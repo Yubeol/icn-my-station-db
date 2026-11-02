@@ -1,0 +1,15 @@
+{
+  "target": "REPLACE_HOST/REPLACE_DATABASE",
+  "port": 5432,
+  "user": "REPLACE_USER",
+  "jobs": {
+    "icn-collection-congestion": {
+      "enabled": false,
+      "validated": false,
+      "sources": ["congestion_t1", "congestion_t2"],
+      "max_requests": 35,
+      "approval_reference": "",
+      "quota_reference": ""
+    }
+  }
+}
