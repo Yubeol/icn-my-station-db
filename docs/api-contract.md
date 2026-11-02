@@ -74,7 +74,7 @@ Hall
 | hallName | 문자 | N | 2번 출국장 | 표시 이름 |
 | waitingCount | 숫자 | N | 510 | 대기 인원(명) |
 | level | 코드 | N | HIGH | LOW / MID / HIGH |
-| changeRate | 숫자 | Y | 28.0 | 전일 같은 시각(±5분) 대비 %, 비교값 없으면 null |
+| changeRate | 숫자 | Y | 28.0 | 30분 전(±5분) 측정값 대비 %, 비교값 없으면 null |
 | source | 코드 | N | api | api / yolo / demo |
 
 ## FlightStats (운항 통계)
