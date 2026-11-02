@@ -1,0 +1,154 @@
+{
+  "_notice": "7 API one-shot testing. Live scheduler requires explicit --confirm-live-schedule. Flight/facility/forecast remain raw until team DB mapping. Source time and raw gateId preserved.",
+  "sources": [
+    {
+      "id": "congestion_t1",
+      "kind": "congestion",
+      "terminal": "T1",
+      "interval_minutes": 2,
+      "enabled": true,
+      "endpoint": "https://apis.data.go.kr/B551177/statusOfDepartureCongestion/getDepartureCongestion",
+      "key_env": "PUBLIC_DATA_KEY",
+      "key_parameter": "serviceKey",
+      "params": {
+        "pageNo": 1,
+        "numOfRows": 100,
+        "type": "json"
+      },
+      "format": "json",
+      "records_path": "response.body.items",
+      "fixture": "t1.json",
+      "mapping": {
+        "hall_id": "gateId",
+        "measured_at": "occurtime",
+        "waiting_count": "waitLength"
+      }
+    },
+    {
+      "id": "congestion_t2",
+      "kind": "congestion",
+      "terminal": "T2",
+      "interval_minutes": 2,
+      "enabled": true,
+      "endpoint": "https://apis.data.go.kr/B551177/statusOfDepartureCongestionT2/getDepartureCongestionT2",
+      "key_env": "PUBLIC_DATA_KEY",
+      "key_parameter": "serviceKey",
+      "params": {
+        "pageNo": 1,
+        "numOfRows": 100,
+        "type": "json"
+      },
+      "format": "json",
+      "records_path": "response.body.items",
+      "fixture": "t2.json",
+      "mapping": {
+        "hall_id": "gateId",
+        "measured_at": "occurtime",
+        "waiting_count": "waitLength"
+      }
+    },
+    {
+      "id": "passenger_forecast",
+      "kind": "raw",
+      "terminal": "",
+      "interval_minutes": 60,
+      "enabled": true,
+      "endpoint": "https://apis.data.go.kr/B551177/passgrAnncmt/getPassgrAnncmt",
+      "key_env": "PUBLIC_DATA_KEY",
+      "key_parameter": "serviceKey",
+      "params": {
+        "pageNo": 1,
+        "numOfRows": 100,
+        "type": "json",
+        "selectdate": "0"
+      },
+      "format": "json",
+      "records_path": "",
+      "fixture": "passenger.json",
+      "mapping": {}
+    },
+    {
+      "id": "flights",
+      "kind": "raw",
+      "terminal": "",
+      "interval_minutes": 15,
+      "enabled": true,
+      "endpoint": "https://apis.data.go.kr/B551177/statusOfAllFltDeOdp/getFltDeparturesDeOdp",
+      "key_env": "PUBLIC_DATA_KEY",
+      "key_parameter": "serviceKey",
+      "params": {
+        "pageNo": 1,
+        "numOfRows": 100,
+        "type": "json",
+        "searchDate": "{DATE}",
+        "searchFrom": "0000",
+        "searchTo": "2400",
+        "searchdtCode": "S"
+      },
+      "format": "json",
+      "records_path": "",
+      "fixture": "flights.json",
+      "mapping": {}
+    },
+    {
+      "id": "metar",
+      "kind": "raw",
+      "terminal": "",
+      "interval_minutes": 30,
+      "enabled": true,
+      "endpoint": "https://apihub.kma.go.kr/api/typ02/openApi/AmmIwxxmService/getMetar",
+      "key_env": "KMA_API_KEY",
+      "key_parameter": "authKey",
+      "params": {
+        "pageNo": 1,
+        "numOfRows": 10,
+        "dataType": "JSON",
+        "icao": "RKSI"
+      },
+      "format": "json",
+      "records_path": "",
+      "fixture": "metar.json",
+      "mapping": {}
+    },
+    {
+      "id": "takeoff_forecast",
+      "kind": "raw",
+      "terminal": "",
+      "interval_minutes": 60,
+      "enabled": true,
+      "endpoint": "https://apis.data.go.kr/1360000/AirInfoService/getAirInfo",
+      "key_env": "PUBLIC_DATA_KEY",
+      "key_parameter": "serviceKey",
+      "params": {
+        "pageNo": 1,
+        "numOfRows": 100,
+        "dataType": "JSON",
+        "icaoCode": "RKSI",
+        "fctm": "{UTC_HOUR}"
+      },
+      "format": "json",
+      "records_path": "",
+      "fixture": "takeoff.json",
+      "mapping": {}
+    },
+    {
+      "id": "facilities",
+      "kind": "raw",
+      "terminal": "",
+      "interval_minutes": 1440,
+      "enabled": true,
+      "endpoint": "https://apis.data.go.kr/B551177/StatusOfFacility/getFacilityKR",
+      "key_env": "PUBLIC_DATA_KEY",
+      "key_parameter": "serviceKey",
+      "params": {
+        "pageNo": 1,
+        "numOfRows": 100,
+        "type": "json"
+      },
+      "format": "json",
+      "records_path": "",
+      "fixture": "facilities.json",
+      "mapping": {}
+    }
+  ]
+}

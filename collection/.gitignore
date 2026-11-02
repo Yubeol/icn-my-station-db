@@ -1,0 +1,22 @@
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Local environments
+.venv/
+.env
+.env.*
+
+# Generated API data
+normalized_output/
+normalized_final/
+validation_output/
+
+# Local SQLite tests
+*.sqlite3
+*.sqlite3-journal
+
+# Local reports/logs
+*.log
