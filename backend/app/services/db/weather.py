@@ -73,11 +73,12 @@ def get_weather() -> Weather:
             wind_direction=None,
             visibility=None,
             pressure=None,
-            crosswind=Crosswind(runway=rules.RUNWAY_NAME, direction=None, speed=None),
+            crosswind=Crosswind(runway=rules.RUNWAY_NAME, active_runway=None, direction=None, speed=None),
             operation_score=OperationScore(
                 minutes_ahead=rules.OPERATION_SCORE_MINUTES_AHEAD,
                 score=None,
                 level=None,
+                delay_risk=None,
                 basis=None,
                 message=rules.OPERATION_MESSAGE_NO_DATA,
             ),
@@ -105,6 +106,7 @@ def get_weather() -> Weather:
         pressure=_float(obs["pressure_hpa"]),
         crosswind=Crosswind(
             runway=rules.RUNWAY_NAME,
+            active_runway=rules.active_runway(wind_speed, wind_direction),
             direction=wind_direction,
             speed=rules.crosswind_speed(wind_speed, wind_direction),
         ),
@@ -112,6 +114,7 @@ def get_weather() -> Weather:
             minutes_ahead=rules.OPERATION_SCORE_MINUTES_AHEAD,
             score=score,
             level=level,
+            delay_risk=rules.delay_risk(level),
             basis=observed_at if score is not None else None,
             message=rules.OPERATION_MESSAGES[level]
             if level is not None

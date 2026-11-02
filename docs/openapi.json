@@ -502,6 +502,17 @@
             ],
             "title": "Runway"
           },
+          "activeRunway": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activerunway"
+          },
           "direction": {
             "anyOf": [
               {
@@ -528,6 +539,7 @@
         "type": "object",
         "required": [
           "runway",
+          "activeRunway",
           "direction",
           "speed"
         ],
@@ -985,6 +997,16 @@
               }
             ]
           },
+          "delayRisk": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CongestionLevel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "basis": {
             "anyOf": [
               {
@@ -1007,6 +1029,7 @@
           "minutesAhead",
           "score",
           "level",
+          "delayRisk",
           "basis",
           "message"
         ],

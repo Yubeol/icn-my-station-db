@@ -79,6 +79,7 @@ class WeatherCondition(StrEnum):
 
 # 운항 여건 단계는 혼잡 단계와 같은 LOW / MID / HIGH 코드를 쓴다.
 OperationLevel = CongestionLevel
+DelayRisk = CongestionLevel  # 출발 지연 위험. 값은 LOW / MID / HIGH
 
 
 class FacilityCategory(StrEnum):
@@ -182,6 +183,7 @@ class Alert(CamelModel):
 
 class Crosswind(CamelModel):
     runway: str | None
+    active_runway: str | None
     direction: float | None
     speed: float | None
 
@@ -190,6 +192,7 @@ class OperationScore(CamelModel):
     minutes_ahead: int
     score: int | None
     level: OperationLevel | None
+    delay_risk: DelayRisk | None
     basis: datetime | None
     message: str
 

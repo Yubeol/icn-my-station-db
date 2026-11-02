@@ -8,6 +8,7 @@ from app.schemas import Crosswind, OperationScore, Weather, WeatherCondition
 def get_weather() -> Weather:
     observed_at = now_kst().replace(second=0)
     wind_speed = 8.0
+    wind_direction = 320.0
     visibility = 10.0
     score = rules.operation_score(wind_speed, visibility)
     level = rules.operation_level(score)
@@ -16,14 +17,20 @@ def get_weather() -> Weather:
         condition=WeatherCondition.CLEAR,
         temperature=18.0,
         wind_speed=wind_speed,
-        wind_direction=320.0,
+        wind_direction=wind_direction,
         visibility=visibility,
         pressure=1016.0,
-        crosswind=Crosswind(runway="15/33", direction=270.0, speed=8.0),
+        crosswind=Crosswind(
+            runway=rules.RUNWAY_NAME,
+            active_runway=rules.active_runway(wind_speed, wind_direction),
+            direction=wind_direction,
+            speed=rules.crosswind_speed(wind_speed, wind_direction),
+        ),
         operation_score=OperationScore(
             minutes_ahead=rules.OPERATION_SCORE_MINUTES_AHEAD,
             score=score,
             level=level,
+            delay_risk=rules.delay_risk(level),
             basis=observed_at if score is not None else None,
             message=rules.OPERATION_MESSAGES[level]
             if level is not None

@@ -5,6 +5,7 @@ import re
 
 from app.schemas import (
     CongestionLevel,
+    DelayRisk,
     FacilityArea,
     FacilityCategory,
     FlightStatus,
@@ -129,6 +130,23 @@ def crosswind_speed(wind_speed: float | None, wind_direction: float | None) -> f
     return round(abs(wind_speed * math.sin(angle)), 1)
 
 
+# 활주로 끝 번호 -> 방향(도). 바람을 마주 보는 쪽 끝을 사용 활주로로 본다.
+RUNWAY_ENDS: dict[str, float] = {"15": 150.0, "33": 330.0}
+CALM_WIND_MS = 1.0  # 이 값 미만이면 무풍으로 보고 사용 활주로를 정하지 않는다.
+
+
+def active_runway(wind_speed: float | None, wind_direction: float | None) -> str | None:
+    """풍향과 각도 차이가 더 작은 활주로 끝("15" 또는 "33"). 무풍이거나 풍향을 모르면 None."""
+    if wind_speed is None or wind_direction is None or wind_speed < CALM_WIND_MS:
+        return None
+
+    def gap(end_deg: float) -> float:
+        diff = abs(wind_direction - end_deg) % 360
+        return min(diff, 360 - diff)
+
+    return min(RUNWAY_ENDS, key=lambda end: gap(RUNWAY_ENDS[end]))
+
+
 # 일기현상(METAR 코드) -> 날씨 코드. 앞에 있는 규칙이 우선한다.
 # 구름량을 아직 수집하지 않으므로 일기현상이 없으면 임시로 CLEAR. 구름량이 생기면 CLOUDY를 구분한다.
 WEATHER_RULES: list[tuple[tuple[str, ...], WeatherCondition]] = [
@@ -187,6 +205,17 @@ def operation_score(wind_speed: float | None, visibility: float | None) -> int |
         - _penalty(visibility, VISIBILITY_OK_KM, VISIBILITY_LIMIT_KM)
     )
     return round(score)
+
+
+def delay_risk(level: OperationLevel | None) -> DelayRisk | None:
+    """출발 지연 위험. 운항 여건 등급을 뒤집은 값(HIGH → LOW, LOW → HIGH)."""
+    if level is None:
+        return None
+    return {
+        OperationLevel.HIGH: DelayRisk.LOW,
+        OperationLevel.MID: DelayRisk.MID,
+        OperationLevel.LOW: DelayRisk.HIGH,
+    }[level]
 
 
 def operation_level(score: int | None) -> OperationLevel | None:

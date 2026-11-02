@@ -130,11 +130,13 @@ Hourly
 | visibility | 숫자 | Y | 10 | 시정 km |
 | pressure | 숫자 | Y | 1016 | 기압 hPa |
 | crosswind.runway | 문자 | Y | 15/33 | 활주로 번호 |
+| crosswind.activeRunway | 문자 | Y | 33 | 바람을 마주 보는 쪽 활주로 끝(15 또는 33). 풍속 1 m/s 미만(무풍)이거나 풍향을 모르면 null |
 | crosswind.direction | 숫자 | Y | 270 | 측풍 방향(도) |
 | crosswind.speed | 숫자 | Y | 8 | 측풍 속도 m/s |
 | operationScore.minutesAhead | 숫자 | N | 60 | 몇 분 후 기준 |
 | operationScore.score | 숫자 | Y | 87 | 기상 운항 여건 점수 0~100, 데이터 부족 시 null |
 | operationScore.level | 코드 | Y | HIGH | LOW / MID / HIGH |
+| operationScore.delayRisk | 코드 | Y | LOW | 출발 지연 위험 LOW / MID / HIGH. level을 뒤집은 값(HIGH→LOW, LOW→HIGH), level이 null이면 null |
 | operationScore.basis | 시각 | Y | | 계산에 쓴 입력값의 관측 시각 |
 | operationScore.message | 문자 | N | 운항 여건 양호 | 화면 문구 |
 
