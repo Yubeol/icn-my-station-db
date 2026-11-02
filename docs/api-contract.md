@@ -94,7 +94,7 @@ Breakdown
 | category | 코드 | N | DELAYED | NORMAL / DELAYED / CANCELLED / DIVERTED |
 | count | 숫자 | N | 72 | 편수 |
 | ratio | 숫자 | N | 14.9 | 비율 % |
-| changeRate | 숫자 | Y | 20.0 | 전일 같은 시각까지 대비 %, 비교값 없으면 null |
+| changeRate | 숫자 | Y | 20.0 | 전일 같은 시각까지 대비 %. 이력 데이터가 쌓이기 전까지 null |
 
 Hourly
 

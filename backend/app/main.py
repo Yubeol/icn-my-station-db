@@ -1,15 +1,29 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app import ws
 from app.core.config import settings
+from app.core.db import close_pool
+from app.core.errors import FlightNotFoundError
 from app.routers import alerts, congestion, dashboard, facilities, flights, stats, weather
-from app.services.flights import FlightNotFoundError
+from app.services.alert_worker import start_alert_worker
 
 API_PREFIX = "/api/v1"
 
-app = FastAPI(title="ICN My Station API", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    worker = start_alert_worker()  # db 모드에서만 알림 감지를 돌린다
+    yield
+    if worker is not None:
+        worker.cancel()
+    close_pool()  # db 모드에서 열린 연결 풀을 정리한다. mock 모드면 아무 일도 하지 않는다.
+
+
+app = FastAPI(title="ICN My Station API", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
