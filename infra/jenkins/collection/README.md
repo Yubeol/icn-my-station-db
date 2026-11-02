@@ -52,9 +52,12 @@ dry-run도 실제 API 호출, 로컬 파일 생성, RDS 읽기를 수행합니�
 
 ## 자동 실행 전 남은 조건
 
-현재 파일은 매 쓰기 실행에서 승인을 요구합니다. **지금 cron을 켜도 무인 자동 적재는 완성되지 않습니다.**
-실제 적재 검증 후 승인된 대상/source/요청 상한을 고정한 운영 정책을 반영하고 수동 승인 단계를 운영 정책 검사로 전환해야 합니다.
-운영 전체 수집에서는 시험용 ROW_LIMIT=10을 해제해야 합니다.
+수동 쓰기는 실행별 승인을 요구합니다. TimerTrigger로 실행되는 정기 작업은 별도 운영 정책을 검사합니다.
+실제 적재 검증 및 반복 운영 승인 후 `operating-policy.example.json`을 참고해 정책 파일을 Jenkins Secret file ID `icn-collection-policy`에 등록합니다. 실제 파일은 Git에 올리지 않습니다.
+target은 정확한 `DB_HOST/DB_NAME`, port/user도 접속 대상과 일치해야 합니다. jobs 키는 폴더 경로를 포함하는 Jenkins JOB_NAME입니다.
+각 Job에 sources, max_requests, enabled=true, validated=true, approval_reference(반복 운영 승인 기록), quota_reference(확인된 계정 할당량 기록)를 지정합니다. METAR는 cadence_reference도 필수입니다.
+정기 실행은 정책에 승인된 요청 상한을 사용하고 시험용 ROW_LIMIT 없이 전체 결과를 처리합니다. 정책이 없거나 불일치하면 API 호출 전에 실패합니다.
+정책 등록만으로 cron이 켜지지는 않습니다. 승인된 Job에만 위 표의 Build periodically 설정을 저장하고 다음 실행의 TimerTrigger 원인, KST 시작 시각, RESULT와 RDS 기록을 확인합니다.
 공공데이터 포털 계정별 할당량 및 페이지 수를 확인하여 혼잡도(하루 480회 Job 실행), 항공편(96회)의 총 요청량을 산정합니다.
 METAR 제공 주기는 API 문서와 실제 응답 시각으로 확인합니다. 저장소 config의 interval_minutes는 공급자 보증값이 아닙니다.
 이 조건을 충족하기 전에는 스케줄을 비활성 상태로 유지합니다.

@@ -30,14 +30,24 @@ pipeline {
             steps {
                 script {
                     env.ICN_WRITE_APPROVED = 'false'
-                    if (params.APPLY) {
+                    env.ICN_SCHEDULED = currentBuild.getBuildCauses('hudson.triggers.TimerTrigger$TimerTriggerCause') ? 'true' : 'false'
+                    if (params.APPLY && env.ICN_SCHEDULED != 'true') {
                         input message: "Approve RDS write: job=${env.JOB_NAME}, target=${params.TARGET_CONFIRMATION}, input rows/source=${params.ROW_LIMIT}, API requests<=${params.MAX_REQUESTS}", ok: 'Approve this write'
                         env.ICN_WRITE_APPROVED = 'true'
                     }
                 }
                 withCredentials([file(credentialsId: 'icn-collection-env', variable: 'ICN_ENV_FILE')]) {
-                    sh '''set +x
+                    script {
+                        if (env.ICN_SCHEDULED == 'true') {
+                            withCredentials([file(credentialsId: 'icn-collection-policy', variable: 'ICN_POLICY_FILE')]) {
+                                sh '''set +x
 .collection-venv/bin/python infra/jenkins/collection/run.py --sources takeoff_forecast'''
+                            }
+                        } else {
+                            sh '''set +x
+.collection-venv/bin/python infra/jenkins/collection/run.py --sources takeoff_forecast'''
+                        }
+                    }
                 }
             }
         }

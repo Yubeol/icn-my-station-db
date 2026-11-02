@@ -1,5 +1,6 @@
 """Run the existing collector without exposing raw API/SQL exception text."""
 import argparse
+import json
 import os
 from pathlib import Path
 import re
@@ -51,7 +52,27 @@ def main():
         print('CONFIGURATION FAILED: invalid port or execution limits.')
         return 2
     expected_target = values['DB_HOST'] + '/' + values['DB_NAME']
-    if apply and (os.environ.get('ICN_WRITE_APPROVED') != 'true'
+    scheduled = os.environ.get('ICN_SCHEDULED') == 'true'
+    if scheduled:
+        try:
+            policy = json.loads(Path(os.environ['ICN_POLICY_FILE']).read_text(encoding='utf-8'))
+            job = policy['jobs'][os.environ['JOB_NAME']]
+            if (policy['target'] != expected_target
+                    or policy['port'] != port or policy['user'] != values['DB_USER']
+                    or job['enabled'] is not True or job['validated'] is not True
+                    or job['sources'] != args.sources or not job['approval_reference']
+                    or not job['quota_reference']
+                    or type(job['max_requests']) is not int or job['max_requests'] < 1):
+                raise ValueError()
+            if 'metar' in args.sources and not job.get('cadence_reference'):
+                raise ValueError()
+            budget = job['max_requests']
+            limit = None  # Scheduled production runs process the complete result.
+            apply = True
+        except (KeyError, OSError, ValueError, TypeError):
+            print('BLOCKED: scheduled job lacks a matching validated operating policy.')
+            return 2
+    if apply and not scheduled and (os.environ.get('ICN_WRITE_APPROVED') != 'true'
                   or os.environ.get('TARGET_CONFIRMATION') != expected_target):
         print('BLOCKED: approval or exact target confirmation missing.')
         return 2
@@ -63,7 +84,9 @@ def main():
     ).render_as_string(hide_password=False)
     child_env['PYTHONUNBUFFERED'] = '1'
     command = [sys.executable, '-m', 'collection.pipeline.jobs', '--sources', *args.sources]
-    command += ['--limit', str(limit), '--max-requests', str(budget)]
+    command += ['--max-requests', str(budget)]
+    if limit is not None:
+        command += ['--limit', str(limit)]
     if apply:
         command.append('--apply')
     phase = 'START'
