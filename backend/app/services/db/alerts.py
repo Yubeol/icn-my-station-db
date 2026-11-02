@@ -13,7 +13,15 @@ from app.core.cache import ttl_cache
 from app.core.config import settings
 from app.core.db import fetch_all
 from app.core.timeutil import KST, now_kst
-from app.schemas import Alert, AlertSeverity, AlertType, Direction, FlightStatus, OperationLevel
+from app.schemas import (
+    Alert,
+    AlertSeverity,
+    AlertType,
+    Direction,
+    FlightStatus,
+    OperationLevel,
+    Terminal,
+)
 from app.services.db import weather
 from app.services.db.flights import fetch_today_rows, my_flight_numbers
 
@@ -34,8 +42,10 @@ def _stored_rows() -> list[dict[str, Any]]:
     return fetch_all(
         """
         SELECT a.alert_id, a.alert_type, a.severity, a.title, a.message, a.created_at,
-               f.flight_number, f.master_flight_number
+               f.flight_number, f.master_flight_number, t.terminal_code
         FROM smart_alerts a
+        LEFT JOIN airport_zones z ON z.zone_id = a.zone_id
+        LEFT JOIN terminals t ON t.terminal_id = z.terminal_id
         LEFT JOIN flight_operations f ON f.flight_uid = a.flight_uid AND f.source = a.source
         WHERE a.source = ANY(%(sources)s)
           AND a.alert_type = ANY(%(types)s)
@@ -67,6 +77,10 @@ def _stored(mine: set[str]) -> list[Alert]:
                 title=row["title"],
                 message=row["message"],
                 flight_no=row["flight_number"],
+                # 혼잡 알림만 출국장의 터미널(탑승동은 T1). 나머지는 공통.
+                terminal=rules.to_terminal(row["terminal_code"])
+                if row["alert_type"] == "congestion"
+                else None,
                 is_mine=bool(numbers & mine),
                 is_important=severity != AlertSeverity.INFO,
                 created_at=row["created_at"].astimezone(KST),
@@ -99,6 +113,7 @@ def _boarding(mine: set[str]) -> list[Alert]:
                 if gate
                 else "탑승이 시작되었습니다.",
                 flight_no=number,
+                terminal=None,
                 is_mine=number.strip().upper() in mine,
                 is_important=False,
                 created_at=now.replace(second=0),
@@ -121,6 +136,7 @@ def _weather() -> list[Alert]:
             title="기상 안내",
             message=f"운항 여건 점수가 {score.score}점으로 낮습니다. 운항 정보를 확인하세요.",
             flight_no=None,
+            terminal=None,
             is_mine=False,
             is_important=True,
             created_at=w.observed_at,
@@ -128,8 +144,8 @@ def _weather() -> list[Alert]:
     ]
 
 
-def list_alerts(flight_no: str | None = None) -> list[Alert]:
+def list_alerts(flight_no: str | None = None, terminal: Terminal | None = None) -> list[Alert]:
     mine = my_flight_numbers(flight_no)
-    alerts = _stored(mine) + _boarding(mine) + _weather()
+    alerts = rules.filter_alert_terminal(_stored(mine) + _boarding(mine) + _weather(), terminal)
     alerts.sort(key=lambda a: a.created_at, reverse=True)
     return alerts[: rules.ALERT_LIST_LIMIT]

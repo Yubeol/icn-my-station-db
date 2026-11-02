@@ -2,8 +2,9 @@
 
 from datetime import timedelta
 
+from app.core import rules
 from app.core.timeutil import now_kst
-from app.schemas import Alert, AlertSeverity, AlertType
+from app.schemas import Alert, AlertSeverity, AlertType, Terminal
 from app.services.flights import resolve_my_flight_no
 
 # (id, 종류, 중요도, 제목, 내용, 편명, 중요 알림 여부, 발생 시각 오프셋(분))
@@ -61,10 +62,14 @@ _MOCK_ROWS: list[tuple] = [
 ]
 
 
-def list_alerts(flight_no: str | None = None) -> list[Alert]:
+# 혼잡 알림의 터미널. 나머지 알림은 공통(None).
+_MOCK_TERMINALS: dict[str, Terminal] = {"a4": Terminal.T1}
+
+
+def list_alerts(flight_no: str | None = None, terminal: Terminal | None = None) -> list[Alert]:
     my_flight_no = resolve_my_flight_no(flight_no)
     now = now_kst()
-    return [
+    alerts = [
         Alert(
             alert_id=alert_id,
             type=kind,
@@ -72,9 +77,11 @@ def list_alerts(flight_no: str | None = None) -> list[Alert]:
             title=title,
             message=message,
             flight_no=alert_flight_no,
+            terminal=_MOCK_TERMINALS.get(alert_id),
             is_mine=my_flight_no is not None and alert_flight_no == my_flight_no,
             is_important=is_important,
             created_at=now + timedelta(minutes=offset),
         )
         for alert_id, kind, severity, title, message, alert_flight_no, is_important, offset in _MOCK_ROWS
     ]
+    return rules.filter_alert_terminal(alerts, terminal)

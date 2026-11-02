@@ -2,6 +2,7 @@
 
 from datetime import datetime, time
 
+from app.core import rules
 from app.core.timeutil import now_kst
 from app.schemas import Facility, FacilityArea, FacilityCategory, Terminal
 
@@ -100,9 +101,9 @@ def _is_open(open_time: str | None, close_time: str | None, is24h: bool, now: ti
     return now >= start or now < end  # 자정을 넘기는 운영
 
 
-def list_facilities() -> list[Facility]:
+def list_facilities(terminal: Terminal | None = None) -> list[Facility]:
     now = now_kst().time()
-    return [
+    facilities = [
         Facility(
             facility_id=facility_id,
             name=name,
@@ -133,3 +134,4 @@ def list_facilities() -> list[Facility]:
             tel,
         ) in _MOCK_ROWS
     ]
+    return rules.filter_terminal(facilities, terminal)

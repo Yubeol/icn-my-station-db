@@ -12,7 +12,7 @@ from app.core import rules
 from app.core.cache import ttl_cache
 from app.core.db import fetch_all
 from app.core.timeutil import now_kst
-from app.schemas import Facility
+from app.schemas import Facility, Terminal
 
 
 @ttl_cache(seconds=300)
@@ -52,6 +52,7 @@ def _to_facility(row: dict[str, Any], now_hhmm: str) -> Facility:
     )
 
 
-def list_facilities() -> list[Facility]:
+def list_facilities(terminal: Terminal | None = None) -> list[Facility]:
     now_hhmm = now_kst().strftime("%H:%M")
-    return [_to_facility(row, now_hhmm) for row in _rows()]
+    facilities = [_to_facility(row, now_hhmm) for row in _rows()]
+    return rules.filter_terminal(facilities, terminal)

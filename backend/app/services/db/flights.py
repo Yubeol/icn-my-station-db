@@ -14,7 +14,7 @@ from app.core.config import settings
 from app.core.db import fetch_all
 from app.core.errors import FlightNotFoundError
 from app.core.timeutil import KST, now_kst
-from app.schemas import Direction, Flight
+from app.schemas import Direction, Flight, Terminal
 
 _FLOW = {Direction.DEPARTURE: "departure", Direction.ARRIVAL: "arrival"}
 
@@ -156,17 +156,20 @@ def _flights(rows: list[dict[str, Any]], my_flight_no: str | None) -> list[Fligh
     return [f for row in rows if (f := _to_flight(row, my_numbers)) is not None]
 
 
-def list_flights(direction: Direction, flight_no: str | None = None) -> list[Flight]:
-    """오늘 운항편 전체(예정 시각순)."""
-    return _flights(fetch_today_rows(direction), resolve_my_flight_no(flight_no))
+def list_flights(
+    direction: Direction, flight_no: str | None = None, terminal: Terminal | None = None
+) -> list[Flight]:
+    """오늘 운항편 전체(예정 시각순). terminal을 주면 그 터미널만."""
+    flights = _flights(fetch_today_rows(direction), resolve_my_flight_no(flight_no))
+    return rules.filter_terminal(flights, terminal)
 
 
 def list_upcoming_flights(
-    direction: Direction, my_flight_no: str | None, limit: int
+    direction: Direction, my_flight_no: str | None, limit: int, terminal: Terminal | None = None
 ) -> list[Flight]:
     """메인 요약용. 지금보다 SUMMARY_PAST_MINUTES 전 이후 예정된 편부터 limit건."""
     since = now_kst() - timedelta(minutes=rules.SUMMARY_PAST_MINUTES)
-    flights = _flights(fetch_today_rows(direction), my_flight_no)
+    flights = rules.filter_terminal(_flights(fetch_today_rows(direction), my_flight_no), terminal)
     return [f for f in flights if f.scheduled_at >= since][:limit]
 
 

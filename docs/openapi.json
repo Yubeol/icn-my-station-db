@@ -28,6 +28,22 @@
               ],
               "title": "Flightno"
             }
+          },
+          {
+            "name": "terminal",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Terminal"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Terminal"
+            }
           }
         ],
         "responses": {
@@ -84,6 +100,22 @@
                 }
               ],
               "title": "Flightno"
+            }
+          },
+          {
+            "name": "terminal",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Terminal"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Terminal"
             }
           }
         ],
@@ -262,6 +294,22 @@
               ],
               "title": "Flightno"
             }
+          },
+          {
+            "name": "terminal",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Terminal"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Terminal"
+            }
           }
         ],
         "responses": {
@@ -320,17 +368,45 @@
         ],
         "summary": "Get Facilities",
         "operationId": "get_facilities_api_v1_facilities_get",
+        "parameters": [
+          {
+            "name": "terminal",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Terminal"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Terminal"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/Facility"
                   },
-                  "type": "array",
                   "title": "Response Get Facilities Api V1 Facilities Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -372,6 +448,16 @@
             ],
             "title": "Flightno"
           },
+          "terminal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Terminal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "isMine": {
             "type": "boolean",
             "title": "Ismine"
@@ -394,6 +480,7 @@
           "title",
           "message",
           "flightNo",
+          "terminal",
           "isMine",
           "isImportant",
           "createdAt"

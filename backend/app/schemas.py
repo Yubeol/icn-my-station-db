@@ -173,6 +173,7 @@ class Alert(CamelModel):
     title: str
     message: str
     flight_no: str | None
+    terminal: Terminal | None
     is_mine: bool
     is_important: bool
     created_at: datetime

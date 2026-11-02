@@ -63,18 +63,22 @@ def _to_flight(row: tuple, my_flight_no: str | None) -> Flight:
     )
 
 
-def list_flights(direction: Direction, flight_no: str | None = None) -> list[Flight]:
+def list_flights(
+    direction: Direction, flight_no: str | None = None, terminal: Terminal | None = None
+) -> list[Flight]:
     my_flight_no = resolve_my_flight_no(flight_no)
     flights = [_to_flight(row, my_flight_no) for row in _MOCK_ROWS if row[2] == direction]
-    return sorted(flights, key=lambda f: f.scheduled_at)
+    return sorted(rules.filter_terminal(flights, terminal), key=lambda f: f.scheduled_at)
 
 
 def list_upcoming_flights(
-    direction: Direction, my_flight_no: str | None, limit: int
+    direction: Direction, my_flight_no: str | None, limit: int, terminal: Terminal | None = None
 ) -> list[Flight]:
     """메인 요약용. 지금보다 SUMMARY_PAST_MINUTES 전 이후 예정된 편부터 limit건."""
     since = now_kst() - timedelta(minutes=rules.SUMMARY_PAST_MINUTES)
-    flights = [_to_flight(row, my_flight_no) for row in _MOCK_ROWS if row[2] == direction]
+    flights = rules.filter_terminal(
+        [_to_flight(row, my_flight_no) for row in _MOCK_ROWS if row[2] == direction], terminal
+    )  # 거른 다음에 limit건을 자른다
     flights.sort(key=lambda f: f.scheduled_at)
     return [f for f in flights if f.scheduled_at >= since][:limit]
 

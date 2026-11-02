@@ -207,6 +207,20 @@ def operation_score(wind_speed: float | None, visibility: float | None) -> int |
     return round(score)
 
 
+def filter_terminal(items: list, terminal: Terminal | None) -> list:
+    """운항·편의시설 목록을 터미널로 거른다. terminal이 없으면 그대로, 터미널을 모르는 항목은 지정 시 제외."""
+    if terminal is None:
+        return items
+    return [item for item in items if item.terminal == terminal]
+
+
+def filter_alert_terminal(alerts: list, terminal: Terminal | None) -> list:
+    """알림을 터미널로 거른다. 지정하면 같은 터미널의 알림과 공통(terminal=None) 알림만 남긴다."""
+    if terminal is None:
+        return alerts
+    return [a for a in alerts if a.terminal is None or a.terminal == terminal]
+
+
 def delay_risk(level: OperationLevel | None) -> DelayRisk | None:
     """출발 지연 위험. 운항 여건 등급을 뒤집은 값(HIGH → LOW, LOW → HIGH)."""
     if level is None:
