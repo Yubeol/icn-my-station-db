@@ -1,0 +1,47 @@
+// Schedule remains disabled until manual RDS validation and approval.
+// Proposed Asia/Seoul schedule: 0 4 * * *
+pipeline {
+    agent { label 'icn-ci' }
+    options {
+        skipDefaultCheckout(true)
+        disableConcurrentBuilds()
+        timeout(time: 15, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '30'))
+        timestamps()
+    }
+    parameters {
+        booleanParam(name: 'APPLY', defaultValue: false, description: 'Approved RDS write only. Default is dry-run.')
+        string(name: 'ROW_LIMIT', defaultValue: '10', description: 'Maximum input rows per source for this run')
+        string(name: 'MAX_REQUESTS', defaultValue: '35', description: 'Maximum API requests per run')
+        string(name: 'TARGET_CONFIRMATION', defaultValue: '', description: 'For writes: exact DB_HOST/DB_NAME, no password')
+    }
+    environment { TZ = 'Asia/Seoul' }
+    stages {
+        stage('Checkout main') {
+            steps {
+                deleteDir()
+                git branch: 'main', url: 'https://github.com/donacana/icn-my-station-db.git'
+            }
+        }
+        stage('Dependencies') {
+            steps { sh 'uv venv --python 3.12 .collection-venv && uv pip install --python .collection-venv/bin/python -r infra/jenkins/collection/requirements.txt' }
+        }
+        stage('Collect and validate') {
+            steps {
+                script {
+                    env.ICN_WRITE_APPROVED = 'false'
+                    if (params.APPLY) {
+                        input message: "Approve RDS write: job=${env.JOB_NAME}, target=${params.TARGET_CONFIRMATION}, input rows/source=${params.ROW_LIMIT}, API requests<=${params.MAX_REQUESTS}", ok: 'Approve this write'
+                        env.ICN_WRITE_APPROVED = 'true'
+                    }
+                }
+                withCredentials([file(credentialsId: 'icn-collection-env', variable: 'ICN_ENV_FILE')]) {
+                    sh '''set +x
+.collection-venv/bin/python infra/jenkins/collection/run.py --sources facilities'''
+                }
+            }
+        }
+    }
+    post { always { deleteDir() } }
+}
+
