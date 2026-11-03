@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR/backend\" && uv run ruff format . && uv run ruff check --fix ."
+            "command": "cd \"$CLAUDE_PROJECT_DIR/backend\" && uv run python scripts/format_edited.py"
           }
         ]
       }
