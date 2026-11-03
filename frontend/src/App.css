@@ -1,0 +1,54 @@
+/* 범위 제한: 모든 프로젝트 전용 요소는 icn- 접두사를 사용합니다. */
+:root { font-family: Arial, 'Noto Sans KR', sans-serif; }
+html, body, #root { margin: 0; width: 100%; min-width: 320px; min-height: 100%; max-width: none; padding: 0; }
+body { background: #edf4ff; }
+#root { display: block; text-align: left; }
+.icn-app, .icn-app * { box-sizing: border-box; }
+.icn-app { --blue: #0756ae; --border: #bdd2eb; width: 100%; min-height: 100vh; padding: 10px clamp(10px,1.4vw,28px) 22px; background: #dbeafb; color: #153b65; }
+.icn-app button { font: inherit; cursor: pointer; }
+.icn-banner { height: 86px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 clamp(15px,2vw,35px); border-radius: 17px 17px 5px 5px; color: white; overflow: hidden; background: linear-gradient(110deg,#0c468b 0%,#126dc2 30%,#8fc8f0 53%,#034988 78%,#042e61 100%); }
+.icn-brand { display: flex; align-items: center; gap: 12px; flex: 0 0 auto; }
+.icn-brand > span { font-size: 40px; }
+.icn-brand strong { display: block; font-size: clamp(18px,1.45vw,25px); }
+.icn-brand small { display: block; font-size: 11px; margin-top: 4px; }
+.icn-banner__middle { align-self: stretch; flex: 1; display: flex; align-items: center; justify-content: center; font-size: 10px; letter-spacing: 3px; color: #145287; background: repeating-linear-gradient(130deg,transparent 0 70px,#ffffff88 72px 79px,transparent 81px 115px); text-align: center; }
+.icn-route { display: grid; gap: 5px; text-align: right; flex: 0 0 auto; }
+.icn-route strong { font-size: clamp(20px,1.7vw,27px); }
+.icn-route small { font-size: 10px; }
+.icn-nav { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; padding: 10px 14px; margin: 5px 0 9px; border: 1px solid var(--border); border-radius: 15px; background: white; }
+.icn-nav button { padding: 11px 16px; background: #f7faff; border: 1px solid #c7d9ee; border-radius: 9px; color: #163f74; font-weight: 600; font-size: 14px; }
+.icn-nav button.is-active, .icn-nav button:hover { color: white; background: var(--blue); border-color: var(--blue); }
+.icn-dashboard { display: grid; grid-template-columns: minmax(0, 23fr) minmax(0, 51fr) minmax(0, 26fr); gap: 10px; min-height: min(760px, calc(100vh - 175px)); }
+.icn-dashboard__left, .icn-dashboard__center, .icn-dashboard__right { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.icn-section { background: #fff; border: 1px solid var(--border); border-radius: 15px; padding: 14px; display: flex; flex-direction: column; min-width: 0; min-height: 0; box-shadow: 0 2px 6px #2f5e9219; }
+.icn-section__header { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 28px; border-bottom: 1px solid #e0e9f5; padding-bottom: 11px; margin-bottom: 12px; }
+.icn-section__header h2 { margin: 0; font-size: clamp(14px,1vw,17px); }
+.icn-more { background: none; border: none; padding: 0; color: #095bb2; white-space: nowrap; font-size: 12px!important; font-weight: bold!important; }
+.icn-section__body { flex: 1; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+.icn-summary, .icn-stats { flex: 1; }
+.icn-congestion { flex: 1; }
+.icn-weather { flex: 0 0 25%; }
+.icn-alerts { flex: 0 0 32%; }
+.icn-facilities { flex: 1; }
+.icn-placeholder { flex: 1; min-height: 80px; border: 2px dashed #9ebee3; background: #f1f7ff; border-radius: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; padding: 15px; text-align: center; color: #2d619a; }
+.icn-placeholder strong { font-size: clamp(13px,1vw,17px); font-weight: 650; }
+.icn-placeholder small { font-size: 12px; color: #668bb3; }
+.icn-terminal { display: flex; align-self: flex-start; gap: 4px; border-radius: 11px; padding: 4px; background: #e4effc; }
+.icn-terminal button { border: none; border-radius: 8px; padding: 8px 20px; color: #215991; background: transparent; font-size: 13px; }
+.icn-terminal button.is-active { background: #0d65c7; color: white; }
+.icn-congestion__map { flex: 7; min-height: 270px; }
+.icn-congestion__details { flex: 2; min-height: 130px; }
+.icn-barcode { height: 52px; padding: 3px 15px 0; display: flex; flex-direction: column; gap: 4px; align-items: center; }
+.icn-barcode i { display: block; width: 100%; height: 28px; background: repeating-linear-gradient(90deg,#134071 0 2px,transparent 2px 5px,#134071 5px 8px,transparent 8px 12px); }
+.icn-barcode span { font-size: 9px; font-weight: bold; letter-spacing: 3px; }
+.icn-detail { margin: 0; min-height: calc(100vh - 210px); display: flex; flex-direction: column; border: 1px solid var(--border); padding: clamp(18px,2vw,32px); border-radius: 15px; background: white; }
+.icn-detail__heading h1 { font-size: 24px; margin: 0; }
+.icn-detail__heading p { margin: 7px 0 20px; color: #6483aa; font-size: 13px; }
+.icn-detail__content { flex: 1; min-height: 380px; }
+@media(max-width: 1080px) { .icn-dashboard { grid-template-columns: minmax(0, 35fr) minmax(0, 65fr); min-height: 850px; } .icn-dashboard__right { grid-column: 1/-1; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); } .icn-weather,.icn-alerts,.icn-facilities { min-height: 220px; } .icn-barcode { display: none; } }
+@media(max-width: 700px) { .icn-app { padding: 7px; } .icn-banner { height: 70px; padding: 10px 14px; } .icn-banner__middle { display: none; } .icn-route { display: none; } .icn-nav { gap: 5px; padding: 7px; } .icn-nav button { font-size: 12px; padding: 9px 10px; } .icn-dashboard { display: flex; flex-direction: column; min-height: 0; } .icn-dashboard__left,.icn-dashboard__right { display: flex; } .icn-summary,.icn-stats,.icn-weather,.icn-alerts,.icn-facilities { min-height: 180px; } .icn-congestion { min-height: 550px; } .icn-congestion__map { min-height: 260px; } .icn-congestion__details { min-height: 120px; } }
+
+/* API 상태는 작은 텍스트만 표시하며 영역 안에 임의의 데이터 카드를 생성하지 않습니다. */
+.icn-api-status { margin: 0 0 6px; padding: 6px 10px; font-size: 12px; border-radius: 7px; background: #eaf2ff; color: #336aa5; overflow-wrap: anywhere; }
+.icn-api-status--success { background: #ecf8ee; color: #207343; }
+.icn-api-status--error { background: #fff2f0; color: #b83330; }
