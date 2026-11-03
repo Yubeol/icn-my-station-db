@@ -314,11 +314,10 @@ CREATE TABLE airport_facilities (
 );
 CREATE INDEX airport_facilities_terminal_type_idx ON airport_facilities (terminal_id, facility_type);
 CREATE INDEX airport_facilities_zone_terminal_idx ON airport_facilities (zone_id, terminal_id);
--- RDS already enforces uniqueness of non-null source_facility_key.
--- NULL is allowed for unclassified/legacy records.
+-- A regular UNIQUE index supports ON CONFLICT (source_facility_key).
+-- PostgreSQL 14 allows multiple NULL values under a regular UNIQUE index.
 CREATE UNIQUE INDEX airport_facilities_source_facility_key_uq
-    ON airport_facilities (source_facility_key)
-    WHERE source_facility_key IS NOT NULL;
+    ON airport_facilities (source_facility_key);
 
 -- Weekly recurring local wall-clock intervals, not timestamps of actual events.
 -- ISO weekday: Monday=1 ... Sunday=7; local timezone Asia/Seoul.
