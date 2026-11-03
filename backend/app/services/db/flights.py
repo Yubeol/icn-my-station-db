@@ -34,7 +34,8 @@ _COLUMNS = """
     f.estimated_at,
     t.terminal_code,
     f.gate,
-    f.source_status
+    f.source_status,
+    f.last_collected_at
 """
 
 

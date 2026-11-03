@@ -90,7 +90,7 @@ def _stored(mine: set[str]) -> list[Alert]:
 
 
 def _boarding(mine: set[str]) -> list[Alert]:
-    """탑승 중이고 예정 시각이 곧인 출발편. 저장하지 않는 계산 알림."""
+    """최근 수집 기준 탑승 중이고 예정 시각이 곧인 출발편. 저장하지 않는 계산 알림."""
     now = now_kst()
     until = now + timedelta(minutes=rules.BOARDING_ALERT_WITHIN_MINUTES)
     since = now - timedelta(minutes=rules.SUMMARY_PAST_MINUTES)
@@ -101,6 +101,8 @@ def _boarding(mine: set[str]) -> list[Alert]:
             continue
         if rules.resolve_status(row["source_status"], 0) != FlightStatus.BOARDING:
             continue
+        if not rules.is_fresh(row["last_collected_at"], now):
+            continue  # 오래된 상태로 '지금 탑승' 알림을 만들지 않는다
         number = row["flight_number"]
         gate = rules.parse_gate(row["gate"])
         alerts.append(
@@ -116,7 +118,7 @@ def _boarding(mine: set[str]) -> list[Alert]:
                 terminal=None,
                 is_mine=number.strip().upper() in mine,
                 is_important=False,
-                created_at=now.replace(second=0),
+                created_at=row["last_collected_at"].astimezone(KST),
             )
         )
     return alerts

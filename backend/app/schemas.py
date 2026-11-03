@@ -42,6 +42,10 @@ class CongestionLevel(StrEnum):
     HIGH = "HIGH"
 
 
+class HallOperationStatus(StrEnum):
+    CHECK_REQUIRED = "CHECK_REQUIRED"
+
+
 class DataSource(StrEnum):
     API = "api"
     YOLO = "yolo"
@@ -131,6 +135,7 @@ class Hall(CamelModel):
     level: CongestionLevel
     change_rate: float | None
     source: DataSource
+    operation_status: HallOperationStatus | None = None
 
 
 class Congestion(CamelModel):

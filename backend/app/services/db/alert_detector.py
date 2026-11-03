@@ -4,6 +4,7 @@
 - 게이트 변경과 지연 증가는 '직전 감지 때의 상태'와 비교한다. 이 상태는 메모리에만 둔다.
   서버를 재시작하면 첫 감지에서는 게이트 변경을 알 수 없고, 다음 감지부터 다시 비교한다.
 - 감지에 쓰는 데이터가 ALERT_MAX_DATA_AGE_MINUTES보다 오래됐으면 알림을 만들지 않는다.
+- 같은 출국장의 같은 종류 혼잡 알림은 CONGESTION_ALERT_COOLDOWN_MINUTES 안에 다시 만들지 않는다.
 """
 
 import logging
@@ -22,6 +23,7 @@ from app.services.alert_events import (
     HallState,
     Measure,
     congestion_events,
+    drop_recent_congestion,
     flight_events,
 )
 from app.services.db.flights import delay_minutes
@@ -128,10 +130,9 @@ def _flight_states(now: datetime) -> list[FlightState]:
             "hi": now + timedelta(hours=rules.ALERT_FLIGHT_FUTURE_HOURS),
         },
     )
-    max_age = timedelta(minutes=rules.ALERT_MAX_DATA_AGE_MINUTES)
     states = []
     for row in rows:
-        if row["last_collected_at"] is None or now - row["last_collected_at"] > max_age:
+        if not rules.is_fresh(row["last_collected_at"], now):
             continue  # 최근 수집되지 않은 편은 상태가 현재와 다를 수 있다
         delay = delay_minutes(row)
         states.append(
@@ -148,6 +149,17 @@ def _flight_states(now: datetime) -> list[FlightState]:
             )
         )
     return states
+
+
+def _recent_congestion_keys(now: datetime) -> list[str]:
+    rows = fetch_all(
+        """
+        SELECT dedupe_key FROM smart_alerts
+        WHERE alert_type = 'congestion' AND created_at >= %(since)s
+        """,
+        {"since": now - timedelta(minutes=rules.CONGESTION_ALERT_COOLDOWN_MINUTES)},
+    )
+    return [row["dedupe_key"] for row in rows]
 
 
 # ---------- 감지 실행 ----------
@@ -170,6 +182,8 @@ class AlertDetector:
                 rows.extend(flight_events(flight, self._last_flights.get(uid)))
             # 이번에 안 보인 편의 이전 상태도 남겨 둔다(한 번 수집이 빠져도 비교가 끊기지 않게).
             self._last_flights.update(current)
+            if any(row["alert_type"] == "congestion" for row in rows):
+                rows = drop_recent_congestion(rows, _recent_congestion_keys(now))
             return rows
 
     def scan_once(self, write: bool | None = None) -> tuple[int, int]:
