@@ -1021,6 +1021,16 @@
           },
           "source": {
             "$ref": "#/components/schemas/DataSource"
+          },
+          "operationStatus": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HallOperationStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -1033,6 +1043,13 @@
           "source"
         ],
         "title": "Hall"
+      },
+      "HallOperationStatus": {
+        "type": "string",
+        "enum": [
+          "CHECK_REQUIRED"
+        ],
+        "title": "HallOperationStatus"
       },
       "Hourly": {
         "properties": {

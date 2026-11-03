@@ -4,6 +4,7 @@ DB 조회는 services/db/alert_detector.py가 하고, 여기서는 넘겨받은 
 DB 없이 테스트할 수 있게 분리했다.
 """
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
@@ -119,6 +120,23 @@ def congestion_events(hall: HallState) -> list[dict[str, Any]]:
             )
         )
     return events
+
+
+def _congestion_kind(dedupe_key: str) -> str:
+    """congestion:{zone_id}:{enter|surge}:{시각} -> congestion:{zone_id}:{enter|surge}"""
+    return ":".join(dedupe_key.split(":")[:3])
+
+
+def drop_recent_congestion(
+    rows: list[dict[str, Any]], recent_keys: Iterable[str]
+) -> list[dict[str, Any]]:
+    """최근 저장된 혼잡 알림과 출국장·종류가 같은 행을 뺀다. 다른 종류의 알림은 그대로 둔다."""
+    recent = {_congestion_kind(key) for key in recent_keys}
+    return [
+        row
+        for row in rows
+        if row["alert_type"] != "congestion" or _congestion_kind(row["dedupe_key"]) not in recent
+    ]
 
 
 def flight_events(flight: FlightState, previous: FlightState | None) -> list[dict[str, Any]]:

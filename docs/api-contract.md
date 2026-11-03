@@ -77,6 +77,7 @@ Hall
 | level | 코드 | N | HIGH | LOW / MID / HIGH |
 | changeRate | 숫자 | Y | 28.0 | 30분 전(±5분) 측정값 대비 %, 비교값 없으면 null |
 | source | 코드 | N | api | api / yolo / demo |
+| operationStatus | 코드 | Y | CHECK_REQUIRED | 최근 24시간 측정이 충분한데 합산 최대 인원이 매우 적으면 CHECK_REQUIRED(운영 확인 필요), 그 외 null. 미운영 확정이 아니다 |
 
 ## FlightStats (운항 통계)
 
@@ -179,6 +180,7 @@ congestion 메시지는 터미널별로, flights·stats 메시지는 방향별�
 |---|---|
 | 운항 상태 | SCHEDULED, BOARDING_SOON, BOARDING, DELAYED, CANCELLED, DEPARTED, ARRIVED, DIVERTED |
 | 혼잡 단계 | LOW, MID, HIGH |
+| 출국장 운영 확인 | CHECK_REQUIRED |
 | 알림 중요도 | INFO, WARN, CRITICAL |
 | 알림 종류 | DELAY, GATE_CHANGE, CONGESTION, WEATHER, BOARDING |
 | 날씨 | CLEAR, CLOUDY, RAIN, SNOW, FOG |

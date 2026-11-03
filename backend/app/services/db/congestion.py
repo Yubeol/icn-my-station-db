@@ -79,6 +79,47 @@ def _previous(zone_ids: list[int], target) -> dict[int, int]:
     return {row["zone_id"]: row["waiting_passenger_count"] for row in rows}
 
 
+@ttl_cache(seconds=300)
+def _hall_activity(terminal: Terminal) -> dict[int, dict[str, Any]]:
+    """최근 N시간의 출국장별 측정 횟수와 최대 합산 대기 인원. 모든 구역 값이 있는 시각만 쓴다."""
+    rows = fetch_all(
+        f"""
+        WITH {_ZONES_CTE},
+        hall_zones AS (
+            SELECT hall_no, count(*) AS zone_count
+            FROM zones
+            WHERE hall_no IS NOT NULL
+            GROUP BY hall_no
+        ),
+        snapshots AS (
+            SELECT DISTINCT ON (s.zone_id, s.measured_at)
+                s.zone_id, s.measured_at, s.waiting_passenger_count
+            FROM congestion_snapshots s
+            JOIN zones z ON z.zone_id = s.zone_id
+            WHERE s.source = ANY(%(sources)s) AND s.measured_at >= %(since)s
+            ORDER BY s.zone_id, s.measured_at, (s.source = 'yolo') DESC
+        ),
+        totals AS (
+            SELECT z.hall_no, s.measured_at, count(*) AS reported,
+                   sum(s.waiting_passenger_count) AS waiting
+            FROM snapshots s
+            JOIN zones z ON z.zone_id = s.zone_id
+            GROUP BY z.hall_no, s.measured_at
+        )
+        SELECT t.hall_no, count(*) AS points, max(t.waiting) AS max_waiting
+        FROM totals t
+        JOIN hall_zones h ON h.hall_no = t.hall_no AND h.zone_count = t.reported
+        GROUP BY t.hall_no
+        """,
+        {
+            "terminal": terminal.value,
+            "sources": settings.data_sources(),
+            "since": now_kst() - timedelta(hours=rules.HALL_CHECK_LOOKBACK_HOURS),
+        },
+    )
+    return {row["hall_no"]: row for row in rows}
+
+
 @ttl_cache(seconds=30)
 def get_congestion(terminal: Terminal) -> Congestion:
     rows = _latest(terminal)
@@ -88,6 +129,7 @@ def get_congestion(terminal: Terminal) -> Congestion:
     measured_at = max(row["measured_at"] for row in rows)
     target = measured_at - timedelta(minutes=rules.CONGESTION_COMPARE_MINUTES)
     previous = _previous([row["zone_id"] for row in rows], target)
+    activity = _hall_activity(terminal)
 
     by_hall: dict[int, list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
@@ -105,6 +147,7 @@ def get_congestion(terminal: Terminal) -> Congestion:
             if any(r["source"] == "yolo" for r in zone_rows)
             else DataSource(zone_rows[0]["source"])
         )
+        stats = activity.get(hall_no)
         halls.append(
             Hall(
                 hall_id=hall_no,
@@ -113,6 +156,10 @@ def get_congestion(terminal: Terminal) -> Congestion:
                 level=rules.congestion_level(count, terminal),
                 change_rate=rules.change_rate(count, past_total),
                 source=source,
+                operation_status=rules.hall_operation_status(
+                    stats["points"] if stats else 0,
+                    stats["max_waiting"] if stats else None,
+                ),
             )
         )
     return Congestion(terminal=terminal, measured_at=measured_at.astimezone(KST), halls=halls)

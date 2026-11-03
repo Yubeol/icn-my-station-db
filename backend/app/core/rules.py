@@ -2,6 +2,7 @@
 
 import math
 import re
+from datetime import datetime, timedelta
 
 from app.schemas import (
     CongestionLevel,
@@ -9,6 +10,7 @@ from app.schemas import (
     FacilityArea,
     FacilityCategory,
     FlightStatus,
+    HallOperationStatus,
     OperationLevel,
     Terminal,
     WeatherCondition,
@@ -110,6 +112,21 @@ def congestion_level(waiting_count: int, terminal: Terminal) -> CongestionLevel:
     if waiting_count >= mid_from:
         return CongestionLevel.MID
     return CongestionLevel.LOW
+
+
+# 운영 확인 필요 표시: 측정이 충분한데도 최대 합산 대기 인원이 매우 적은 출국장.
+# 대기 인원만으로 미운영을 확정할 수 없으므로 '확인 필요'로만 표시한다.
+HALL_CHECK_LOOKBACK_HOURS = 24
+HALL_CHECK_MIN_POINTS = 100
+HALL_CHECK_MAX_WAITING = 10
+
+
+def hall_operation_status(points: int, max_waiting: int | None) -> HallOperationStatus | None:
+    if points < HALL_CHECK_MIN_POINTS or max_waiting is None:
+        return None
+    if max_waiting <= HALL_CHECK_MAX_WAITING:
+        return HallOperationStatus.CHECK_REQUIRED
+    return None
 
 
 def change_rate(current: int, previous: int | None) -> float | None:
@@ -336,6 +353,8 @@ def is_open_now(
 # 혼잡 급증: 30분 전 대비 증가율과 증가 인원을 둘 다 넘어야 알린다(작은 숫자의 큰 비율을 거르기 위해).
 SURGE_MIN_RATE = 30.0
 SURGE_MIN_INCREASE = 100
+# 같은 출국장의 같은 종류 혼잡 알림은 이 시간 안에 다시 저장하지 않는다.
+CONGESTION_ALERT_COOLDOWN_MINUTES = 30
 # 지연 알림 단위(분). 지연이 이 단위만큼 늘 때마다 새 알림이 생긴다.
 DELAY_ALERT_STEP_MINUTES = 15
 # 이 시간 이상 지연이면 critical
@@ -350,6 +369,13 @@ ALERT_LIST_HOURS = 6
 ALERT_LIST_LIMIT = 30
 # 탑승 시작 알림(저장하지 않고 계산): 예정 시각이 지금부터 N분 안인 탑승중 편
 BOARDING_ALERT_WITHIN_MINUTES = 60
+
+
+def is_fresh(collected_at: datetime | None, now: datetime) -> bool:
+    """알림을 만들어도 될 만큼 최근에 수집된 데이터인지."""
+    if collected_at is None:
+        return False
+    return now - collected_at <= timedelta(minutes=ALERT_MAX_DATA_AGE_MINUTES)
 
 
 def delay_bucket(delay_minutes: int) -> int:
