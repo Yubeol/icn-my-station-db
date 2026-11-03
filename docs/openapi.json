@@ -1,0 +1,1345 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "ICN My Station API",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/v1/dashboard/summary": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Get Summary",
+        "operationId": "get_summary_api_v1_dashboard_summary_get",
+        "parameters": [
+          {
+            "name": "flightNo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Flightno"
+            }
+          },
+          {
+            "name": "terminal",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Terminal"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Terminal"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardSummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/flights": {
+      "get": {
+        "tags": [
+          "flights"
+        ],
+        "summary": "Get Flights",
+        "operationId": "get_flights_api_v1_flights_get",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Direction"
+            }
+          },
+          {
+            "name": "flightNo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Flightno"
+            }
+          },
+          {
+            "name": "terminal",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Terminal"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Terminal"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Flight"
+                  },
+                  "title": "Response Get Flights Api V1 Flights Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/flights/{flightNo}": {
+      "get": {
+        "tags": [
+          "flights"
+        ],
+        "summary": "Get Flight",
+        "operationId": "get_flight_api_v1_flights__flightNo__get",
+        "parameters": [
+          {
+            "name": "flightNo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Flightno"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Flight"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/congestion": {
+      "get": {
+        "tags": [
+          "congestion"
+        ],
+        "summary": "Get Congestion",
+        "operationId": "get_congestion_api_v1_congestion_get",
+        "parameters": [
+          {
+            "name": "terminal",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Terminal"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Congestion"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/stats/flights": {
+      "get": {
+        "tags": [
+          "stats"
+        ],
+        "summary": "Get Flight Stats",
+        "operationId": "get_flight_stats_api_v1_stats_flights_get",
+        "parameters": [
+          {
+            "name": "direction",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Direction"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlightStats"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/alerts": {
+      "get": {
+        "tags": [
+          "alerts"
+        ],
+        "summary": "Get Alerts",
+        "operationId": "get_alerts_api_v1_alerts_get",
+        "parameters": [
+          {
+            "name": "flightNo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Flightno"
+            }
+          },
+          {
+            "name": "terminal",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Terminal"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Terminal"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Alert"
+                  },
+                  "title": "Response Get Alerts Api V1 Alerts Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/weather": {
+      "get": {
+        "tags": [
+          "weather"
+        ],
+        "summary": "Get Weather",
+        "operationId": "get_weather_api_v1_weather_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Weather"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/facilities": {
+      "get": {
+        "tags": [
+          "facilities"
+        ],
+        "summary": "Get Facilities",
+        "operationId": "get_facilities_api_v1_facilities_get",
+        "parameters": [
+          {
+            "name": "terminal",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Terminal"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Terminal"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Facility"
+                  },
+                  "title": "Response Get Facilities Api V1 Facilities Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Alert": {
+        "properties": {
+          "alertId": {
+            "type": "string",
+            "title": "Alertid"
+          },
+          "type": {
+            "$ref": "#/components/schemas/AlertType"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/AlertSeverity"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "flightNo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flightno"
+          },
+          "terminal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Terminal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "isMine": {
+            "type": "boolean",
+            "title": "Ismine"
+          },
+          "isImportant": {
+            "type": "boolean",
+            "title": "Isimportant"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "alertId",
+          "type",
+          "severity",
+          "title",
+          "message",
+          "flightNo",
+          "terminal",
+          "isMine",
+          "isImportant",
+          "createdAt"
+        ],
+        "title": "Alert"
+      },
+      "AlertSeverity": {
+        "type": "string",
+        "enum": [
+          "INFO",
+          "WARN",
+          "CRITICAL"
+        ],
+        "title": "AlertSeverity"
+      },
+      "AlertType": {
+        "type": "string",
+        "enum": [
+          "DELAY",
+          "GATE_CHANGE",
+          "CONGESTION",
+          "WEATHER",
+          "BOARDING"
+        ],
+        "title": "AlertType"
+      },
+      "Breakdown": {
+        "properties": {
+          "category": {
+            "$ref": "#/components/schemas/StatsCategory"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "ratio": {
+            "type": "number",
+            "title": "Ratio"
+          },
+          "changeRate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changerate"
+          }
+        },
+        "type": "object",
+        "required": [
+          "category",
+          "count",
+          "ratio",
+          "changeRate"
+        ],
+        "title": "Breakdown"
+      },
+      "Congestion": {
+        "properties": {
+          "terminal": {
+            "$ref": "#/components/schemas/Terminal"
+          },
+          "measuredAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Measuredat"
+          },
+          "halls": {
+            "items": {
+              "$ref": "#/components/schemas/Hall"
+            },
+            "type": "array",
+            "title": "Halls"
+          }
+        },
+        "type": "object",
+        "required": [
+          "terminal",
+          "measuredAt",
+          "halls"
+        ],
+        "title": "Congestion"
+      },
+      "CongestionLevel": {
+        "type": "string",
+        "enum": [
+          "LOW",
+          "MID",
+          "HIGH"
+        ],
+        "title": "CongestionLevel"
+      },
+      "Crosswind": {
+        "properties": {
+          "runway": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Runway"
+          },
+          "activeRunway": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activerunway"
+          },
+          "direction": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Direction"
+          },
+          "speed": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Speed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "runway",
+          "activeRunway",
+          "direction",
+          "speed"
+        ],
+        "title": "Crosswind"
+      },
+      "DashboardSummary": {
+        "properties": {
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generatedat"
+          },
+          "myFlightNo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Myflightno"
+          },
+          "flights": {
+            "$ref": "#/components/schemas/SummaryFlights"
+          },
+          "congestion": {
+            "$ref": "#/components/schemas/SummaryCongestion"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/SummaryStats"
+          },
+          "alerts": {
+            "items": {
+              "$ref": "#/components/schemas/Alert"
+            },
+            "type": "array",
+            "title": "Alerts"
+          },
+          "weather": {
+            "$ref": "#/components/schemas/Weather"
+          },
+          "facilities": {
+            "items": {
+              "$ref": "#/components/schemas/Facility"
+            },
+            "type": "array",
+            "title": "Facilities"
+          }
+        },
+        "type": "object",
+        "required": [
+          "generatedAt",
+          "myFlightNo",
+          "flights",
+          "congestion",
+          "stats",
+          "alerts",
+          "weather",
+          "facilities"
+        ],
+        "title": "DashboardSummary"
+      },
+      "DataSource": {
+        "type": "string",
+        "enum": [
+          "api",
+          "yolo",
+          "demo"
+        ],
+        "title": "DataSource"
+      },
+      "Direction": {
+        "type": "string",
+        "enum": [
+          "DEPARTURE",
+          "ARRIVAL"
+        ],
+        "title": "Direction"
+      },
+      "Facility": {
+        "properties": {
+          "facilityId": {
+            "type": "string",
+            "title": "Facilityid"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "category": {
+            "$ref": "#/components/schemas/FacilityCategory"
+          },
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Items"
+          },
+          "terminal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Terminal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "floor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Floor"
+          },
+          "location": {
+            "type": "string",
+            "title": "Location"
+          },
+          "area": {
+            "$ref": "#/components/schemas/FacilityArea"
+          },
+          "openTime": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opentime"
+          },
+          "closeTime": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closetime"
+          },
+          "is24h": {
+            "type": "boolean",
+            "title": "Is24H"
+          },
+          "isOpen": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Isopen"
+          },
+          "tel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tel"
+          }
+        },
+        "type": "object",
+        "required": [
+          "facilityId",
+          "name",
+          "category",
+          "items",
+          "terminal",
+          "floor",
+          "location",
+          "area",
+          "openTime",
+          "closeTime",
+          "is24h",
+          "isOpen",
+          "tel"
+        ],
+        "title": "Facility"
+      },
+      "FacilityArea": {
+        "type": "string",
+        "enum": [
+          "DEPARTURE",
+          "ARRIVAL"
+        ],
+        "title": "FacilityArea"
+      },
+      "FacilityCategory": {
+        "type": "string",
+        "enum": [
+          "LOUNGE",
+          "FOOD_CAFE",
+          "PHARMACY",
+          "SHOPPING",
+          "ETC"
+        ],
+        "title": "FacilityCategory"
+      },
+      "Flight": {
+        "properties": {
+          "flightNo": {
+            "type": "string",
+            "title": "Flightno"
+          },
+          "airline": {
+            "type": "string",
+            "title": "Airline"
+          },
+          "type": {
+            "$ref": "#/components/schemas/Direction"
+          },
+          "city": {
+            "type": "string",
+            "title": "City"
+          },
+          "airportCode": {
+            "type": "string",
+            "title": "Airportcode"
+          },
+          "scheduledAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Scheduledat"
+          },
+          "estimatedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimatedat"
+          },
+          "terminal": {
+            "$ref": "#/components/schemas/Terminal"
+          },
+          "gate": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gate"
+          },
+          "status": {
+            "$ref": "#/components/schemas/FlightStatus"
+          },
+          "delayMinutes": {
+            "type": "integer",
+            "title": "Delayminutes"
+          },
+          "isMyFlight": {
+            "type": "boolean",
+            "title": "Ismyflight"
+          }
+        },
+        "type": "object",
+        "required": [
+          "flightNo",
+          "airline",
+          "type",
+          "city",
+          "airportCode",
+          "scheduledAt",
+          "estimatedAt",
+          "terminal",
+          "gate",
+          "status",
+          "delayMinutes",
+          "isMyFlight"
+        ],
+        "title": "Flight"
+      },
+      "FlightStats": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "direction": {
+            "$ref": "#/components/schemas/Direction"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "breakdown": {
+            "items": {
+              "$ref": "#/components/schemas/Breakdown"
+            },
+            "type": "array",
+            "title": "Breakdown"
+          },
+          "hourly": {
+            "items": {
+              "$ref": "#/components/schemas/Hourly"
+            },
+            "type": "array",
+            "title": "Hourly"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "direction",
+          "total",
+          "breakdown",
+          "hourly"
+        ],
+        "title": "FlightStats"
+      },
+      "FlightStatus": {
+        "type": "string",
+        "enum": [
+          "SCHEDULED",
+          "BOARDING_SOON",
+          "BOARDING",
+          "DELAYED",
+          "CANCELLED",
+          "DEPARTED",
+          "ARRIVED",
+          "DIVERTED"
+        ],
+        "title": "FlightStatus"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Hall": {
+        "properties": {
+          "hallId": {
+            "type": "integer",
+            "title": "Hallid"
+          },
+          "hallName": {
+            "type": "string",
+            "title": "Hallname"
+          },
+          "waitingCount": {
+            "type": "integer",
+            "title": "Waitingcount"
+          },
+          "level": {
+            "$ref": "#/components/schemas/CongestionLevel"
+          },
+          "changeRate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changerate"
+          },
+          "source": {
+            "$ref": "#/components/schemas/DataSource"
+          }
+        },
+        "type": "object",
+        "required": [
+          "hallId",
+          "hallName",
+          "waitingCount",
+          "level",
+          "changeRate",
+          "source"
+        ],
+        "title": "Hall"
+      },
+      "Hourly": {
+        "properties": {
+          "hour": {
+            "type": "integer",
+            "title": "Hour"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "delayedCount": {
+            "type": "integer",
+            "title": "Delayedcount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "hour",
+          "count",
+          "delayedCount"
+        ],
+        "title": "Hourly"
+      },
+      "OperationScore": {
+        "properties": {
+          "minutesAhead": {
+            "type": "integer",
+            "title": "Minutesahead"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "level": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CongestionLevel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "delayRisk": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CongestionLevel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "basis": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Basis"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "minutesAhead",
+          "score",
+          "level",
+          "delayRisk",
+          "basis",
+          "message"
+        ],
+        "title": "OperationScore"
+      },
+      "StatsCategory": {
+        "type": "string",
+        "enum": [
+          "NORMAL",
+          "DELAYED",
+          "CANCELLED",
+          "DIVERTED"
+        ],
+        "title": "StatsCategory"
+      },
+      "SummaryCongestion": {
+        "properties": {
+          "T1": {
+            "$ref": "#/components/schemas/Congestion"
+          },
+          "T2": {
+            "$ref": "#/components/schemas/Congestion"
+          }
+        },
+        "type": "object",
+        "required": [
+          "T1",
+          "T2"
+        ],
+        "title": "SummaryCongestion"
+      },
+      "SummaryFlights": {
+        "properties": {
+          "departures": {
+            "items": {
+              "$ref": "#/components/schemas/Flight"
+            },
+            "type": "array",
+            "title": "Departures"
+          },
+          "arrivals": {
+            "items": {
+              "$ref": "#/components/schemas/Flight"
+            },
+            "type": "array",
+            "title": "Arrivals"
+          }
+        },
+        "type": "object",
+        "required": [
+          "departures",
+          "arrivals"
+        ],
+        "title": "SummaryFlights"
+      },
+      "SummaryStats": {
+        "properties": {
+          "departure": {
+            "$ref": "#/components/schemas/FlightStats"
+          },
+          "arrival": {
+            "$ref": "#/components/schemas/FlightStats"
+          }
+        },
+        "type": "object",
+        "required": [
+          "departure",
+          "arrival"
+        ],
+        "title": "SummaryStats"
+      },
+      "Terminal": {
+        "type": "string",
+        "enum": [
+          "T1",
+          "T2"
+        ],
+        "title": "Terminal"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "Weather": {
+        "properties": {
+          "observedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Observedat"
+          },
+          "condition": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WeatherCondition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "temperature": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature"
+          },
+          "windSpeed": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Windspeed"
+          },
+          "windDirection": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Winddirection"
+          },
+          "visibility": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visibility"
+          },
+          "pressure": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pressure"
+          },
+          "crosswind": {
+            "$ref": "#/components/schemas/Crosswind"
+          },
+          "operationScore": {
+            "$ref": "#/components/schemas/OperationScore"
+          }
+        },
+        "type": "object",
+        "required": [
+          "observedAt",
+          "condition",
+          "temperature",
+          "windSpeed",
+          "windDirection",
+          "visibility",
+          "pressure",
+          "crosswind",
+          "operationScore"
+        ],
+        "title": "Weather"
+      },
+      "WeatherCondition": {
+        "type": "string",
+        "enum": [
+          "CLEAR",
+          "CLOUDY",
+          "RAIN",
+          "SNOW",
+          "FOG"
+        ],
+        "title": "WeatherCondition"
+      }
+    }
+  }
+}

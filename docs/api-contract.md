@@ -6,21 +6,24 @@
 - 기본 경로: /api/v1
 - JSON 필드명: camelCase
 - 시간: ISO 8601, KST(+09:00). 예: 2026-11-05T14:30:00+09:00
-- 에러 응답: {"detail": "메시지"} (없는 편명 조회 시 404)
+- 에러 응답: {"detail": "메시지"}
+- 404는 편명 단건 조회(GET /api/v1/flights/{flightNo})에서 없는 편명일 때만 내려간다. 목록·요약·알림 조회에서 없는 편명을 flightNo로 보내면 404 없이 200으로 응답하며, 내 항공편 강조(isMyFlight)와 내 항공편 알림(isMine)만 적용되지 않는다.
 - 상태값은 코드로 내려가며, 화면 문구와 색은 프론트에서 정한다.
 - "null" 열이 Y인 필드는 값이 없을 때 null로 내려간다.
+- 터미널 구분: 운항 현황·편의시설·혼잡 알림만 터미널별, 운항 통계·날씨는 인천공항 공통, 탑승동은 T1. terminal을 지정하면 터미널을 모르는 데이터는 제외하고, 혼잡 알림이 아닌 공통 알림(terminal null)은 남긴다.
 
 ## 엔드포인트
 
 | 위젯 | 메서드 | 경로 | 파라미터 |
 |---|---|---|---|
-| 메인 요약 | GET | /api/v1/dashboard/summary | flightNo (선택) |
-| 운항 현황 | GET | /api/v1/flights | type=DEPARTURE\|ARRIVAL, flightNo (선택) |
+| 메인 요약 | GET | /api/v1/dashboard/summary | flightNo (선택), terminal=T1\|T2 (선택, 없으면 공항 전체) |
+| 운항 현황 | GET | /api/v1/flights | type=DEPARTURE\|ARRIVAL, flightNo (선택), terminal=T1\|T2 (선택, 없으면 공항 전체) |
+| 편명 단건 조회 | GET | /api/v1/flights/{flightNo} | 경로의 flightNo. 없는 편명이면 404 |
 | 출국장 혼잡도 | GET | /api/v1/congestion | terminal=T1\|T2 |
 | 운항 통계 | GET | /api/v1/stats/flights | direction=DEPARTURE\|ARRIVAL |
-| 스마트 알림 | GET | /api/v1/alerts | flightNo (선택) |
+| 스마트 알림 | GET | /api/v1/alerts | flightNo (선택), terminal=T1\|T2 (선택, 없으면 공항 전체) |
 | 날씨·운항 여건 | GET | /api/v1/weather | - |
-| 편의시설 | GET | /api/v1/facilities | - |
+| 편의시설 | GET | /api/v1/facilities | terminal=T1\|T2 (선택, 없으면 공항 전체) |
 | 실시간 | WebSocket | /ws/live | - |
 
 ## 메인 요약 (DashboardSummary)
@@ -72,7 +75,7 @@ Hall
 | hallName | 문자 | N | 2번 출국장 | 표시 이름 |
 | waitingCount | 숫자 | N | 510 | 대기 인원(명) |
 | level | 코드 | N | HIGH | LOW / MID / HIGH |
-| changeRate | 숫자 | Y | 28.0 | 전일 같은 시각(±5분) 대비 %, 비교값 없으면 null |
+| changeRate | 숫자 | Y | 28.0 | 30분 전(±5분) 측정값 대비 %, 비교값 없으면 null |
 | source | 코드 | N | api | api / yolo / demo |
 
 ## FlightStats (운항 통계)
@@ -92,7 +95,7 @@ Breakdown
 | category | 코드 | N | DELAYED | NORMAL / DELAYED / CANCELLED / DIVERTED |
 | count | 숫자 | N | 72 | 편수 |
 | ratio | 숫자 | N | 14.9 | 비율 % |
-| changeRate | 숫자 | Y | 20.0 | 전일 같은 시각까지 대비 %, 비교값 없으면 null |
+| changeRate | 숫자 | Y | 20.0 | 전일 같은 시각까지 대비 %. 이력 데이터가 쌓이기 전까지 null |
 
 Hourly
 
@@ -115,6 +118,7 @@ Hourly
 | isMine | 불리언 | N | true | 내 항공편 탭 표시 여부 |
 | isImportant | 불리언 | N | true | 중요 알림 탭 표시 여부 |
 | createdAt | 시각 | N | | 발생 시각 |
+| terminal | 코드 | Y | T1 | 혼잡 알림의 터미널. 공통 알림이면 null. WebSocket 알림도 이 값으로 프론트에서 거른다 |
 
 ## Weather (날씨·운항 여건)
 
@@ -128,11 +132,13 @@ Hourly
 | visibility | 숫자 | Y | 10 | 시정 km |
 | pressure | 숫자 | Y | 1016 | 기압 hPa |
 | crosswind.runway | 문자 | Y | 15/33 | 활주로 번호 |
+| crosswind.activeRunway | 문자 | Y | 33 | 바람을 마주 보는 쪽 활주로 끝(15 또는 33). 풍속 1 m/s 미만(무풍)이거나 풍향을 모르면 null |
 | crosswind.direction | 숫자 | Y | 270 | 측풍 방향(도) |
 | crosswind.speed | 숫자 | Y | 8 | 측풍 속도 m/s |
 | operationScore.minutesAhead | 숫자 | N | 60 | 몇 분 후 기준 |
 | operationScore.score | 숫자 | Y | 87 | 기상 운항 여건 점수 0~100, 데이터 부족 시 null |
 | operationScore.level | 코드 | Y | HIGH | LOW / MID / HIGH |
+| operationScore.delayRisk | 코드 | Y | LOW | 출발 지연 위험 LOW / MID / HIGH. level을 뒤집은 값(HIGH→LOW, LOW→HIGH), level이 null이면 null |
 | operationScore.basis | 시각 | Y | | 계산에 쓴 입력값의 관측 시각 |
 | operationScore.message | 문자 | N | 운항 여건 양호 | 화면 문구 |
 
@@ -161,10 +167,11 @@ Hourly
 | 필드 | 타입 | 설명 |
 |---|---|---|
 | topic | 코드 | congestion / flights / stats / alerts / weather |
-| data | 객체 | 해당 API 응답과 같은 모양 |
+| scope | 문자 (null 가능) | flights·stats는 DEPARTURE / ARRIVAL, congestion은 T1 / T2, alerts·weather는 null |
+| data | 객체 또는 배열 | 해당 API 응답과 같은 모양(객체 또는 배열) |
 | sentAt | 시각 | 보낸 시각 |
 
-congestion 메시지는 터미널별로 따로 오며, data.terminal로 구분한다.
+congestion 메시지는 터미널별로, flights·stats 메시지는 방향별로 따로 오며 scope로 구분한다.
 
 ## 코드값
 
