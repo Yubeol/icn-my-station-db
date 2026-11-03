@@ -9,13 +9,8 @@
 5. PostgreSQL DRY RUN
 6. --apply 지정 시 PostgreSQL UPSERT
 
-사용법:
-python -m collection.pipeline.jobs
-python -m collection.pipeline.jobs --sources congestion_t1
-python -m collection.pipeline.jobs --apply
-
 기본 실행은 AWS RDS를 변경하지 않는다.
-단, 실제 공공 API 호출과 로컬 JSON 파일 생성은 수행한다.
+실제 공공 API 호출과 로컬 JSON 파일 생성은 수행한다.
 """
 
 import argparse
@@ -75,14 +70,18 @@ def validate_output(sources):
         count = 0
 
         with path.open(
-            "r", encoding="utf-8-sig"
+            "r",
+            encoding="utf-8-sig",
         ) as file:
+
             for line_number, line in enumerate(file, 1):
+
                 if not line.strip():
                     continue
 
                 try:
                     row = json.loads(line)
+
                 except json.JSONDecodeError as exc:
                     raise ValueError(
                         f"{path.name}:{line_number}: "
@@ -111,7 +110,10 @@ def validate_output(sources):
                 f"정규화 결과 0건: {source}"
             )
 
-        print(f"[VALID] {source}: {count}건")
+        print(
+            f"[VALID] {source}: {count}건",
+            flush=True,
+        )
 
         summary.append({
             "source": source,
@@ -164,17 +166,33 @@ def main():
             "--limit은 1 이상이어야 합니다."
         )
 
-    sources = list(dict.fromkeys(args.sources))
+    sources = list(
+        dict.fromkeys(args.sources)
+    )
 
     print("\n=== 1. COLLECT ===")
 
-    run_module(
-        "batch_preview",
-        "--sources",
-        *sources,
-        "--max-requests",
-        args.max_requests,
-    )
+    # 항공편 단독 실행 + 3회 제한
+    # -> 시간 범위 기반 수집
+    if (
+        sources == ["flights"]
+        and args.max_requests == 3
+    ):
+        run_module(
+            "flight_window",
+            "--max-requests",
+            args.max_requests,
+        )
+
+    else:
+        # 나머지 API는 기존 전체 수집 유지
+        run_module(
+            "batch_preview",
+            "--sources",
+            *sources,
+            "--max-requests",
+            args.max_requests,
+        )
 
     print("\n=== 2. NORMALIZE ===")
 
@@ -199,12 +217,14 @@ def main():
 
     for source in sources:
         command_args = [
-            "--source", source,
+            "--source",
+            source,
         ]
 
         if args.limit is not None:
             command_args += [
-                "--limit", str(args.limit)
+                "--limit",
+                str(args.limit),
             ]
 
         if args.apply:
@@ -216,6 +236,7 @@ def main():
         )
 
     print("\n=== FINAL SUMMARY ===")
+
     print(
         json.dumps(
             summary,
@@ -225,9 +246,13 @@ def main():
     )
 
     if args.apply:
-        print("\nPIPELINE SUCCESS - AWS RDS UPDATED")
+        print(
+            "\nPIPELINE SUCCESS - AWS RDS UPDATED"
+        )
     else:
-        print("\nPIPELINE SUCCESS - AWS RDS NOT MODIFIED")
+        print(
+            "\nPIPELINE SUCCESS - AWS RDS NOT MODIFIED"
+        )
 
 
 if __name__ == "__main__":
