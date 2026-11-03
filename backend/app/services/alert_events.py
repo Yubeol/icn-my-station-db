@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Any
 
 from app.core import rules
-from app.schemas import CongestionLevel, FlightStatus
+from app.schemas import CongestionLevel, FlightStatus, Terminal
 
 
 @dataclass(frozen=True)
@@ -55,10 +55,14 @@ def _bucket_30(dt: datetime) -> str:
     )
 
 
-def _measure_json(m: Measure) -> dict[str, Any]:
+def _level(hall: HallState, count: int) -> CongestionLevel:
+    return rules.congestion_level(count, Terminal(hall.terminal))
+
+
+def _measure_json(hall: HallState, m: Measure) -> dict[str, Any]:
     return {
         "waiting_count": m.count,
-        "level": rules.congestion_level(m.count).value,
+        "level": _level(hall, m.count).value,
         "measured_at": _iso(m.measured_at),
     }
 
@@ -74,12 +78,12 @@ def congestion_events(hall: HallState) -> list[dict[str, Any]]:
     events = []
     title = f"{hall.terminal} {hall.hall_no}번 출국장"
     bucket = _bucket_30(hall.current.measured_at)
-    now_level = rules.congestion_level(hall.current.count)
+    now_level = _level(hall, hall.current.count)
 
     if (
         now_level == CongestionLevel.HIGH
         and hall.previous is not None
-        and rules.congestion_level(hall.previous.count) != CongestionLevel.HIGH
+        and _level(hall, hall.previous.count) != CongestionLevel.HIGH
     ):
         events.append(
             _row(
@@ -89,8 +93,8 @@ def congestion_events(hall: HallState) -> list[dict[str, Any]]:
                 title=title,
                 message=f"대기 인원이 {hall.current.count}명으로 혼잡합니다.",
                 zone_id=hall.zone_id,
-                previous_value=_measure_json(hall.previous),
-                current_value=_measure_json(hall.current),
+                previous_value=_measure_json(hall, hall.previous),
+                current_value=_measure_json(hall, hall.current),
                 unit="명",
                 dedupe_key=f"congestion:{hall.zone_id}:enter:{bucket}",
             )
@@ -108,8 +112,8 @@ def congestion_events(hall: HallState) -> list[dict[str, Any]]:
                 title=title,
                 message=f"대기 인원이 30분 전보다 {increase}명({rate:.0f}%) 늘었습니다.",
                 zone_id=hall.zone_id,
-                previous_value=_measure_json(hall.past30),
-                current_value=_measure_json(hall.current),
+                previous_value=_measure_json(hall, hall.past30),
+                current_value=_measure_json(hall, hall.current),
                 unit="명",
                 dedupe_key=f"congestion:{hall.zone_id}:surge:{bucket}",
             )

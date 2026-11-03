@@ -91,19 +91,23 @@ def parse_gate(value: str | None) -> int | None:
 
 # ---------- 출국장 혼잡도 ----------
 
-# 혼잡 단계 기준(대기 인원, 명). 임시값이며 실제 데이터 기준이 정해지면 교체한다.
-CONGESTION_MID_FROM = 200
-CONGESTION_HIGH_FROM = 400
+# 터미널별 혼잡 단계 기준 (MID 시작, HIGH 시작). 출국장 합산 대기 인원(명) 기준이다.
+# 2026-11-02~03 실제 분포로 정한 임시값이며, 데이터가 더 쌓이면 다시 조정한다.
+CONGESTION_LEVEL_FROM: dict[Terminal, tuple[int, int]] = {
+    Terminal.T1: (200, 400),
+    Terminal.T2: (800, 2000),
+}
 
 # changeRate 비교 기준: 최신 측정 시각보다 N분 전 값(앞뒤 허용 오차 M분)
 CONGESTION_COMPARE_MINUTES = 30
 CONGESTION_COMPARE_TOLERANCE_MINUTES = 5
 
 
-def congestion_level(waiting_count: int) -> CongestionLevel:
-    if waiting_count >= CONGESTION_HIGH_FROM:
+def congestion_level(waiting_count: int, terminal: Terminal) -> CongestionLevel:
+    mid_from, high_from = CONGESTION_LEVEL_FROM[terminal]
+    if waiting_count >= high_from:
         return CongestionLevel.HIGH
-    if waiting_count >= CONGESTION_MID_FROM:
+    if waiting_count >= mid_from:
         return CongestionLevel.MID
     return CongestionLevel.LOW
 
@@ -358,4 +362,3 @@ def is_surge(current: int, past: int | None) -> bool:
         return False
     rate = change_rate(current, past)
     return rate is not None and rate >= SURGE_MIN_RATE and current - past >= SURGE_MIN_INCREASE
-

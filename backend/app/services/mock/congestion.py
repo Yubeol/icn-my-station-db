@@ -15,8 +15,8 @@ _MOCK_HALLS: dict[Terminal, list[tuple[int, int, float | None]]] = {
         (6, 180, 0.0),
     ],
     Terminal.T2: [
-        (1, 430, 15.0),
-        (2, 210, -3.5),
+        (1, 2100, 15.0),
+        (2, 900, -3.5),
     ],
 }
 
@@ -28,7 +28,7 @@ def get_congestion(terminal: Terminal) -> Congestion:
             hall_id=hall_id,
             hall_name=f"{hall_id}번 출국장",
             waiting_count=count,
-            level=rules.congestion_level(count),
+            level=rules.congestion_level(count, terminal),
             change_rate=change_rate,
             source=DataSource.DEMO,
         )

@@ -110,7 +110,7 @@ def get_congestion(terminal: Terminal) -> Congestion:
                 hall_id=hall_no,
                 hall_name=f"{hall_no}번 출국장",
                 waiting_count=count,
-                level=rules.congestion_level(count),
+                level=rules.congestion_level(count, terminal),
                 change_rate=rules.change_rate(count, past_total),
                 source=source,
             )
