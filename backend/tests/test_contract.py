@@ -50,6 +50,23 @@ def test_summary(client):
     assert_kst(body["generatedAt"])
 
 
+def test_flight_detail_summary(client):
+    body = client.get(f"{API}/flights/ke703/detail").json()
+    assert_matches("FlightDetail", body)
+    assert_matches("Flight", body["flight"])
+    assert_matches("Congestion", body["congestion"])
+    assert_matches("Weather", body["weather"])
+    assert body["flight"]["flightNo"] == "KE703"
+    assert body["flight"]["isMyFlight"] is True
+    assert body["congestion"]["terminal"] == body["flight"]["terminal"]
+    assert all(f["terminal"] == body["flight"]["terminal"] for f in body["facilities"])
+    assert_kst(body["generatedAt"])
+
+
+def test_flight_detail_summary_unknown_is_404(client):
+    assert client.get(f"{API}/flights/XX999/detail").status_code == 404
+
+
 def test_summary_with_flight_no(client):
     body = client.get(f"{API}/dashboard/summary", params={"flightNo": "ke703"}).json()
     assert body["myFlightNo"] == "KE703"
@@ -215,6 +232,7 @@ def test_openapi_has_all_rest_paths(client):
         f"{API}/dashboard/summary",
         f"{API}/flights",
         f"{API}/flights/{{flightNo}}",
+        f"{API}/flights/{{flightNo}}/detail",
         f"{API}/congestion",
         f"{API}/stats/flights",
         f"{API}/alerts",

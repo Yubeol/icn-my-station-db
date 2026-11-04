@@ -6,6 +6,7 @@ from app.schemas import (
     DashboardSummary,
     Direction,
     Facility,
+    FlightDetail,
     SummaryCongestion,
     SummaryFlights,
     SummaryStats,
@@ -43,4 +44,17 @@ def get_summary(flight_no: str | None = None, terminal: Terminal | None = None) 
         alerts=alerts.list_alerts(my_flight_no, terminal),
         weather=weather.get_weather(),
         facilities=_summary_facilities(terminal),
+    )
+
+
+def get_flight_detail(flight_no: str) -> FlightDetail:
+    """편명 상세. 혼잡도·알림·편의시설은 그 편의 터미널 기준이다. 없는 편명이면 404."""
+    flight = flights.get_flight(flight_no)
+    return FlightDetail(
+        generated_at=now_kst(),
+        flight=flight,
+        congestion=congestion.get_congestion(flight.terminal),
+        alerts=alerts.list_alerts(flight.flight_no, flight.terminal),
+        weather=weather.get_weather(),
+        facilities=_summary_facilities(flight.terminal),
     )

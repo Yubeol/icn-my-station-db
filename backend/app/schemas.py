@@ -284,6 +284,18 @@ class DashboardSummary(CamelModel):
     facilities: list[Facility]
 
 
+# ---------- FlightDetail ----------
+
+
+class FlightDetail(CamelModel):
+    generated_at: datetime
+    flight: Flight
+    congestion: Congestion
+    alerts: list[Alert]
+    weather: Weather
+    facilities: list[Facility]
+
+
 # ---------- WebSocket ----------
 
 
