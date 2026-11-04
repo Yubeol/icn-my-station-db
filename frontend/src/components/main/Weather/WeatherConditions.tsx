@@ -118,21 +118,6 @@ function directionName(degrees: number | null): string {
   return names[index];
 }
 
-function formatTime(value: string | null): string {
-  if (!value) return "관측 시각 확인 중";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-
-  return new Intl.DateTimeFormat("ko-KR", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: "Asia/Seoul",
-  }).format(date);
-}
 
 function getRisk(value: string | null) {
   const normalized = (value ?? "").toUpperCase();

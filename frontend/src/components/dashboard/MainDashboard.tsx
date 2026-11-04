@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { getDashboardSummary } from '../../api/client';
 import { useApiResource } from '../../hooks/useApiResource';
 import ApiStatus from '../layout/ApiStatus';
-import PlaceholderBox from '../layout/PlaceholderBox';
 import SectionBox from '../layout/SectionBox';
 import type { PageKey } from '../../App';
 

@@ -361,8 +361,8 @@ export default function TerminalMap({
     camera.updateMatrixWorld(true);
 
     function renderScene() {
-      const width = mount.clientWidth;
-      const height = mount.clientHeight;
+      const width = mountRef.current?.clientWidth ?? 0;
+      const height = mountRef.current?.clientHeight ?? 0;
 
       if (width <= 0 || height <= 0) return;
 
