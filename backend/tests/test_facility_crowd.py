@@ -110,6 +110,46 @@ def test_flight_level(flights, terminal, expected):
     assert rules.flight_crowd_level(flights, terminal) == expected
 
 
+def test_flight_coverage():
+    now = now_kst()
+    minutes = rules.CROWD_FLIGHT_MIN_COVERAGE_MINUTES
+
+    assert rules.has_flight_coverage(now + timedelta(minutes=minutes), now)
+    assert not rules.has_flight_coverage(now + timedelta(minutes=minutes - 1), now)
+    assert not rules.has_flight_coverage(None, now)
+
+
+def test_departures_are_empty_without_coverage(monkeypatch):
+    db_facilities._departures_by_terminal.cache_clear()
+    last_scheduled = now_kst() + timedelta(minutes=34)
+    monkeypatch.setattr(
+        db_facilities,
+        "fetch_all",
+        lambda sql, params: [
+            {"terminal_code": "T1", "flights": 5, "last_scheduled": last_scheduled},
+            {"terminal_code": "T2", "flights": 13, "last_scheduled": last_scheduled},
+        ],
+    )
+
+    assert db_facilities._departures_by_terminal() == {}
+    db_facilities._departures_by_terminal.cache_clear()
+
+
+def test_departures_count_when_covered(monkeypatch):
+    db_facilities._departures_by_terminal.cache_clear()
+    last_scheduled = now_kst() + timedelta(hours=3)
+    monkeypatch.setattr(
+        db_facilities,
+        "fetch_all",
+        lambda sql, params: [
+            {"terminal_code": "T1", "flights": 22, "last_scheduled": last_scheduled},
+        ],
+    )
+
+    assert db_facilities._departures_by_terminal() == {"T1": 22}
+    db_facilities._departures_by_terminal.cache_clear()
+
+
 def test_hall_level_uses_higher_input():
     assert rules.hall_crowd_level(LOW, HIGH, None) == HIGH
     assert rules.hall_crowd_level(MID, None, None) == MID

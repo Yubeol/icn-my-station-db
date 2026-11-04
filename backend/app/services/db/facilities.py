@@ -37,18 +37,23 @@ def _rows() -> list[dict[str, Any]]:
 
 @ttl_cache(seconds=60)
 def _departures_by_terminal() -> dict[str, int]:
-    """DB 터미널 코드별 앞으로 2시간의 출발 편수. 코드쉐어와 결항은 뺀다."""
+    """DB 터미널 코드별 앞으로 2시간의 출발 편수. 코드쉐어와 결항은 뺀다.
+
+    수집된 출발편이 범위를 충분히 덮지 않으면 비운다. 일부만 세어 LOW로 내보내지 않기 위해서다.
+    """
     now = now_kst()
     rows = fetch_all(
         """
-        SELECT t.terminal_code, count(*) AS flights
+        SELECT t.terminal_code,
+               count(*) FILTER (WHERE f.scheduled_at < %(end)s) AS flights,
+               max(f.scheduled_at) AS last_scheduled
         FROM flight_operations f
         JOIN terminals t ON t.terminal_id = f.terminal_id
         WHERE f.flow_type = 'departure'
           AND f.source = ANY(%(sources)s)
           AND f.is_codeshare IS NOT TRUE
           AND f.status <> 'cancelled'
-          AND f.scheduled_at >= %(start)s AND f.scheduled_at < %(end)s
+          AND f.scheduled_at >= %(start)s
         GROUP BY t.terminal_code
         """,
         {
@@ -57,6 +62,9 @@ def _departures_by_terminal() -> dict[str, int]:
             "end": now + timedelta(hours=rules.CROWD_FLIGHT_WINDOW_HOURS),
         },
     )
+    last_scheduled = max((row["last_scheduled"] for row in rows), default=None)
+    if not rules.has_flight_coverage(last_scheduled, now):
+        return {}
     return {row["terminal_code"]: row["flights"] for row in rows}
 
 

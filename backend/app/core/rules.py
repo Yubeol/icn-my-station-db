@@ -438,6 +438,8 @@ CROWD_CONGESTION_MAX_AGE_MINUTES = 30
 CROWD_FORECAST_RATIO_FROM = (0.4, 0.7)
 # 면세구역·탑승구 쪽 시설이 보는 출발 편수 범위(시간)
 CROWD_FLIGHT_WINDOW_HOURS = 2
+# DB의 출발편이 지금부터 이 시간(분) 뒤까지 없으면 수집이 덜 된 것으로 보고 판정하지 않는다.
+CROWD_FLIGHT_MIN_COVERAGE_MINUTES = 100
 # 터미널별 2시간 출발 편수 기준 (MID 시작, HIGH 시작). 코드쉐어를 뺀 값이다.
 # 2026-11-02~04의 부분 수집 분포로 정한 임시값이며, 전체 수집이 안정되면 다시 조정한다.
 CROWD_FLIGHT_LEVEL_FROM: dict[str, tuple[int, int]] = {
@@ -525,6 +527,13 @@ def flight_crowd_level(flights: int, terminal_code: str) -> CongestionLevel | No
     if flights <= 0 or terminal_code not in CROWD_FLIGHT_LEVEL_FROM:
         return None
     return _level_from(flights, *CROWD_FLIGHT_LEVEL_FROM[terminal_code])
+
+
+def has_flight_coverage(last_scheduled: datetime | None, now: datetime) -> bool:
+    """출발편 데이터가 편수 범위를 대부분 덮는지 확인한다. 일부만 세면 LOW로 잘못 나온다."""
+    if last_scheduled is None:
+        return False
+    return last_scheduled >= now + timedelta(minutes=CROWD_FLIGHT_MIN_COVERAGE_MINUTES)
 
 
 def hall_crowd_level(
