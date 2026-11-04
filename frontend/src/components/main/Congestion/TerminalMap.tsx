@@ -1,13 +1,13 @@
 
-import { useEffect, useRef } from "react";
-import * as THREE from "three";
+import { useEffect, useRef } from 'react';
+import * as THREE from 'three';
 
 import type {
   Hall,
   Terminal,
-} from "../../../api/congestion";
+} from '../../../api/congestion';
 
-import "./Terminal3D.css";
+import './Terminal3D.css';
 
 interface Props {
   terminal: Terminal;
@@ -16,7 +16,7 @@ interface Props {
   onSelect: (id: string) => void;
 }
 
-type Level = "LOW" | "MID" | "HIGH" | "UNKNOWN";
+type Level = 'LOW' | 'MID' | 'HIGH' | 'UNKNOWN';
 
 const COLORS: Record<Level, number> = {
   LOW: 0x7fd6bb,
@@ -26,10 +26,10 @@ const COLORS: Record<Level, number> = {
 };
 
 const LABELS: Record<Level, string> = {
-  LOW: "여유",
-  MID: "보통",
-  HIGH: "혼잡",
-  UNKNOWN: "확인 필요",
+  LOW: '여유',
+  MID: '보통',
+  HIGH: '혼잡',
+  UNKNOWN: '확인 필요',
 };
 
 const HEIGHTS: Record<Level, number> = {
@@ -40,41 +40,41 @@ const HEIGHTS: Record<Level, number> = {
 };
 
 function getLevel(hall?: Hall): Level {
-  if (!hall || hall.operationStatus === "CHECK_REQUIRED") {
-    return "UNKNOWN";
+  if (!hall || hall.operationStatus === 'CHECK_REQUIRED') {
+    return 'UNKNOWN';
   }
 
-  const value = String(hall.level ?? "")
-    .trim()
-    .toUpperCase();
+  const value = String(hall.level ?? '').trim().toUpperCase();
 
   if (
-    ["LOW", "RELAXED", "SPACIOUS", "FREE", "여유", "원활"]
+    ['LOW', 'RELAXED', 'SPACIOUS', 'FREE', '여유', '원활']
       .includes(value)
   ) {
-    return "LOW";
+    return 'LOW';
   }
 
   if (
-    ["MID", "MEDIUM", "NORMAL", "MODERATE", "보통"]
+    ['MID', 'MEDIUM', 'NORMAL', 'MODERATE', '보통']
       .includes(value)
   ) {
-    return "MID";
+    return 'MID';
   }
 
   if (
-    ["HIGH", "BUSY", "CROWDED", "VERY_CROWDED", "혼잡", "매우혼잡"]
-      .includes(value)
+    [
+      'HIGH', 'BUSY', 'CROWDED',
+      'VERY_CROWDED', '혼잡', '매우혼잡',
+    ].includes(value)
   ) {
-    return "HIGH";
+    return 'HIGH';
   }
 
-  return "UNKNOWN";
+  return 'UNKNOWN';
 }
 
 function getHallNumber(hall: Hall): string | null {
-  const name = String(hall.name ?? "");
-  const id = String(hall.id ?? "");
+  const name = String(hall.name ?? '');
+  const id = String(hall.id ?? '');
 
   const match =
     name.match(/([1-6])\s*번?\s*출국장/) ??
@@ -85,9 +85,7 @@ function getHallNumber(hall: Hall): string | null {
 }
 
 function findHall(halls: Hall[], number: string) {
-  return halls.find(
-    (hall) => getHallNumber(hall) === number
-  );
+  return halls.find(hall => getHallNumber(hall) === number);
 }
 
 function createArcShape(
@@ -138,7 +136,6 @@ function createArcMesh(
     }
   );
 
-  // 원호 평면을 지면에 놓고 높이는 Y축으로 올림
   geometry.rotateX(-Math.PI / 2);
 
   const material = new THREE.MeshStandardMaterial({
@@ -148,6 +145,7 @@ function createArcMesh(
   });
 
   const mesh = new THREE.Mesh(geometry, material);
+
   mesh.castShadow = true;
   mesh.receiveShadow = true;
 
@@ -169,6 +167,7 @@ export default function TerminalMap({
 
   useEffect(() => {
     const mount = mountRef.current;
+
     if (!mount) return;
 
     const scene = new THREE.Scene();
@@ -190,22 +189,14 @@ export default function TerminalMap({
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-    renderer.domElement.className = "terminal3d-canvas";
+    renderer.domElement.className = 'terminal3d-canvas';
     mount.appendChild(renderer.domElement);
 
-    // 조명
     scene.add(
-      new THREE.HemisphereLight(
-        0xffffff,
-        0xd7e1ec,
-        2
-      )
+      new THREE.HemisphereLight(0xffffff, 0xd7e1ec, 2)
     );
 
-    const sun = new THREE.DirectionalLight(
-      0xffffff,
-      2
-    );
+    const sun = new THREE.DirectionalLight(0xffffff, 2);
 
     sun.position.set(-20, 40, 20);
     sun.castShadow = true;
@@ -225,23 +216,21 @@ export default function TerminalMap({
     const group = new THREE.Group();
     scene.add(group);
 
-    const isT1 = terminal === "T1";
+    const isT1 = terminal === 'T1';
 
     const numbers = isT1
-      ? ["6", "5", "4", "3", "2", "1"]
-      : ["2", "1"];
+      ? ['6', '5', '4', '3', '2', '1']
+      : ['2', '1'];
 
     const inner = isT1 ? 19 : 37;
     const outer = isT1 ? 28 : 46;
 
-    const spread =
-      (isT1 ? 55 : 34) * Math.PI / 180;
+    const spread = ((isT1 ? 55 : 34) * Math.PI) / 180;
 
     const start = Math.PI / 2 - spread;
     const end = Math.PI / 2 + spread;
     const segment = (end - start) / numbers.length;
 
-    // 건물 바닥
     const foundation = createArcMesh(
       inner - 1.2,
       outer + 1.2,
@@ -254,7 +243,6 @@ export default function TerminalMap({
     foundation.position.y = -0.5;
     group.add(foundation);
 
-    // 내부 통로
     const corridor = createArcMesh(
       inner + 0.2,
       inner + 2.0,
@@ -266,12 +254,9 @@ export default function TerminalMap({
 
     group.add(corridor);
 
-    // 지면 그림자
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(140, 120),
-      new THREE.ShadowMaterial({
-        opacity: 0.12,
-      })
+      new THREE.ShadowMaterial({ opacity: 0.12 })
     );
 
     ground.rotation.x = -Math.PI / 2;
@@ -300,14 +285,15 @@ export default function TerminalMap({
       );
 
       if (hall && selectedId === hall.id) {
-        const material = mesh.material as THREE.MeshStandardMaterial;
+        const material =
+          mesh.material as THREE.MeshStandardMaterial;
+
         material.emissive.setHex(0x174c99);
         material.emissiveIntensity = 0.16;
       }
 
       group.add(mesh);
 
-      // 건물 구역의 실제 3D 좌표와 라벨 좌표 일치
       const angle = (a0 + a1) / 2;
       const radius = (inner + outer) / 2;
 
@@ -317,28 +303,31 @@ export default function TerminalMap({
         -Math.sin(angle) * radius
       );
 
-      const label = document.createElement("button");
-      label.type = "button";
-      label.className = `terminal3d-label is-${level.toLowerCase()}`;
+      const label = document.createElement('button');
+
+      label.type = 'button';
+      label.className =
+        `terminal3d-label is-${level.toLowerCase()}`;
 
       if (hall && selectedId === hall.id) {
-        label.classList.add("is-selected");
+        label.classList.add('is-selected');
       }
 
-      const title = document.createElement("strong");
+      const title = document.createElement('strong');
       title.textContent = `${number}번 출국장`;
 
-      const status = document.createElement("span");
+      const status = document.createElement('span');
+
       status.textContent =
-        hall?.operationStatus === "CHECK_REQUIRED"
-          ? "운영 확인 필요"
+        hall?.operationStatus === 'CHECK_REQUIRED'
+          ? '운영 확인 필요'
           : LABELS[level];
 
       label.append(title, status);
       label.disabled = !hall;
 
       if (hall) {
-        label.addEventListener("click", () => {
+        label.addEventListener('click', () => {
           onSelect(hall.id);
         });
       }
@@ -347,7 +336,6 @@ export default function TerminalMap({
       labels.push({ element: label, position });
     });
 
-    // 카메라가 바라볼 건물 중심을 자동 계산
     group.updateWorldMatrix(true, true);
 
     const bounds = new THREE.Box3().setFromObject(group);
@@ -361,6 +349,9 @@ export default function TerminalMap({
     camera.updateMatrixWorld(true);
 
     function renderScene() {
+      // TypeScript null 오류 해결
+      if (!mount) return;
+
       const width = mount.clientWidth;
       const height = mount.clientHeight;
 
@@ -368,7 +359,6 @@ export default function TerminalMap({
 
       const aspect = width / height;
 
-      // 건물의 화면상 가로/세로 크기를 계산
       const right = new THREE.Vector3()
         .setFromMatrixColumn(camera.matrixWorld, 0);
 
@@ -376,14 +366,30 @@ export default function TerminalMap({
         .setFromMatrixColumn(camera.matrixWorld, 1);
 
       const corners = [
-        new THREE.Vector3(bounds.min.x, bounds.min.y, bounds.min.z),
-        new THREE.Vector3(bounds.min.x, bounds.min.y, bounds.max.z),
-        new THREE.Vector3(bounds.min.x, bounds.max.y, bounds.min.z),
-        new THREE.Vector3(bounds.min.x, bounds.max.y, bounds.max.z),
-        new THREE.Vector3(bounds.max.x, bounds.min.y, bounds.min.z),
-        new THREE.Vector3(bounds.max.x, bounds.min.y, bounds.max.z),
-        new THREE.Vector3(bounds.max.x, bounds.max.y, bounds.min.z),
-        new THREE.Vector3(bounds.max.x, bounds.max.y, bounds.max.z),
+        new THREE.Vector3(
+          bounds.min.x, bounds.min.y, bounds.min.z
+        ),
+        new THREE.Vector3(
+          bounds.min.x, bounds.min.y, bounds.max.z
+        ),
+        new THREE.Vector3(
+          bounds.min.x, bounds.max.y, bounds.min.z
+        ),
+        new THREE.Vector3(
+          bounds.min.x, bounds.max.y, bounds.max.z
+        ),
+        new THREE.Vector3(
+          bounds.max.x, bounds.min.y, bounds.min.z
+        ),
+        new THREE.Vector3(
+          bounds.max.x, bounds.min.y, bounds.max.z
+        ),
+        new THREE.Vector3(
+          bounds.max.x, bounds.max.y, bounds.min.z
+        ),
+        new THREE.Vector3(
+          bounds.max.x, bounds.max.y, bounds.max.z
+        ),
       ];
 
       let halfWidth = 0;
@@ -403,7 +409,6 @@ export default function TerminalMap({
         );
       }
 
-      // 건물에 약간의 여백을 남겨 화면에 맞춤
       const fittedHeight = Math.max(
         halfHeight * 1.65,
         (halfWidth * 1.3) / aspect,
@@ -420,33 +425,39 @@ export default function TerminalMap({
       renderer.setSize(width, height, false);
       renderer.render(scene, camera);
 
-      // 3D 구역 위 라벨 배치
-      const positioned = labels.map((item) => {
+      const positioned = labels.map(item => {
         const point = item.position.clone().project(camera);
 
         return {
           ...item,
           x: ((point.x + 1) / 2) * width,
           y: ((1 - point.y) / 2) * height,
-          visible: Math.abs(point.x) <= 1.1 &&
-                   Math.abs(point.y) <= 1.1,
+          visible:
+            Math.abs(point.x) <= 1.1 &&
+            Math.abs(point.y) <= 1.1,
         };
       });
 
-      // 가로 라벨끼리 겹치지 않도록 간격 확보
-      const sorted = [...positioned].sort((a, b) => a.x - b.x);
+      const sorted = [...positioned].sort(
+        (a, b) => a.x - b.x
+      );
+
       const gap = isT1 ? 64 : 80;
       const padding = 30;
 
       let previousX = padding - gap;
 
-      sorted.forEach((item) => {
+      sorted.forEach(item => {
         if (!item.visible) {
           item.element.hidden = true;
           return;
         }
 
-        const x = Math.max(item.x, previousX + gap);
+        const x = Math.max(
+          item.x,
+          previousX + gap
+        );
+
         previousX = x;
 
         item.element.hidden = false;
@@ -454,32 +465,38 @@ export default function TerminalMap({
         item.element.style.top = `${item.y}px`;
       });
 
-      // 오른쪽으로 밀린 라벨을 화면 안에 보정
-      const visible = sorted.filter((item) => item.visible);
+      const visible = sorted.filter(item => item.visible);
       const last = visible[visible.length - 1];
 
       if (last) {
-        const lastX = parseFloat(last.element.style.left);
+        const lastX = parseFloat(
+          last.element.style.left
+        );
+
         const overflow = lastX - (width - padding);
 
         if (overflow > 0) {
-          visible.forEach((item) => {
-            const x = parseFloat(item.element.style.left);
-            item.element.style.left = `${x - overflow}px`;
+          visible.forEach(item => {
+            const x = parseFloat(
+              item.element.style.left
+            );
+
+            item.element.style.left =
+              `${x - overflow}px`;
           });
         }
       }
     }
 
     const observer = new ResizeObserver(renderScene);
-    observer.observe(mount);
 
+    observer.observe(mount);
     renderScene();
 
     return () => {
       observer.disconnect();
 
-      scene.traverse((object) => {
+      scene.traverse(object => {
         if (!(object instanceof THREE.Mesh)) return;
 
         object.geometry.dispose();
@@ -488,7 +505,7 @@ export default function TerminalMap({
           ? object.material
           : [object.material];
 
-        materials.forEach((material) => {
+        materials.forEach(material => {
           material.dispose();
         });
       });
