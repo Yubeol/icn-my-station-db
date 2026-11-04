@@ -6,6 +6,12 @@
   min-width: 0;
 }
 
+@property --drift {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 45px;
+}
+
 .icn-w-controls {
   display: flex;
   align-items: center;
