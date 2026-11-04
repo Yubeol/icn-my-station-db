@@ -1,0 +1,145 @@
+.icn-detail.icn-flightstats {
+  --stats-ink: #24405f;
+  --stats-muted: #667a94;
+  --stats-line: #e4ecf6;
+  --stats-normal: #74a8ee;
+  --stats-delayed: #f2b64a;
+  --stats-cancelled: #ec8585;
+  --stats-diverted: #a494ec;
+  color: var(--stats-ink);
+  font-variant-numeric: tabular-nums;
+  background: #f2f6fd;
+  border-color: #e0e9f5;
+}
+.icn-flightstats h2 { margin: 0; color: inherit; font-family: inherit; font-size: 17px; font-weight: 700; }
+.icn-flightstats .is-normal { background: var(--stats-normal); }
+.icn-flightstats .is-delayed { background: var(--stats-delayed); }
+.icn-flightstats .is-cancelled { background: var(--stats-cancelled); }
+.icn-flightstats .is-diverted { background: var(--stats-diverted); }
+
+.icn-flightstats__grid { display: grid; grid-template-columns: minmax(0,1.42fr) minmax(0,1fr); gap: 16px; }
+.icn-flightstats__card { padding: 22px; background: white; border: 1px solid var(--stats-line); border-radius: 18px; box-shadow: 0 6px 18px rgba(50,90,150,.05); }
+.icn-flightstats__side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.icn-flightstats__note { margin: 8px 0 0; color: var(--stats-muted); font-size: 12px; line-height: 1.5; }
+
+.icn-flightstats__scene { position: relative; display: flex; flex-direction: column; min-width: 0; overflow: hidden; color: var(--stats-ink); background: linear-gradient(#b4cfec,#e6f0fa 84%); border-radius: 18px; }
+.icn-flightstats__scene-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 24px 26px 0; }
+.icn-flightstats .icn-flightstats__scene h2 { max-width: 20em; font-size: clamp(22px,2.3vw,32px); line-height: 1.32; letter-spacing: -.4px; word-break: keep-all; }
+.icn-flightstats__scene-head p { flex: none; margin: 2px 0 0; padding: 7px 13px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,.72); border-radius: 999px; }
+.icn-flightstats__scene-plot { position: relative; order: 2; margin-top: auto; }
+.icn-flightstats__scene-plot svg { display: block; width: 100%; height: auto; }
+.icn-flightstats__scene-plot rect[tabindex]:focus-visible { outline: none; stroke: white; stroke-width: 2; }
+.icn-flightstats__scene-tick { fill: var(--stats-ink); font-size: 12px; font-weight: 600; }
+.icn-flightstats__scene-legend { order: 1; display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0; padding: 12px 26px 0; list-style: none; font-size: 12px; font-weight: 600; }
+.icn-flightstats__scene-legend li { display: flex; align-items: center; gap: 7px; }
+.icn-flightstats__scene-legend i { width: 16px; height: 4px; border-radius: 2px; }
+.icn-flightstats__scene-legend i.is-climb { background: white; box-shadow: 0 0 0 1px #9dbbdc; }
+
+.icn-flightstats__share { display: flex; gap: 3px; height: 14px; margin-top: 16px; }
+.icn-flightstats__segment { flex: 0 0 7px; border-radius: 7px; }
+.icn-flightstats__segment.is-normal { flex-shrink: 1; }
+.icn-flightstats__categories { display: grid; gap: 0; margin: 14px 0 0; }
+.icn-flightstats__categories div { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--stats-line); }
+.icn-flightstats__categories div:first-child { border-top: 0; }
+.icn-flightstats__categories dt { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.icn-flightstats__categories i { width: 10px; height: 10px; flex: none; border-radius: 50%; }
+.icn-flightstats__categories dd { display: flex; align-items: baseline; gap: 10px; margin: 0; text-align: right; }
+.icn-flightstats__categories strong { font-size: 18px; }
+.icn-flightstats__categories span { color: var(--stats-muted); font-size: 12px; }
+
+.icn-flightstats__highlights { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; margin: 0; }
+.icn-flightstats__highlights .icn-flightstats__card { min-width: 0; padding: 16px; }
+.icn-flightstats__highlights dt { color: var(--stats-muted); font-size: 12px; }
+.icn-flightstats__highlights dd { margin: 8px 0 0; font-size: 23px; font-weight: 700; line-height: 1.2; }
+.icn-flightstats__highlights span { display: block; margin-top: 5px; color: var(--stats-muted); font-size: 12px; font-weight: 400; line-height: 1.35; }
+
+.icn-flightstats__section-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px 20px; }
+.icn-flightstats__section-head ul { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0; padding: 0; list-style: none; color: var(--stats-muted); font-size: 12px; }
+.icn-flightstats__section-head li { display: flex; align-items: center; gap: 6px; }
+.icn-flightstats__section-head i { width: 9px; height: 9px; border-radius: 50%; }
+.icn-flightstats__section-head i.is-upcoming { background: var(--stats-normal); opacity: .5; }
+
+.icn-flightstats__chart { display: grid; grid-template-columns: repeat(24,minmax(0,1fr)); gap: 3px; margin-top: 16px; }
+.icn-app .icn-flightstats__hour { position: relative; display: grid; grid-template-rows: 250px 14px 20px; gap: 5px; min-width: 0; padding: 0; color: var(--stats-muted); background: none; border: 0; border-radius: 4px; }
+.icn-flightstats__hour:focus-visible { outline: 2px solid var(--stats-ink); outline-offset: 2px; }
+.icn-flightstats__plot { position: relative; display: flex; align-items: flex-end; padding-top: 20px; border-bottom: 1px solid #c3d3e6; }
+.icn-flightstats__stack { display: flex; flex-direction: column-reverse; gap: 2px; width: 100%; min-height: 2px; }
+.icn-flightstats__stack span { min-height: 2px; flex-basis: 0; }
+.icn-flightstats__stack span:last-child { border-radius: 4px 4px 0 0; }
+.icn-flightstats__hour.is-upcoming .icn-flightstats__stack { opacity: .5; }
+.icn-flightstats__hour:hover .icn-flightstats__stack, .icn-flightstats__hour:focus-visible .icn-flightstats__stack { opacity: 1; }
+.icn-flightstats__hour.is-now .icn-flightstats__plot { background: linear-gradient(transparent,#e6f0fc); }
+.icn-flightstats__peak { position: absolute; top: 0; right: 0; left: 0; color: var(--stats-ink); font-size: 11px; font-weight: 700; text-align: center; }
+.icn-flightstats__heat { border-radius: 3px; }
+.icn-flightstats__tick { position: relative; color: transparent; font-size: 11px; text-align: center; }
+.icn-flightstats__tick.is-major { color: var(--stats-muted); }
+.icn-flightstats__tick b { position: absolute; top: 0; left: 50%; padding: 1px 5px; color: white; font-size: 11px; font-weight: 700; line-height: 1.5; white-space: nowrap; background: #5c86ba; border-radius: 4px; transform: translateX(-50%); }
+
+.icn-flightstats__tooltip { position: absolute; z-index: 2; width: 124px; padding: 9px 11px; color: white; font-size: 12px; line-height: 1.6; text-align: left; background: rgba(45,70,105,.94); border-radius: 9px; transform: translateX(-50%); pointer-events: none; }
+.icn-flightstats__tooltip.is-hover { bottom: 54px; left: 50%; display: none; }
+.icn-flightstats__tooltip.is-start { left: 0; transform: none; }
+.icn-flightstats__tooltip.is-end { transform: translateX(-100%); }
+.icn-flightstats__tooltip.is-hover.is-end { right: 0; left: auto; transform: none; }
+.icn-flightstats__hour:hover .icn-flightstats__tooltip, .icn-flightstats__hour:focus-visible .icn-flightstats__tooltip { display: block; }
+.icn-flightstats__tooltip b, .icn-flightstats__tooltip span { display: flex; justify-content: space-between; }
+.icn-flightstats__tooltip em { font-style: normal; font-weight: 700; }
+
+.icn-flightstats__radar { display: block; width: min(100%,340px); margin: 10px auto 0; }
+.icn-flightstats__sweep { transform-origin: 180px 180px; animation: icn-stats-sweep 6s linear infinite; }
+.icn-flightstats__blip { cursor: pointer; outline: none; animation: icn-stats-blip .45s ease-out backwards; }
+.icn-flightstats__blip.is-active circle:last-child, .icn-flightstats__blip:focus-visible circle:last-child { stroke: white; stroke-width: 2; }
+.icn-flightstats__readout { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; margin: 12px 0 0; color: var(--stats-muted); font-size: 13px; }
+.icn-flightstats__readout b { color: var(--stats-ink); }
+.icn-flightstats__radar-label { fill: var(--stats-muted); font-size: 12px; }
+.icn-flightstats__radar-value { fill: var(--stats-ink); font-size: 22px; font-weight: 700; }
+
+.icn-flightstats__gauge { display: flex; flex: 1; flex-direction: column; }
+.icn-flightstats__gauge svg { display: block; width: min(100%,360px); margin: auto; padding-top: 10px; }
+.icn-flightstats__needle { transform-origin: 160px 158px; transform: rotate(var(--needle)); animation: icn-stats-needle 1.5s cubic-bezier(.3,1.3,.5,1) both; }
+
+.icn-flightstats__stream { grid-column: 1 / -1; }
+.icn-flightstats__stream-plot { position: relative; margin-top: 12px; }
+.icn-flightstats__stream-plot svg { display: block; width: 100%; height: clamp(170px,17vw,260px); }
+.icn-flightstats__stream-plot rect:focus-visible { outline: none; stroke: var(--stats-ink); stroke-width: 1.5; }
+.icn-flightstats__stream-ticks { position: relative; height: 22px; margin-top: 6px; color: var(--stats-muted); font-size: 12px; }
+.icn-flightstats__stream-ticks span { position: absolute; transform: translateX(-50%); }
+.icn-flightstats__tooltip.is-start-at { transform: none; }
+
+.icn-flightstats__draw { stroke-dasharray: 1; animation: icn-stats-draw 1.6s cubic-bezier(.35,0,.25,1) both; }
+.icn-flightstats__plane { offset-distance: 100%; offset-rotate: auto; animation: icn-stats-fly 1.6s cubic-bezier(.35,0,.25,1) both; }
+.icn-flightstats__fade-in { animation: icn-stats-fade .8s ease-out .8s backwards; }
+.icn-flightstats__stack { transform-origin: bottom; animation: icn-stats-rise .55s cubic-bezier(.2,.8,.3,1) backwards; }
+@keyframes icn-stats-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes icn-stats-fly { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+@keyframes icn-stats-fade { from { opacity: 0; } }
+@keyframes icn-stats-rise { from { transform: scaleY(0); } }
+@keyframes icn-stats-sweep { to { transform: rotate(360deg); } }
+@keyframes icn-stats-blip { from { opacity: 0; transform: scale(.2); } }
+@keyframes icn-stats-needle { from { transform: rotate(0deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .icn-flightstats__draw, .icn-flightstats__plane, .icn-flightstats__fade-in, .icn-flightstats__stack, .icn-flightstats__sweep, .icn-flightstats__blip, .icn-flightstats__needle { animation: none; }
+}
+
+.icn-flightstats__table { grid-column: 1 / -1; padding: 0 22px; }
+.icn-flightstats__table summary { padding: 16px 0; font-size: 14px; font-weight: 600; cursor: pointer; }
+.icn-flightstats__table summary:focus-visible { outline: 2px solid var(--stats-ink); outline-offset: 2px; }
+.icn-flightstats__table > div { max-height: 340px; margin-bottom: 16px; overflow: auto; }
+.icn-flightstats__table table { width: 100%; font-size: 13px; border-collapse: collapse; }
+.icn-flightstats__table th, .icn-flightstats__table td { padding: 8px 12px; text-align: right; border-bottom: 1px solid var(--stats-line); }
+.icn-flightstats__table th:first-child { text-align: left; }
+.icn-flightstats__table thead th { position: sticky; top: 0; color: var(--stats-muted); font-weight: 600; background: white; }
+.icn-flightstats__empty { margin: 8px 0 0; padding: 24px; color: var(--stats-muted); background: white; border-radius: 14px; }
+
+@media (max-width: 1100px) {
+  .icn-flightstats__grid { grid-template-columns: minmax(0,1fr); }
+}
+@media (max-width: 700px) {
+  .icn-flightstats__card { padding: 16px; }
+  .icn-flightstats__scene-head { flex-direction: column; gap: 8px; padding: 18px 18px 0; }
+  .icn-flightstats__scene-legend { padding: 10px 18px 0; }
+  .icn-flightstats__scene-tick { font-size: 20px; }
+  .icn-flightstats__highlights { grid-template-columns: 1fr; }
+  .icn-flightstats__chart { gap: 2px; }
+  .icn-app .icn-flightstats__hour { grid-template-rows: 190px 12px 20px; }
+  .icn-flightstats__tick { font-size: 10px; }
+}
