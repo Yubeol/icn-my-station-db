@@ -178,6 +178,8 @@ Hourly
 | is24h | 불리언 | N | false | 24시간 운영 여부 |
 | isOpen | 불리언 | Y | true | 현재 운영 여부, 시간 해석 실패 시 null |
 | tel | 문자 | Y | 1566-9070 | 전화번호 |
+| crowdEstimate | 문자 | Y | MID | 주변 혼잡 예상. 실제 측정값이 아니다. LOW / MID / HIGH. 추정 근거가 없거나 영업 종료면 null |
+| crowdBasis | 문자 | Y | HALL | 추정 기준. HALL / TERMINAL / FLIGHTS. crowdEstimate가 null이면 null |
 
 ## WebSocket /ws/live 메시지
 
@@ -197,6 +199,7 @@ congestion 메시지는 터미널별로, flights·stats 메시지는 방향별�
 | 운항 상태 | SCHEDULED, BOARDING_SOON, BOARDING, DELAYED, CANCELLED, DEPARTED, ARRIVED, DIVERTED |
 | 혼잡 단계 | LOW, MID, HIGH |
 | 출국장 운영 확인 | CHECK_REQUIRED |
+| 주변 혼잡 예상 기준 | HALL, TERMINAL, FLIGHTS |
 | 알림 중요도 | INFO, WARN, CRITICAL |
 | 알림 종류 | DELAY, GATE_CHANGE, CONGESTION, WEATHER, BOARDING |
 | 날씨 | CLEAR, CLOUDY, RAIN, SNOW, FOG |

@@ -99,6 +99,11 @@ class FacilityArea(StrEnum):
     ARRIVAL = "ARRIVAL"
 
 
+class CrowdBasis(StrEnum):
+    HALL = "HALL"
+    TERMINAL = "TERMINAL"
+    FLIGHTS = "FLIGHTS"
+
 class LiveTopic(StrEnum):
     CONGESTION = "congestion"
     FLIGHTS = "flights"
@@ -244,7 +249,8 @@ class Facility(CamelModel):
     is24h: bool = Field(alias="is24h")
     is_open: bool | None
     tel: str | None
-
+    crowd_estimate: CongestionLevel | None = None
+    crowd_basis: CrowdBasis | None = None
 
 # ---------- DashboardSummary ----------
 
