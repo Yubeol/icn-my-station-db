@@ -427,7 +427,6 @@ def is_surge(current: int, past: int | None) -> bool:
     return rate is not None and rate >= SURGE_MIN_RATE and current - past >= SURGE_MIN_INCREASE
 
 
-
 # ---------- 편의시설 주변 혼잡 예상 ----------
 
 # 실측값이 아니라 현재 혼잡·승객예고·출발 편수로 정한 단계다. 인원수나 대기 시간은 내지 않는다.
