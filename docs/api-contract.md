@@ -160,6 +160,8 @@ Hourly
 | windSpeed | 숫자 | Y | 8 | 풍속 m/s |
 | condition | 코드 | Y | RAIN | CLEAR / CLOUDY / RAIN / SNOW / FOG |
 | phenomenon | 문자 | Y | -RA | METAR 기상 현상 코드, 없으면 null |
+| visibility | 숫자 | Y | 10 | 시정 km |
+| pressure | 숫자 | Y | 1016 | 기압 hPa |
 
 ## Facility (편의시설)
 

@@ -229,6 +229,8 @@ class WeatherHistoryPoint(CamelModel):
     wind_speed: float | None
     condition: WeatherCondition | None
     phenomenon: str | None
+    visibility: float | None = None
+    pressure: float | None = None
 
 
 # ---------- Facility ----------

@@ -1517,6 +1517,28 @@
               }
             ],
             "title": "Phenomenon"
+          },
+          "visibility": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visibility"
+          },
+          "pressure": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pressure"
           }
         },
         "type": "object",

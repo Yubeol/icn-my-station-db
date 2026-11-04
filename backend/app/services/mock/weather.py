@@ -56,6 +56,8 @@ def get_weather_history(hours: int = rules.WEATHER_HISTORY_DEFAULT_HOURS) -> lis
                 wind_speed=round(5 + 3 * (step % 8) / 8, 1),
                 condition=WeatherCondition.RAIN if rain else WeatherCondition.CLEAR,
                 phenomenon="-RA" if rain else None,
+                visibility=6.0 if rain else 10.0,
+                pressure=round(1012 + 4 * (step % 24) / 24, 1),
             )
         )
     return points
