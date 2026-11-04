@@ -23,6 +23,7 @@
 | 운항 통계 | GET | /api/v1/stats/flights | direction=DEPARTURE\|ARRIVAL |
 | 스마트 알림 | GET | /api/v1/alerts | flightNo (선택), terminal=T1\|T2 (선택, 없으면 공항 전체) |
 | 날씨·운항 여건 | GET | /api/v1/weather | - |
+| METAR 이력 | GET | /api/v1/weather/history | hours=1~48 (선택, 기본 24). 응답은 WeatherHistoryPoint[] |
 | 편의시설 | GET | /api/v1/facilities | terminal=T1\|T2 (선택, 없으면 공항 전체) |
 | 실시간 | WebSocket | /ws/live | - |
 
@@ -48,9 +49,11 @@
 |---|---|---|---|---|
 | flightNo | 문자 | N | KE703 | 편명 |
 | airline | 문자 | N | 대한항공 | 항공사 |
+| airlineCode | 문자 | Y | KE | IATA 항공사 코드. 로고 파일을 고르는 값이다. 수집값이 없으면 편명 앞 두 글자, 판별 불가면 null |
 | type | 코드 | N | DEPARTURE | DEPARTURE / ARRIVAL |
 | city | 문자 | N | 도쿄(나리타) | 출발편은 목적지, 도착편은 출발지 |
 | airportCode | 문자 | N | NRT | 상대 공항 IATA 코드 |
+| countryCode | 문자 | Y | JP | 상대 공항의 ISO 3166-1 국가 코드. 모르는 공항이면 null |
 | scheduledAt | 시각 | N | | 예정 시각 |
 | estimatedAt | 시각 | Y | | 변경 시각, 변경 없으면 null |
 | terminal | 코드 | N | T1 | T1 / T2 |
@@ -129,6 +132,7 @@ Hourly
 | condition | 코드 | Y | CLEAR | CLEAR / CLOUDY / RAIN / SNOW / FOG |
 | temperature | 숫자 | Y | 18 | 기온 °C |
 | windSpeed | 숫자 | Y | 8 | 풍속 m/s |
+| windGust | 숫자 | Y | 12 | 돌풍 m/s. METAR에 없으면 null |
 | windDirection | 숫자 | Y | 320 | 풍향(도). 방위 글자·나침반은 프론트 변환 |
 | visibility | 숫자 | Y | 10 | 시정 km |
 | pressure | 숫자 | Y | 1016 | 기압 hPa |
@@ -144,6 +148,18 @@ Hourly
 | operationScore.message | 문자 | N | 운항 여건 양호 | 화면 문구 |
 
 운항 여건 점수는 실제 운항 확률이 아니라 풍속·시정 기반 자체 계산 점수다.
+
+## WeatherHistoryPoint (METAR 이력)
+
+시각 오름차순이다.
+
+| 필드 | 타입 | null | 예시 | 설명 |
+|---|---|---|---|---|
+| observedAt | 시각 | N | | 관측 시각 |
+| temperature | 숫자 | Y | 18 | 기온 °C |
+| windSpeed | 숫자 | Y | 8 | 풍속 m/s |
+| condition | 코드 | Y | RAIN | CLEAR / CLOUDY / RAIN / SNOW / FOG |
+| phenomenon | 문자 | Y | -RA | METAR 기상 현상 코드, 없으면 null |
 
 ## Facility (편의시설)
 

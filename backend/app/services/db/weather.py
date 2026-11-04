@@ -15,7 +15,7 @@ from app.core.cache import ttl_cache
 from app.core.config import settings
 from app.core.db import fetch_all
 from app.core.timeutil import KST, now_kst
-from app.schemas import Crosswind, OperationScore, Weather
+from app.schemas import Crosswind, OperationScore, Weather, WeatherHistoryPoint
 
 AIRPORT_ICAO = "RKSI"
 
@@ -27,7 +27,7 @@ def _float(value: Any) -> float | None:
 def _latest_observation() -> dict[str, Any] | None:
     rows = fetch_all(
         """
-        SELECT observed_at, wind_direction_degrees, wind_speed_mps, temperature_c,
+        SELECT observed_at, wind_direction_degrees, wind_speed_mps, wind_gust_mps, temperature_c,
                pressure_hpa, visibility_km, weather_phenomena
         FROM weather_observations
         WHERE airport_icao = %(icao)s AND source = ANY(%(sources)s)
@@ -70,6 +70,7 @@ def get_weather() -> Weather:
             condition=None,
             temperature=None,
             wind_speed=None,
+            wind_gust=None,
             wind_direction=None,
             visibility=None,
             pressure=None,
@@ -101,6 +102,7 @@ def get_weather() -> Weather:
         condition=rules.weather_condition(obs["weather_phenomena"]),
         temperature=_float(obs["temperature_c"]),
         wind_speed=wind_speed,
+        wind_gust=_float(obs["wind_gust_mps"]),
         wind_direction=wind_direction,
         visibility=visibility,
         pressure=_float(obs["pressure_hpa"]),
@@ -121,3 +123,37 @@ def get_weather() -> Weather:
             else rules.OPERATION_MESSAGE_NO_DATA,
         ),
     )
+
+
+@ttl_cache(seconds=60)
+def get_weather_history(hours: int = rules.WEATHER_HISTORY_DEFAULT_HOURS) -> list[WeatherHistoryPoint]:
+    """최근 N시간 METAR 관측. 시각 오름차순이고 같은 시각의 중복 출처는 하나만 쓴다."""
+    rows = fetch_all(
+        """
+        SELECT * FROM (
+            SELECT DISTINCT ON (observed_at)
+                observed_at, temperature_c, wind_speed_mps, weather_phenomena
+            FROM weather_observations
+            WHERE airport_icao = %(icao)s AND source = ANY(%(sources)s) AND observed_at >= %(since)s
+            ORDER BY observed_at DESC
+            LIMIT %(limit)s
+        ) recent
+        ORDER BY observed_at
+        """,
+        {
+            "icao": AIRPORT_ICAO,
+            "sources": settings.data_sources(),
+            "since": now_kst() - timedelta(hours=hours),
+            "limit": rules.WEATHER_HISTORY_LIMIT,
+        },
+    )
+    return [
+        WeatherHistoryPoint(
+            observed_at=row["observed_at"].astimezone(KST),
+            temperature=_float(row["temperature_c"]),
+            wind_speed=_float(row["wind_speed_mps"]),
+            condition=rules.weather_condition(row["weather_phenomena"]),
+            phenomenon=rules.weather_phenomenon(row["weather_phenomena"]),
+        )
+        for row in rows
+    ]
