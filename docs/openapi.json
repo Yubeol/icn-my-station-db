@@ -681,6 +681,15 @@
         ],
         "title": "Crosswind"
       },
+      "CrowdBasis": {
+        "type": "string",
+        "enum": [
+          "HALL",
+          "TERMINAL",
+          "FLIGHTS"
+        ],
+        "title": "CrowdBasis"
+      },
       "DashboardSummary": {
         "properties": {
           "generatedAt": {
@@ -855,6 +864,26 @@
               }
             ],
             "title": "Tel"
+          },
+          "crowdEstimate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CongestionLevel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "crowdBasis": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CrowdBasis"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",

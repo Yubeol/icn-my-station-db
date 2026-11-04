@@ -4,9 +4,16 @@ from datetime import datetime, time
 
 from app.core import rules
 from app.core.timeutil import now_kst
-from app.schemas import Facility, FacilityArea, FacilityCategory, Terminal
+from app.schemas import (
+    CongestionLevel,
+    CrowdBasis,
+    Facility,
+    FacilityArea,
+    FacilityCategory,
+    Terminal,
+)
 
-# (id, 이름, 분류, 취급품목, 터미널, 층, 위치, 구역, 시작, 종료, 24시간, 전화)
+# (id, 이름, 분류, 취급품목, 터미널, 층, 위치, 구역, 시작, 종료, 24시간, 전화, 혼잡 예상, 기준)
 _MOCK_ROWS: list[tuple] = [
     (
         "f1",
@@ -21,6 +28,8 @@ _MOCK_ROWS: list[tuple] = [
         "22:00",
         False,
         "1566-9070",
+        None,
+        None,
     ),
     (
         "f2",
@@ -35,6 +44,8 @@ _MOCK_ROWS: list[tuple] = [
         None,
         True,
         "032-741-2000",
+        CongestionLevel.MID,
+        CrowdBasis.TERMINAL,
     ),
     (
         "f3",
@@ -49,6 +60,8 @@ _MOCK_ROWS: list[tuple] = [
         "21:00",
         False,
         "032-741-3000",
+        None,
+        None,
     ),
     (
         "f4",
@@ -63,6 +76,8 @@ _MOCK_ROWS: list[tuple] = [
         "01:00",
         False,
         None,
+        CongestionLevel.HIGH,
+        CrowdBasis.FLIGHTS,
     ),
     (
         "f5",
@@ -76,6 +91,8 @@ _MOCK_ROWS: list[tuple] = [
         None,
         None,
         False,
+        None,
+        None,
         None,
     ),
 ]
@@ -118,6 +135,8 @@ def list_facilities(terminal: Terminal | None = None) -> list[Facility]:
             is24h=is24h,
             is_open=_is_open(open_time, close_time, is24h, now),
             tel=tel,
+            crowd_estimate=crowd_estimate,
+            crowd_basis=crowd_basis,
         )
         for (
             facility_id,
@@ -132,6 +151,8 @@ def list_facilities(terminal: Terminal | None = None) -> list[Facility]:
             close_time,
             is24h,
             tel,
+            crowd_estimate,
+            crowd_basis,
         ) in _MOCK_ROWS
     ]
     return rules.filter_terminal(facilities, terminal)

@@ -2,6 +2,8 @@
 
 import math
 import re
+from collections.abc import Iterable, Mapping
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from functools import lru_cache
 
@@ -9,6 +11,7 @@ import airportsdata
 
 from app.schemas import (
     CongestionLevel,
+    CrowdBasis,
     DelayRisk,
     FacilityArea,
     FacilityCategory,
@@ -422,3 +425,151 @@ def is_surge(current: int, past: int | None) -> bool:
         return False
     rate = change_rate(current, past)
     return rate is not None and rate >= SURGE_MIN_RATE and current - past >= SURGE_MIN_INCREASE
+
+
+# ---------- 편의시설 주변 혼잡 예상 ----------
+
+# 실측값이 아니라 현재 혼잡·승객예고·출발 편수로 정한 단계다. 인원수나 대기 시간은 내지 않는다.
+CROWD_LEVELS = (CongestionLevel.LOW, CongestionLevel.MID, CongestionLevel.HIGH)
+
+# 이보다 오래된 출국장 측정값은 현재 혼잡으로 쓰지 않는다.
+CROWD_CONGESTION_MAX_AGE_MINUTES = 30
+# 승객예고는 출국장별 규모 차이가 커서 당일 최댓값 대비 비율로 판정한다. (MID 시작, HIGH 시작)
+CROWD_FORECAST_RATIO_FROM = (0.4, 0.7)
+# 면세구역·탑승구 쪽 시설이 보는 출발 편수 범위(시간)
+CROWD_FLIGHT_WINDOW_HOURS = 2
+# DB의 출발편이 지금부터 이 시간(분) 뒤까지 없으면 수집이 덜 된 것으로 보고 판정하지 않는다.
+CROWD_FLIGHT_MIN_COVERAGE_MINUTES = 100
+# 터미널별 2시간 출발 편수 기준 (MID 시작, HIGH 시작). 코드쉐어를 뺀 값이다.
+# 2026-11-02~04의 부분 수집 분포로 정한 임시값이며, 전체 수집이 안정되면 다시 조정한다.
+CROWD_FLIGHT_LEVEL_FROM: dict[str, tuple[int, int]] = {
+    "T1": (14, 22),
+    "CONCOURSE": (13, 19),
+    "T2": (28, 42),
+}
+# 승객예고 구역 코드(T1DG3)와 출국장 번호가 대응한다. EG는 입국 구역이라 쓰지 않는다.
+CROWD_FORECAST_ZONE_RE = re.compile(r"^(T[12])DG(\d+)$")
+
+_CROWD_EXCLUDED_NAME_RE = re.compile(r"AED|셔틀|버스|주차")
+_CROWD_EXCLUDED_LOCATION_RE = re.compile(r"주차장|교통센터|승강장")
+_CROWD_ARRIVAL_RE = re.compile(r"입국장|입국심사")
+_CROWD_AIRSIDE_RE = re.compile(r"면세|에어사이드")
+_CROWD_LANDSIDE_RE = re.compile(r"일반지역|일반구역")
+_CROWD_GATE_RE = re.compile(r"\d+\s*번?\s*(?:게이트|탑승구|탑승교)")
+_CROWD_HALL_RE = re.compile(r"(\d+)\s*번\s*출국장")
+_CROWD_TERMINAL_RE = re.compile(r"일반지역|일반구역|체크인|출국장")
+
+
+@dataclass(frozen=True)
+class CrowdLocation:
+    """시설이 어떤 입력으로 혼잡을 추정하는지. 출국장 기준이면 hall_no가 있다."""
+
+    basis: CrowdBasis
+    hall_no: int | None = None
+
+
+@lru_cache(maxsize=4096)
+def crowd_location(
+    name: str, location: str | None, area: str | None, terminal_code: str | None
+) -> CrowdLocation | None:
+    """시설명·위치 문구로 추정 기준을 정한다. 연결 근거가 없으면 None."""
+    text = location or ""
+    if terminal_code not in CROWD_FLIGHT_LEVEL_FROM:
+        return None
+    if _CROWD_EXCLUDED_NAME_RE.search(name) or _CROWD_EXCLUDED_LOCATION_RE.search(text):
+        return None
+    if facility_area(area) is FacilityArea.ARRIVAL or _CROWD_ARRIVAL_RE.search(text):
+        return None
+    if terminal_code == "CONCOURSE" or _CROWD_AIRSIDE_RE.search(text):
+        return CrowdLocation(CrowdBasis.FLIGHTS)
+
+    floor = parse_floor(text)
+    is_upper_floor = floor is None or not (floor == "1F" or floor.startswith("B"))
+    if is_upper_floor and _CROWD_GATE_RE.search(text) and not _CROWD_LANDSIDE_RE.search(text):
+        return CrowdLocation(CrowdBasis.FLIGHTS)
+
+    hall = _CROWD_HALL_RE.search(text)
+    if hall:
+        return CrowdLocation(CrowdBasis.HALL, int(hall.group(1)))
+    if floor == "3F" and _CROWD_TERMINAL_RE.search(text):
+        return CrowdLocation(CrowdBasis.TERMINAL)
+    return None
+
+
+def crowd_forecast_slots(hour: int) -> tuple[str, str | None]:
+    """현재 시각의 승객예고 시간대와 같은 날의 다음 시간대. 23시 다음은 내일 데이터라 None."""
+
+    def slot(start: int) -> str:
+        return f"{start:02d}_{(start + 1) % 24:02d}"
+
+    return slot(hour), slot(hour + 1) if hour < 23 else None
+
+
+def _level_from(value: float, mid_from: float, high_from: float) -> CongestionLevel:
+    if value >= high_from:
+        return CongestionLevel.HIGH
+    if value >= mid_from:
+        return CongestionLevel.MID
+    return CongestionLevel.LOW
+
+
+def forecast_crowd_level(
+    current: int | None, upcoming: int | None, peak: int | None
+) -> CongestionLevel | None:
+    """현재·다음 시간대 예고 중 큰 값을 그 출국장의 당일 최댓값과 비교한다."""
+    if current is None or not peak:
+        return None
+    return _level_from(max(current, upcoming or 0) / peak, *CROWD_FORECAST_RATIO_FROM)
+
+
+def flight_crowd_level(flights: int, terminal_code: str) -> CongestionLevel | None:
+    """2시간 출발 편수의 단계. 0편은 수집 범위 문제일 수 있어 판정하지 않는다."""
+    if flights <= 0 or terminal_code not in CROWD_FLIGHT_LEVEL_FROM:
+        return None
+    return _level_from(flights, *CROWD_FLIGHT_LEVEL_FROM[terminal_code])
+
+
+def has_flight_coverage(last_scheduled: datetime | None, now: datetime) -> bool:
+    """출발편 데이터가 편수 범위를 대부분 덮는지 확인한다. 일부만 세면 LOW로 잘못 나온다."""
+    if last_scheduled is None:
+        return False
+    return last_scheduled >= now + timedelta(minutes=CROWD_FLIGHT_MIN_COVERAGE_MINUTES)
+
+
+def hall_crowd_level(
+    current: CongestionLevel | None,
+    forecast: CongestionLevel | None,
+    operation_status: HallOperationStatus | None,
+) -> CongestionLevel | None:
+    """현재 혼잡과 승객예고 중 높은 단계. 운영 확인이 필요한 출국장은 판정하지 않는다."""
+    if operation_status is HallOperationStatus.CHECK_REQUIRED:
+        return None
+    levels = [level for level in (current, forecast) if level is not None]
+    return max(levels, key=CROWD_LEVELS.index, default=None)
+
+
+def terminal_crowd_level(levels: Iterable[CongestionLevel | None]) -> CongestionLevel | None:
+    """출국장 단계의 평균을 반올림한다. 판정된 출국장이 없으면 None."""
+    ranks = [CROWD_LEVELS.index(level) for level in levels if level is not None]
+    if not ranks:
+        return None
+    return CROWD_LEVELS[math.floor(sum(ranks) / len(ranks) + 0.5)]
+
+
+def facility_crowd(
+    location: CrowdLocation | None,
+    is_open: bool | None,
+    terminal_code: str | None,
+    hall_levels: Mapping[int, CongestionLevel | None],
+    flights: int,
+) -> tuple[CongestionLevel | None, CrowdBasis | None]:
+    """시설 한 곳의 (혼잡 예상, 기준). 영업 종료가 확인된 시설은 판정하지 않는다."""
+    if location is None or is_open is False:
+        return None, None
+    if location.basis is CrowdBasis.FLIGHTS:
+        level = flight_crowd_level(flights, terminal_code or "")
+    elif location.basis is CrowdBasis.HALL:
+        level = hall_levels.get(location.hall_no)
+    else:
+        level = terminal_crowd_level(hall_levels.values())
+    return (level, location.basis) if level is not None else (None, None)
