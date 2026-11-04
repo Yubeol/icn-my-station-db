@@ -1,0 +1,479 @@
+
+/* ==========================================
+   ICN MY STATION
+   출국장 혼잡도 - SVG + D3 Contour
+========================================== */
+
+/* ===== 전체 혼잡도 영역 ===== */
+
+.congestion-panel {
+  width: 100%;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  box-sizing: border-box;
+
+  font-family: inherit;
+  color: #172b4d;
+}
+
+/* ===== 지도 영역 ===== */
+
+.congestion-panel__map {
+  flex: 0 0 auto;
+
+  width: 100%;
+  height: 300px;
+  min-width: 0;
+  min-height: 0;
+  max-height: 300px;
+
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* ===== SVG 지도 컨테이너 ===== */
+
+.congestion-map,
+.congestion-map--d3 {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  box-sizing: border-box;
+  overflow: hidden;
+
+  background: #f7faff;
+  border: 1px solid #dce8fa;
+  border-radius: 12px;
+}
+
+/* ===== SVG 표시 영역 ===== */
+
+.congestion-map__viewport,
+.congestion-map--d3 .congestion-map__viewport {
+  position: relative;
+
+  flex: 1 1 auto;
+
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  box-sizing: border-box;
+  overflow: hidden;
+
+  background: #f7faff;
+}
+
+/* ===== SVG 자체 ===== */
+
+.congestion-map__svg,
+.congestion-map--d3 .congestion-map__svg {
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  max-height: 100%;
+
+  flex: 1 1 auto;
+
+  overflow: visible;
+}
+
+/* ===== 지도 하단 안내 ===== */
+
+.congestion-map__footer,
+.congestion-map--d3 .congestion-map__footer {
+  flex: 0 0 30px;
+
+  width: 100%;
+  min-height: 30px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  padding: 0 12px;
+
+  box-sizing: border-box;
+
+  background: #edf4ff;
+  border-top: 1px solid #dce8fa;
+
+  color: #64748b;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.congestion-map__footer span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== SVG 출국장 상호작용 ===== */
+
+.congestion-map__svg g[role="button"] {
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+
+.congestion-map__svg g[role="button"]:hover {
+  filter: drop-shadow(
+    0 3px 5px rgba(37, 99, 235, 0.25)
+  );
+}
+
+.congestion-map__svg g[role="button"]:focus {
+  outline: none;
+}
+
+.congestion-map__svg g[role="button"]:focus-visible {
+  filter: drop-shadow(
+    0 0 5px rgba(37, 99, 235, 0.65)
+  );
+}
+
+/* ===== 출국장 카드 전체 ===== */
+
+.congestion-panel__bottom {
+  flex: 0 0 auto;
+
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+
+  box-sizing: border-box;
+}
+
+/* ===== 하단 제목 ===== */
+
+.congestion-panel__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  width: 100%;
+
+  margin-bottom: 9px;
+
+  box-sizing: border-box;
+}
+
+.congestion-panel__heading strong {
+  color: #183456;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.congestion-panel__heading span {
+  color: #64748b;
+  font-size: 11px;
+}
+
+/* ===== 출국장 카드 그리드 ===== */
+
+.congestion-panel__cards {
+  display: grid;
+
+  grid-template-columns:
+    repeat(auto-fit, minmax(95px, 1fr));
+
+  gap: 8px;
+
+  width: 100%;
+  min-width: 0;
+
+  box-sizing: border-box;
+}
+
+/* ===== 출국장 카드 ===== */
+
+.congestion-hall-card {
+  appearance: none;
+
+  width: 100%;
+  min-width: 0;
+  min-height: 116px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 7px;
+
+  padding: 11px 10px;
+
+  box-sizing: border-box;
+
+  background: #ffffff;
+  border: 1px solid #dce6f5;
+  border-radius: 10px;
+
+  color: #172b4d;
+  font-family: inherit;
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+/* 마우스 올렸을 때 */
+
+.congestion-hall-card:hover {
+  background: #f5f9ff;
+  border-color: #93bafa;
+}
+
+/* 선택된 출국장 */
+
+.congestion-hall-card.is-selected {
+  background: #edf4ff;
+  border-color: #478bf5;
+
+  box-shadow:
+    0 0 0 1px rgba(37, 99, 235, 0.1);
+}
+
+/* 비활성 상태 */
+
+.congestion-hall-card:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+/* ===== 출국장 이름 ===== */
+
+.congestion-hall-card__name {
+  display: block;
+
+  color: #173456;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+/* ===== 현재 인원 ===== */
+
+.congestion-hall-card__count {
+  display: block;
+
+  color: #102b51;
+  font-size: clamp(13px, 1.3vw, 18px);
+  font-weight: 800;
+  line-height: 1.3;
+
+  overflow-wrap: anywhere;
+}
+
+/* ===== 전일 대비 ===== */
+
+.congestion-hall-card__change {
+  margin-top: auto;
+
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+/* ===== 운영 확인 필요 ===== */
+
+.congestion-hall-card__warning {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 4px 6px;
+
+  color: #1d4ed8;
+  background: #dbeafe;
+  border-radius: 5px;
+
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* ===== 혼잡 단계 배지 ===== */
+
+.congestion-level {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 4px 8px;
+
+  border-radius: 6px;
+
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* 여유 */
+
+.congestion-level--relaxed {
+  color: #047857;
+  background: #d9f9e9;
+}
+
+/* 보통 */
+
+.congestion-level--normal {
+  color: #9a6700;
+  background: #fff2ca;
+}
+
+/* 혼잡 */
+
+.congestion-level--busy {
+  color: #b91c1c;
+  background: #fee2e2;
+}
+
+/* 미확인 */
+
+.congestion-level--unknown {
+  color: #475569;
+  background: #e2e8f0;
+}
+
+/* ===== 로딩 및 오류 ===== */
+
+.congestion-panel__message {
+  width: 100%;
+
+  padding: 18px 12px;
+
+  box-sizing: border-box;
+
+  color: #64748b;
+  font-size: 12px;
+  text-align: center;
+}
+
+.congestion-panel__error {
+  color: #dc2626;
+}
+
+/* ===== 태블릿 화면 ===== */
+
+@media (max-width: 1100px) {
+  .congestion-panel__map {
+    height: 270px;
+    max-height: 270px;
+  }
+
+  .congestion-panel__cards {
+    grid-template-columns:
+      repeat(auto-fit, minmax(110px, 1fr));
+  }
+
+  .congestion-hall-card {
+    min-height: 110px;
+    padding: 9px;
+  }
+
+  .congestion-hall-card__count {
+    font-size: 15px;
+  }
+}
+
+/* ===== 모바일 화면 ===== */
+
+@media (max-width: 650px) {
+  .congestion-panel {
+    gap: 8px;
+  }
+
+  .congestion-panel__map {
+    height: 220px;
+    max-height: 220px;
+  }
+
+  .congestion-map__footer {
+    min-height: 26px;
+    flex-basis: 26px;
+
+    padding: 0 8px;
+    font-size: 9px;
+  }
+
+  .congestion-panel__heading {
+    margin-bottom: 7px;
+  }
+
+  .congestion-panel__heading strong {
+    font-size: 12px;
+  }
+
+  .congestion-panel__cards {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    gap: 7px;
+  }
+
+  .congestion-hall-card {
+    min-height: 105px;
+    gap: 5px;
+    padding: 9px 8px;
+  }
+
+  .congestion-hall-card__name {
+    font-size: 10px;
+  }
+
+  .congestion-hall-card__count {
+    font-size: 14px;
+  }
+
+  .congestion-hall-card__change {
+    font-size: 9px;
+  }
+
+  .congestion-level {
+    padding: 3px 6px;
+    font-size: 9px;
+  }
+}
+
+/* ===== 아주 좁은 화면 ===== */
+
+@media (max-width: 360px) {
+  .congestion-panel__map {
+    height: 190px;
+    max-height: 190px;
+  }
+
+  .congestion-panel__cards {
+    gap: 5px;
+  }
+
+  .congestion-hall-card {
+    min-height: 100px;
+    padding: 7px;
+  }
+}

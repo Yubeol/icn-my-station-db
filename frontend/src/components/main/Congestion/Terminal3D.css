@@ -1,0 +1,165 @@
+
+/* =========================================
+   ICN My Station - 3D Terminal
+========================================= */
+
+.terminal3d {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid #dce8fa;
+  border-radius: 12px;
+  background: #f3f7fc;
+}
+
+/* 3D 화면 */
+.terminal3d-stage {
+  position: relative;
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: #f3f7fc;
+}
+
+.terminal3d-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* 출국장 라벨 */
+.terminal3d-label {
+  position: absolute;
+  z-index: 2;
+  transform: translate(-50%, -115%);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+
+  min-width: 60px;
+  padding: 5px 6px;
+
+  box-sizing: border-box;
+  border: 1px solid #dbe3ec;
+  border-radius: 7px;
+
+  background: #ffffff;
+  box-shadow: 0 2px 7px rgba(27, 47, 77, 0.13);
+
+  color: #173456;
+  font-family: inherit;
+  line-height: 1.25;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.terminal3d-label strong {
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.terminal3d-label span {
+  font-size: 9px;
+  font-weight: 600;
+}
+
+/* 혼잡 상태 */
+.terminal3d-label.is-low span {
+  color: #087653;
+}
+
+.terminal3d-label.is-mid span {
+  color: #a66c00;
+}
+
+.terminal3d-label.is-high span {
+  color: #c24142;
+}
+
+.terminal3d-label.is-unknown span {
+  color: #64748b;
+}
+
+/* 선택 상태 */
+.terminal3d-label.is-selected {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
+}
+
+.terminal3d-label:disabled {
+  cursor: default;
+}
+
+.terminal3d-label:not(:disabled):hover {
+  background: #f7faff;
+  border-color: #2563eb;
+}
+
+/* 하단 설명 */
+.terminal3d-footer {
+  flex: 0 0 29px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+
+  min-width: 0;
+  padding: 0 10px;
+
+  box-sizing: border-box;
+  background: #edf4ff;
+  border-top: 1px solid #dce8fa;
+
+  color: #64748b;
+  font-size: 10px;
+}
+
+.terminal3d-footer span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 메인페이지 지도 크기 */
+.congestion-panel__map {
+  flex: 0 0 auto;
+  width: 100%;
+  height: 270px;
+  min-height: 0;
+  max-height: 270px;
+  overflow: hidden;
+}
+
+@media (max-width: 650px) {
+  .congestion-panel__map {
+    height: 220px;
+    max-height: 220px;
+  }
+
+  .terminal3d-label {
+    min-width: 48px;
+    padding: 4px;
+  }
+
+  .terminal3d-label strong {
+    font-size: 9px;
+  }
+
+  .terminal3d-label span {
+    font-size: 8px;
+  }
+
+  .terminal3d-footer {
+    font-size: 9px;
+  }
+}

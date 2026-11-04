@@ -1,0 +1,168 @@
+
+.flight-statistics {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  background: #ffffff;
+}
+
+/* 집계 기간 */
+.flight-statistics__period {
+  flex-shrink: 0;
+  padding: 4px 0 10px;
+  font-size: 11px;
+  color: #64748b;
+}
+
+/* 차트 + 상태별 편수 */
+.flight-statistics__body {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* 도넛 영역 */
+.flight-statistics__chart-area {
+  flex: 0 0 43%;
+  min-width: 0;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.flight-statistics__donut {
+  position: relative;
+
+  width: 100%;
+  max-width: 175px;
+  aspect-ratio: 1;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+}
+
+/* 도넛 중앙 */
+.flight-statistics__center {
+  width: 71%;
+  height: 71%;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+  background: #ffffff;
+  color: #172b4d;
+}
+
+.flight-statistics__center span {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.flight-statistics__center strong {
+  font-size: clamp(16px, 2vw, 25px);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* 운항 상태 목록 */
+.flight-statistics__details {
+  flex: 1;
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+}
+
+.flight-statistics__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  min-width: 0;
+  font-size: 11px;
+}
+
+.flight-statistics__dot {
+  flex: 0 0 9px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.flight-statistics__name {
+  flex: 1;
+  min-width: 0;
+
+  font-weight: 600;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.flight-statistics__count {
+  color: #172b4d;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.flight-statistics__percent {
+  width: 43px;
+  text-align: right;
+  color: #94a3b8;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 로딩 및 오류 */
+.flight-statistics__message {
+  width: 100%;
+  padding: 24px 8px;
+  text-align: center;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.flight-statistics__error {
+  color: #dc2626;
+}
+
+/* 좁은 카드에서도 가로 배치 유지 */
+@media (max-width: 480px) {
+  .flight-statistics__body {
+    gap: 8px;
+  }
+
+  .flight-statistics__chart-area {
+    flex-basis: 40%;
+  }
+
+  .flight-statistics__details {
+    gap: 10px;
+  }
+
+  .flight-statistics__item {
+    gap: 4px;
+    font-size: 10px;
+  }
+
+  .flight-statistics__percent {
+    width: 36px;
+  }
+}

@@ -1,0 +1,509 @@
+
+/* ===== 전체 카드 ===== */
+
+.flight-status {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  box-sizing: border-box;
+  overflow: hidden;
+  background: #ffffff;
+  font-family: inherit;
+}
+
+/* ===== 상단 요약 ===== */
+
+.flight-status__summary {
+  flex: 0 0 auto;
+  min-height: 37px;
+
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  padding: 8px 7px;
+  background: #edf4ff;
+  border: 1px solid #dce8fc;
+  border-radius: 6px;
+
+  box-sizing: border-box;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.flight-status__terminal {
+  color: #1554c0;
+  font-weight: 800;
+}
+
+.flight-status__gate-count {
+  color: #64748b;
+}
+
+.flight-status__normal {
+  color: #059669;
+  font-weight: 700;
+}
+
+.flight-status__delayed {
+  color: #e65e5e;
+  font-weight: 700;
+}
+
+.flight-status__count {
+  margin-left: auto;
+  color: #64748b;
+  font-size: 9px;
+}
+
+/* ===== 그래프 공간 ===== */
+
+.flight-status__content {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+
+  display: flex;
+  flex-direction: column;
+
+  padding: 8px 0 4px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* ===== 로딩 / 오류 ===== */
+
+.flight-status__message {
+  flex: 1;
+  min-height: 0;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  padding: 12px;
+  text-align: center;
+  font-size: 11px;
+  color: #64748b;
+}
+
+.flight-status__message--error {
+  color: #dc2626;
+}
+
+.flight-status__spinner {
+  width: 18px;
+  height: 18px;
+
+  border: 2px solid #dbeafe;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+
+  animation: flight-loading 0.8s linear infinite;
+}
+
+@keyframes flight-loading {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ===== 타임라인 ===== */
+
+.flight-timeline {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 시간 표시 */
+
+.flight-timeline__header {
+  flex: 0 0 30px;
+
+  display: flex;
+  width: 100%;
+  align-items: center;
+
+  border-bottom: 1px solid #dbe5f1;
+}
+
+.flight-timeline__gate-label,
+.flight-timeline__gate {
+  flex: 0 0 42px;
+  width: 42px;
+
+  display: flex;
+  align-items: center;
+
+  padding: 0 5px;
+  box-sizing: border-box;
+
+  font-size: 10px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.flight-timeline__gate-label {
+  color: #64748b;
+}
+
+.flight-timeline__time-area {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+}
+
+.flight-timeline__tick-label {
+  position: absolute;
+  top: 9px;
+
+  transform: translateX(-50%);
+  white-space: nowrap;
+
+  font-size: 9px;
+  color: #64748b;
+}
+
+.flight-timeline__tick-label:first-child {
+  transform: translateX(0);
+}
+
+.flight-timeline__tick-label:last-child {
+  transform: translateX(-100%);
+}
+
+/* ===== 게이트 행 ===== */
+
+.flight-timeline__rows {
+  flex: 1 1 auto;
+  min-height: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+}
+
+.flight-timeline__row {
+  flex: 1 1 0;
+  min-height: 28px;
+  width: 100%;
+
+  display: flex;
+  align-items: stretch;
+
+  box-sizing: border-box;
+  border-bottom: 1px solid #e3eaf4;
+}
+
+.flight-timeline__row:nth-child(even) {
+  background: #f7faff;
+}
+
+.flight-timeline__gate {
+  border-right: 1px solid #dbe5f1;
+  color: #1e3a5f;
+}
+
+.flight-timeline__track {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* 세로 시간선 */
+
+.flight-timeline__grid-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+
+  width: 1px;
+  background: #dce5f2;
+  pointer-events: none;
+}
+
+/* 현재 시각 */
+
+.flight-timeline__now-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+
+  width: 1px;
+  border-left: 1px dashed #3478db;
+
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* 지연 전 예정시간 */
+
+.flight-timeline__original {
+  position: absolute;
+  top: 50%;
+
+  transform: translate(-50%, -50%);
+
+  width: 80px;
+  height: 27px;
+  box-sizing: border-box;
+
+  border: 1.5px dashed #8fa3c3;
+  border-radius: 5px;
+  background: rgba(148, 163, 184, 0.05);
+
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* ===== 항공편 막대 ===== */
+
+.flight-bar {
+  position: absolute;
+  top: 50%;
+
+  transform: translate(-50%, -50%);
+
+  width: 80px;
+  height: 27px;
+  max-height: 80%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+
+  padding: 0 5px;
+  box-sizing: border-box;
+
+  border-radius: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+
+  font-size: 10px;
+  font-weight: 800;
+  z-index: 2;
+  cursor: help;
+}
+
+/* 정상: 우리 민트색 */
+
+.flight-bar--normal {
+  color: #065f46;
+  background: #74ebac;
+  border: 1px solid #36c98a;
+}
+
+/* 지연: 코랄색 */
+
+.flight-bar--delayed {
+  color: #8f2828;
+  background: #ff9995;
+  border: 1px solid #f47773;
+}
+
+/* 항공사 로고 */
+
+.flight-bar__logo {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.flight-bar__number {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.flight-bar__delay {
+  font-size: 9px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+/* 지연 막대는 텍스트 우선 */
+
+.flight-bar--delayed .flight-bar__logo {
+  display: none;
+}
+
+/* ===== 하단 범례 ===== */
+
+.flight-status__legend {
+  flex: 0 0 29px;
+
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+
+  padding: 4px 5px;
+  box-sizing: border-box;
+
+  border-top: 1px solid #e2e8f0;
+  background: #ffffff;
+}
+
+.flight-status__legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+
+  font-size: 10px;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.flight-status__dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+
+  flex-shrink: 0;
+  box-sizing: border-box;
+  border-radius: 3px;
+}
+
+.flight-status__dot--normal {
+  background: #74ebac;
+}
+
+.flight-status__dot--delayed {
+  background: #ff9995;
+}
+
+.flight-status__dot--original {
+  border: 1.5px dashed #8fa3c3;
+}
+
+/* ===== 작은 카드 대응 ===== */
+
+@media (max-width: 480px) {
+  .flight-status__summary {
+    gap: 5px;
+    font-size: 9px;
+  }
+
+  .flight-status__count {
+    font-size: 8px;
+  }
+
+  .flight-timeline__gate-label,
+  .flight-timeline__gate {
+    flex-basis: 37px;
+    width: 37px;
+    font-size: 9px;
+  }
+
+  .flight-bar {
+    width: 76px;
+    font-size: 9px;
+    gap: 2px;
+    padding: 0 3px;
+  }
+
+  .flight-timeline__original {
+    width: 76px;
+  }
+
+  .flight-bar__logo {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+/* 상단 요약 바 제거 후 그래프 영역 확장 */
+
+.flight-status {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 요약 바가 남아 있어도 표시하지 않음 */
+.flight-status__summary {
+  display: none;
+}
+
+/* 그래프가 남는 공간을 전부 사용 */
+.flight-status__content {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+
+  padding: 2px 0 4px;
+  overflow: hidden;
+}
+
+/* 타임라인 전체 확장 */
+.flight-timeline {
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+}
+
+/* 시간축 */
+.flight-timeline__header {
+  flex: 0 0 32px;
+}
+
+/* 게이트 행이 세로 공간을 균등하게 채움 */
+.flight-timeline__rows {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.flight-timeline__row {
+  flex: 1 1 0;
+  min-height: 30px;
+}
+
+/* 막대 크기 확대 */
+.flight-bar {
+  width: 86px;
+  height: 32px;
+  max-height: 80%;
+  font-size: 10px;
+}
+
+/* 기존 일정 점선도 동일 크기 */
+.flight-timeline__original {
+  width: 86px;
+  height: 32px;
+  max-height: 80%;
+}
+
+/* 하단 범례는 유지하되 공간 최소화 */
+.flight-status__legend {
+  flex: 0 0 25px;
+  min-height: 25px;
+  padding: 3px 5px;
+  gap: 13px;
+}
