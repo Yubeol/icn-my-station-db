@@ -65,3 +65,9 @@ def test_weather_history_contract_and_order(client):
 @pytest.mark.parametrize(("hours", "status"), [(1, 200), (48, 200), (0, 422), (49, 422)])
 def test_weather_history_hours_range(client, hours, status):
     assert client.get(f"{API}/weather/history", params={"hours": hours}).status_code == status
+
+
+def test_weather_history_includes_visibility_and_pressure(client):
+    point = client.get(f"{API}/weather/history").json()[0]
+    assert point["visibility"] > 0
+    assert point["pressure"] > 0
