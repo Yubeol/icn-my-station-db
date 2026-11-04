@@ -132,7 +132,8 @@ def get_weather_history(hours: int = rules.WEATHER_HISTORY_DEFAULT_HOURS) -> lis
         """
         SELECT * FROM (
             SELECT DISTINCT ON (observed_at)
-                observed_at, temperature_c, wind_speed_mps, weather_phenomena
+                observed_at, temperature_c, wind_speed_mps, weather_phenomena,
+                visibility_km, pressure_hpa
             FROM weather_observations
             WHERE airport_icao = %(icao)s AND source = ANY(%(sources)s) AND observed_at >= %(since)s
             ORDER BY observed_at DESC
@@ -154,6 +155,8 @@ def get_weather_history(hours: int = rules.WEATHER_HISTORY_DEFAULT_HOURS) -> lis
             wind_speed=_float(row["wind_speed_mps"]),
             condition=rules.weather_condition(row["weather_phenomena"]),
             phenomenon=rules.weather_phenomenon(row["weather_phenomena"]),
+            visibility=_float(row["visibility_km"]),
+            pressure=_float(row["pressure_hpa"]),
         )
         for row in rows
     ]
