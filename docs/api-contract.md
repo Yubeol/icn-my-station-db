@@ -7,7 +7,7 @@
 - JSON 필드명: camelCase
 - 시간: ISO 8601, KST(+09:00). 예: 2026-11-05T14:30:00+09:00
 - 에러 응답: {"detail": "메시지"}
-- 404는 편명 단건 조회(GET /api/v1/flights/{flightNo})에서 없는 편명일 때만 내려간다. 목록·요약·알림 조회에서 없는 편명을 flightNo로 보내면 404 없이 200으로 응답하며, 내 항공편 강조(isMyFlight)와 내 항공편 알림(isMine)만 적용되지 않는다.
+- 404는 편명 단건 조회(GET /api/v1/flights/{flightNo})와 편명 상세(GET /api/v1/flights/{flightNo}/detail)에서 없는 편명일 때만 내려간다. 목록·요약·알림 조회에서 없는 편명을 flightNo로 보내면 404 없이 200으로 응답하며, 내 항공편 강조(isMyFlight)와 내 항공편 알림(isMine)만 적용되지 않는다.
 - 상태값은 코드로 내려가며, 화면 문구와 색은 프론트에서 정한다.
 - "null" 열이 Y인 필드는 값이 없을 때 null로 내려간다.
 - 터미널 구분: 운항 현황·편의시설·혼잡 알림만 터미널별, 운항 통계·날씨는 인천공항 공통, 탑승동은 T1. terminal을 지정하면 터미널을 모르는 데이터는 제외하고, 혼잡 알림이 아닌 공통 알림(terminal null)은 남긴다.
@@ -19,6 +19,7 @@
 | 메인 요약 | GET | /api/v1/dashboard/summary | flightNo (선택), terminal=T1\|T2 (선택, 없으면 공항 전체) |
 | 운항 현황 | GET | /api/v1/flights | type=DEPARTURE\|ARRIVAL, flightNo (선택), terminal=T1\|T2 (선택, 없으면 공항 전체) |
 | 편명 단건 조회 | GET | /api/v1/flights/{flightNo} | 경로의 flightNo. 없는 편명이면 404 |
+| 편명 상세 | GET | /api/v1/flights/{flightNo}/detail | 경로의 flightNo. 응답은 FlightDetail. 없는 편명이면 404 |
 | 출국장 혼잡도 | GET | /api/v1/congestion | terminal=T1\|T2 |
 | 운항 통계 | GET | /api/v1/stats/flights | direction=DEPARTURE\|ARRIVAL |
 | 스마트 알림 | GET | /api/v1/alerts | flightNo (선택), terminal=T1\|T2 (선택, 없으면 공항 전체) |
@@ -42,6 +43,17 @@
 | alerts | Alert[] | N | 스마트 알림 |
 | weather | Weather | N | 날씨·운항 여건 |
 | facilities | Facility[] | N | 편의시설 |
+
+## 편명 상세 (FlightDetail)
+
+| 필드 | 타입 | null | 설명 |
+|---|---|---|---|
+| generatedAt | 시각 | N | 갱신 시각 |
+| flight | Flight | N | 해당 편 |
+| congestion | Congestion | N | 해당 편 터미널의 혼잡도 |
+| alerts | Alert[] | N | 해당 편과 터미널 기준 스마트 알림 |
+| weather | Weather | N | 날씨·운항 여건 |
+| facilities | Facility[] | N | 해당 편 터미널의 편의시설. 운영 중 우선 최대 20건 |
 
 ## Flight (운항 현황 항목)
 

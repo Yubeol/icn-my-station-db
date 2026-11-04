@@ -189,6 +189,48 @@
         }
       }
     },
+    "/api/v1/flights/{flightNo}/detail": {
+      "get": {
+        "tags": [
+          "flights"
+        ],
+        "summary": "Get Flight Detail",
+        "operationId": "get_flight_detail_api_v1_flights__flightNo__detail_get",
+        "parameters": [
+          {
+            "name": "flightNo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Flightno"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlightDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/congestion": {
       "get": {
         "tags": [
@@ -1025,6 +1067,48 @@
           "isMyFlight"
         ],
         "title": "Flight"
+      },
+      "FlightDetail": {
+        "properties": {
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generatedat"
+          },
+          "flight": {
+            "$ref": "#/components/schemas/Flight"
+          },
+          "congestion": {
+            "$ref": "#/components/schemas/Congestion"
+          },
+          "alerts": {
+            "items": {
+              "$ref": "#/components/schemas/Alert"
+            },
+            "type": "array",
+            "title": "Alerts"
+          },
+          "weather": {
+            "$ref": "#/components/schemas/Weather"
+          },
+          "facilities": {
+            "items": {
+              "$ref": "#/components/schemas/Facility"
+            },
+            "type": "array",
+            "title": "Facilities"
+          }
+        },
+        "type": "object",
+        "required": [
+          "generatedAt",
+          "flight",
+          "congestion",
+          "alerts",
+          "weather",
+          "facilities"
+        ],
+        "title": "FlightDetail"
       },
       "FlightStats": {
         "properties": {
