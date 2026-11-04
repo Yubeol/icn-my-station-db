@@ -1,0 +1,846 @@
+
+.icn-weather-page {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  min-width: 0;
+}
+
+.icn-w-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #6483aa;
+  font-size: 12px;
+}
+
+.icn-w-controls button {
+  padding: 8px 12px;
+  border: 1px solid #c6d9ee;
+  border-radius: 8px;
+  background: #f3f8ff;
+  color: #0756ae;
+  cursor: pointer;
+}
+
+.icn-w-controls button:hover {
+  background: #e5f0ff;
+}
+
+.icn-w-top,
+.icn-w-charts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+}
+
+.icn-w-left,
+.icn-w-right {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* 공항 풍경 */
+.icn-w-scene {
+  position: relative;
+  isolation: isolate;
+  flex: 1;
+  min-height: 330px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: linear-gradient(
+    #abc9ed,
+    #d9e8f7 67%,
+    #c4d9e9
+  );
+}
+
+.icn-w-sky {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.icn-w-landscape {
+  position: absolute;
+  z-index: 2;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 84%;
+  pointer-events: none;
+}
+
+.icn-w-airplane {
+  animation: icn-w-plane-float 7s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.icn-w-runway-lights {
+  animation: icn-w-lights 2s ease-in-out infinite alternate;
+}
+
+@keyframes icn-w-plane-float {
+  0%, 100% {
+    translate: -5px 2px;
+  }
+  50% {
+    translate: 9px -5px;
+  }
+}
+
+@keyframes icn-w-lights {
+  to {
+    opacity: 0.3;
+  }
+}
+
+/* 날씨별 배경 */
+.icn-w-scene.icn-w-clear {
+  background: linear-gradient(
+    #9fcaf4,
+    #e8f5ff 72%,
+    #d2e8ef
+  );
+}
+
+.icn-w-scene.icn-w-cloudy {
+  background: linear-gradient(
+    #a6bcd4,
+    #dce8f3 72%,
+    #c9dae8
+  );
+}
+
+.icn-w-scene.icn-w-rain {
+  background: linear-gradient(
+    #8aa9cc,
+    #c4d8ec 72%,
+    #bad4df
+  );
+}
+
+.icn-w-scene.icn-w-snow {
+  background: linear-gradient(
+    #afc4dd,
+    #e5eef7 72%,
+    #d2e2ee
+  );
+}
+
+.icn-w-scene.icn-w-fog {
+  background: linear-gradient(
+    #c3d1df,
+    #e4ebf3 72%,
+    #d2e1e9
+  );
+}
+
+.icn-w-scene.icn-w-thunder {
+  background: linear-gradient(
+    #637eaa,
+    #a3b6d0 72%,
+    #a8c2cf
+  );
+}
+
+/* 나침반: 좌측 상단 */
+.icn-w-scene-compass {
+  position: absolute;
+  z-index: 10;
+  top: 15px;
+  left: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  width: 128px;
+  padding: 9px 6px;
+  border: 1px solid #ffffff9c;
+  border-radius: 14px;
+  background: #244c7c24;
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  box-shadow: 0 4px 18px #2d547522;
+}
+
+.icn-w-scene-compass .weather-compass {
+  width: 105px;
+  height: 105px;
+  max-width: 100%;
+  flex: none;
+}
+
+.icn-w-scene-compass > span {
+  color: #fff;
+  font-size: 12px;
+  font-weight: 750;
+  text-shadow: 0 1px 5px #31547888;
+}
+
+.icn-w-scene-compass > small {
+  color: #fff;
+  font-size: 10px;
+  text-shadow: 0 1px 5px #31547888;
+}
+
+/* 날씨와 관측 시간: 우측 상단 */
+.icn-w-weather-badge {
+  position: absolute;
+  z-index: 9;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  padding: 11px 15px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 12px;
+  background: rgba(36, 76, 124, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: white;
+  text-align: right;
+}
+
+.icn-w-weather-badge strong {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.icn-w-weather-badge span {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* 날씨 입자 */
+.icn-w-effects {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.icn-w-particle {
+  position: absolute;
+  display: block;
+  opacity: 0.75;
+}
+
+/* 비 */
+.icn-w-particle-rain {
+  width: 2px;
+  height: 22px;
+  border-radius: 2px;
+  background: #f7ffff;
+  animation: icn-w-rainfall linear infinite;
+}
+
+@keyframes icn-w-rainfall {
+  from {
+    transform: translateY(-350px) rotate(23deg);
+  }
+  to {
+    transform: translateY(350px) rotate(23deg);
+  }
+}
+
+/* 눈 */
+.icn-w-particle-snow {
+  color: white;
+  font-size: 16px;
+  line-height: 1;
+  animation: icn-w-snowfall linear infinite;
+}
+
+@keyframes icn-w-snowfall {
+  from {
+    transform: translate3d(0, -350px, 0) rotate(0deg);
+  }
+  to {
+    transform:
+      translate3d(var(--drift, 45px), 350px, 0)
+      rotate(260deg);
+  }
+}
+
+/* 바람 */
+.icn-w-particle-wind {
+  width: 38px;
+  height: 2px;
+  border-radius: 4px;
+  background: #ffffffa9;
+  animation: icn-w-wind linear infinite;
+}
+
+@keyframes icn-w-wind {
+  from {
+    transform: translateX(-300px);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.7;
+  }
+  to {
+    transform: translateX(500px);
+    opacity: 0;
+  }
+}
+
+/* 구름 */
+.icn-w-cloud {
+  position: absolute;
+  width: 115px;
+  height: 35px;
+  border-radius: 100px;
+  background: #f6fbffb9;
+  animation: icn-w-cloud-drift 30s linear infinite alternate;
+}
+
+.icn-w-cloud::before,
+.icn-w-cloud::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: inherit;
+}
+
+.icn-w-cloud::before {
+  width: 67px;
+  height: 64px;
+  left: 20px;
+  bottom: 7px;
+}
+
+.icn-w-cloud::after {
+  width: 53px;
+  height: 49px;
+  right: 8px;
+  bottom: 5px;
+}
+
+.icn-w-cloud-one {
+  top: 27%;
+  left: 39%;
+}
+
+.icn-w-cloud-two {
+  top: 18%;
+  left: 69%;
+  scale: 1.45;
+  animation-duration: 40s;
+}
+
+@keyframes icn-w-cloud-drift {
+  to {
+    translate: 35px 0;
+  }
+}
+
+/* 안개 */
+.icn-w-fog-layer {
+  position: absolute;
+  inset: 32% 0 0;
+  z-index: 6;
+  background: linear-gradient(
+    transparent,
+    #f4f8ffbf 48%,
+    #eaf3ffdf
+  );
+  animation: icn-w-fog-drift 8s ease-in-out infinite alternate;
+}
+
+@keyframes icn-w-fog-drift {
+  from {
+    translate: -20px 0;
+  }
+  to {
+    translate: 20px 0;
+  }
+}
+
+/* 뇌우 */
+.icn-w-lightning {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  background: white;
+  opacity: 0;
+  animation: icn-w-flash 9s infinite;
+}
+
+@keyframes icn-w-flash {
+  0%, 94%, 97%, 100% {
+    opacity: 0;
+  }
+  95%, 96% {
+    opacity: 0.28;
+  }
+}
+
+/* 운항 위험도와 점수 */
+.icn-w-risk {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  overflow: hidden;
+  border: 1px solid #d2e2f4;
+  border-radius: 13px;
+  background: #f7fbff;
+}
+
+.icn-w-risk-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 16px;
+}
+
+.icn-w-risk-item + .icn-w-risk-item {
+  border-left: 1px solid #d2e2f4;
+}
+
+.icn-w-risk-item > span {
+  color: #6483aa;
+  font-size: 12px;
+}
+
+.icn-w-risk-item > strong {
+  color: #0c468b;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.icn-w-risk-item > small {
+  color: #7892ab;
+  font-size: 10px;
+}
+
+.icn-w-risk-low {
+  color: #008b6a !important;
+}
+
+.icn-w-risk-mid {
+  color: #c57b16 !important;
+}
+
+.icn-w-risk-high {
+  color: #c93d4d !important;
+}
+
+.icn-w-risk-unknown {
+  color: #8291a6 !important;
+}
+
+/* 오른쪽 날씨 안내 및 지표 */
+.icn-w-description,
+.icn-w-metrics article,
+.icn-w-charts section {
+  padding: 17px;
+  border: 1px solid #d2e2f4;
+  border-radius: 13px;
+  background: #f7fbff;
+}
+
+.icn-w-description h2,
+.icn-w-charts h2 {
+  margin: 0 0 12px;
+  font-size: 17px;
+}
+
+.icn-w-description p {
+  margin: 0;
+  color: #6483aa;
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.icn-w-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  flex: 1;
+}
+
+.icn-w-metrics article {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.icn-w-metrics span {
+  color: #6483aa;
+  font-size: 13px;
+}
+
+.icn-w-metrics strong {
+  color: #0c468b;
+  font-size: clamp(17px, 2vw, 25px);
+}
+
+.icn-w-metrics small {
+  color: #7892ab;
+  font-size: 11px;
+}
+
+/* 시간별 기상 열지도 */
+.icn-w-heatmap-card {
+  background: #ffffff !important;
+  border: 1px solid #d9e5f4 !important;
+  border-radius: 18px !important;
+  padding: 20px !important;
+}
+
+.icn-w-heatmap-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.icn-w-heatmap-heading h2 {
+  font-size: 16px;
+  font-weight: 800;
+  color: #173f77;
+  margin: 0 0 5px;
+}
+
+.icn-w-heatmap-heading p {
+  margin: 0;
+  font-size: 12px;
+  color: #8299ba;
+}
+
+.icn-w-heatmap-heading > span {
+  padding: 8px 11px;
+  border-radius: 10px;
+  background: #f0f5fc;
+  color: #6e91c0;
+  font-size: 10px;
+  letter-spacing: 0.8px;
+}
+
+.icn-w-heatmap-scroll {
+  overflow-x: auto;
+}
+
+.icn-w-heatmap-table {
+  display: grid;
+  grid-template-columns: 85px repeat(6, minmax(65px, 1fr));
+  column-gap: 8px;
+  row-gap: 7px;
+  min-width: 530px;
+}
+
+.icn-w-heatmap-row {
+  display: contents;
+}
+
+.icn-w-heatmap-time {
+  text-align: center;
+  color: #8ba3c6;
+  font-size: 11px;
+  padding: 4px 0 6px;
+}
+
+.icn-w-heatmap-label {
+  display: flex;
+  align-items: center;
+  color: #35608f;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.icn-w-heatmap-value {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.icn-w-heatmap-value.level-0 {
+  background: #f0f3f8;
+  color: #9aa8b8;
+}
+
+.icn-w-heatmap-value.level-1,
+.icn-w-heatmap-legend .level-1 {
+  background: #e5f0fd;
+  color: #174a82;
+}
+
+.icn-w-heatmap-value.level-2,
+.icn-w-heatmap-legend .level-2 {
+  background: #c8e2fa;
+  color: #174a82;
+}
+
+.icn-w-heatmap-value.level-3,
+.icn-w-heatmap-legend .level-3 {
+  background: #83bced;
+  color: #123f78;
+}
+
+.icn-w-heatmap-value.level-4,
+.icn-w-heatmap-legend .level-4 {
+  background: #3e82c8;
+  color: white;
+}
+
+.icn-w-heatmap-value.level-5,
+.icn-w-heatmap-legend .level-5 {
+  background: #1d497f;
+  color: white;
+}
+
+.icn-w-heatmap-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+  color: #8ba3c6;
+  font-size: 11px;
+}
+
+.icn-w-heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.icn-w-heatmap-legend i {
+  display: inline-block;
+  width: 20px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+/* 기존 기온·풍속 그래프 */
+.icn-w-line-card {
+  background: white !important;
+  border: 1px solid #d9e5f4 !important;
+  border-radius: 18px !important;
+  padding: 20px !important;
+}
+
+.icn-w-line-card h2 {
+  margin: 0 0 12px;
+  color: #173f77;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.icn-w-chart {
+  width: 100%;
+  height: 250px;
+}
+
+.icn-w-error {
+  color: #b83232;
+  font-size: 13px;
+}
+
+.icn-w-placeholder {
+  color: #7892ab;
+  font-size: 13px;
+}
+
+/* 반응형 */
+@media (max-width: 900px) {
+  .icn-w-top,
+  .icn-w-charts {
+    grid-template-columns: 1fr;
+  }
+
+  .icn-w-scene {
+    min-height: 360px;
+  }
+}
+
+@media (max-width: 600px) {
+  .icn-w-heatmap-card {
+    padding: 14px !important;
+  }
+
+  .icn-w-heatmap-heading > span {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .icn-w-scene {
+    min-height: 310px;
+  }
+
+  .icn-w-scene-compass {
+    top: 10px;
+    left: 10px;
+    width: 94px;
+    padding: 6px 3px;
+  }
+
+  .icn-w-scene-compass .weather-compass {
+    width: 78px;
+    height: 78px;
+  }
+
+  .icn-w-scene-compass > span,
+  .icn-w-scene-compass > small {
+    font-size: 9px;
+  }
+
+  .icn-w-weather-badge {
+    top: 10px;
+    right: 10px;
+    padding: 8px 10px;
+  }
+
+  .icn-w-weather-badge strong {
+    font-size: 12px;
+  }
+
+  .icn-w-weather-badge span {
+    font-size: 9px;
+  }
+
+  .icn-w-risk-item {
+    padding: 12px;
+  }
+
+  .icn-w-risk-item > strong {
+    font-size: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icn-w-airplane,
+  .icn-w-runway-lights,
+  .icn-w-cloud,
+  .icn-w-particle,
+  .icn-w-fog-layer,
+  .icn-w-lightning {
+    animation: none !important;
+  }
+}
+
+/* 공통 상세 박스 사용 및 한 화면 배치 */
+.icn-app:has(> .icn-weather-page) {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  padding-bottom: 10px;
+}
+
+.icn-app:has(> .icn-weather-page) > :not(.icn-weather-page) {
+  flex-shrink: 0;
+}
+
+.icn-weather-page.icn-detail {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+  padding: clamp(10px, 1vw, 16px);
+  gap: 12px;
+}
+
+.icn-weather-page .icn-w-top {
+  flex: 1.2 1 0;
+  min-height: 0;
+}
+
+.icn-weather-page .icn-w-charts {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.icn-weather-page .icn-w-left,
+.icn-weather-page .icn-w-right {
+  min-height: 0;
+}
+
+.icn-weather-page .icn-w-scene {
+  min-height: 0;
+}
+
+.icn-weather-page .icn-w-charts > section {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.icn-weather-page .icn-w-line-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.icn-weather-page .icn-w-chart {
+  flex: 1 1 0;
+  min-height: 0;
+  height: auto;
+}
+
+@media (max-height: 800px) and (min-width: 901px) {
+  .icn-weather-page.icn-detail {
+    gap: 9px;
+    padding: 10px;
+  }
+
+  .icn-weather-page .icn-w-top {
+    flex: 1.15 1 0;
+  }
+
+  .icn-weather-page .icn-w-charts {
+    flex: 1 1 0;
+  }
+
+  .icn-weather-page .icn-w-heatmap-card,
+  .icn-weather-page .icn-w-line-card {
+    padding: 12px !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .icn-app:has(> .icn-weather-page) {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  .icn-weather-page.icn-detail {
+    flex: none;
+    overflow: visible;
+  }
+
+  .icn-weather-page .icn-w-top,
+  .icn-weather-page .icn-w-charts {
+    flex: none;
+  }
+
+  .icn-weather-page .icn-w-scene {
+    min-height: 330px;
+  }
+
+  .icn-weather-page .icn-w-chart {
+    height: 250px;
+    flex: none;
+  }
+}

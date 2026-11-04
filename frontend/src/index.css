@@ -109,3 +109,65 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+/* 날씨 / 운항현황 상세 페이지 공통 레이아웃 */
+
+.icn-detail {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+
+  padding: 16px;
+  border: 1px solid #c9dbf1;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+/* 상세 페이지 내부 제목 및 설명 제거 */
+.icn-detail__heading {
+  display: none !important;
+}
+
+/* 날씨 상세 */
+.icn-weather-page {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* 새로고침 버튼 및 상단 별도 관측 시각 줄 제거 */
+.icn-weather-page .icn-w-controls {
+  display: none;
+}
+
+/* 운항현황 상세 */
+.icn-flights-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* 운항현황 타임라인 */
+.icn-flights-page .icn-flight-timelines {
+  flex: 0 0 auto;
+  min-height: 0;
+}
+
+/* 운항현황 항공편 목록 */
+.icn-flights-page .icn-flight-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* 작은 화면에서는 내용 잘림 방지 */
+@media (max-height: 700px) {
+  .icn-detail {
+    overflow-y: auto;
+  }
+}
