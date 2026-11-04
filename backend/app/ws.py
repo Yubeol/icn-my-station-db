@@ -15,7 +15,8 @@ async def live_feed(websocket: WebSocket):
     await websocket.accept()
     try:
         while True:
-            for message in live.build_snapshot():
+            # DB 조회가 이벤트 루프와 다른 API 응답을 막지 않도록 별도 스레드에서 만든다.
+            for message in await asyncio.to_thread(live.build_snapshot):
                 await websocket.send_json(message.model_dump(mode="json", by_alias=True))
             await asyncio.sleep(settings.ws_push_interval_seconds)
     except WebSocketDisconnect:
