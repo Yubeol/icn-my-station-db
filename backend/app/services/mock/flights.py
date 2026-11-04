@@ -50,9 +50,11 @@ def _to_flight(row: tuple, my_flight_no: str | None) -> Flight:
     return Flight(
         flight_no=no,
         airline=airline,
+        airline_code=rules.airline_code(None, no),
         type=kind,
         city=city,
         airport_code=code,
+        country_code=rules.country_code(code),
         scheduled_at=scheduled,
         estimated_at=scheduled + timedelta(minutes=delay) if delay else None,
         terminal=terminal,

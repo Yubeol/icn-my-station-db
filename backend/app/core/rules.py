@@ -3,6 +3,9 @@
 import math
 import re
 from datetime import datetime, timedelta
+from functools import lru_cache
+
+import airportsdata
 
 from app.schemas import (
     CongestionLevel,
@@ -71,6 +74,26 @@ TERMINAL_MAP: dict[str, Terminal] = {
 
 def to_terminal(code: str | None) -> Terminal | None:
     return TERMINAL_MAP.get(code or "")
+
+
+def airline_code(code: str | None, flight_no: str | None) -> str | None:
+    """IATA 항공사 코드. 수집값이 없으면 편명 앞 두 글자(KE703 -> KE, 7C1101 -> 7C)를 쓴다."""
+    value = (code or "").strip().upper()
+    if value:
+        return value
+    match = re.match(r"[A-Z0-9]{2}(?=\d)", (flight_no or "").strip().upper())
+    return match.group() if match else None
+
+
+@lru_cache(maxsize=1)
+def _airports() -> dict:
+    return airportsdata.load("IATA")
+
+
+def country_code(airport_code: str | None) -> str | None:
+    """공항 IATA 코드의 ISO 3166-1 국가 코드. 모르는 공항이면 None."""
+    airport = _airports().get((airport_code or "").strip().upper())
+    return airport["country"] if airport else None
 
 
 def format_city(value: str | None) -> str | None:
@@ -177,6 +200,12 @@ WEATHER_RULES: list[tuple[tuple[str, ...], WeatherCondition]] = [
 ]
 
 
+def weather_phenomenon(phenomena: str | None) -> str | None:
+    """일기현상 원문(WMO URL)의 마지막 코드. 예: http://codes.wmo.int/306/4678/-RA -> -RA"""
+    code = (phenomena or "").strip().rsplit("/", 1)[-1]
+    return code or None
+
+
 def weather_condition(phenomena: str | None) -> WeatherCondition:
     """일기현상 원문을 날씨 코드로 바꾼다.
 
@@ -189,6 +218,11 @@ def weather_condition(phenomena: str | None) -> WeatherCondition:
             return condition
     return WeatherCondition.CLEAR
 
+
+# METAR 이력 조회 범위(시간)
+WEATHER_HISTORY_DEFAULT_HOURS = 24
+WEATHER_HISTORY_MAX_HOURS = 48
+WEATHER_HISTORY_LIMIT = 300
 
 # 운항 여건 점수(풍속·시정 기반 자체 계산). 임시 공식이며 실제 운항 확률이 아니다.
 # 풍속: WIND_OK 이하면 감점 없음, WIND_LIMIT 이상이면 최대 감점. 시정은 반대 방향.

@@ -3,8 +3,8 @@
 from app.core.config import settings
 
 if settings.data_mode == "db":
-    from app.services.db.weather import get_weather
+    from app.services.db.weather import get_weather, get_weather_history
 else:
-    from app.services.mock.weather import get_weather
+    from app.services.mock.weather import get_weather, get_weather_history
 
-__all__ = ["get_weather"]
+__all__ = ["get_weather", "get_weather_history"]

@@ -361,6 +361,55 @@
         }
       }
     },
+    "/api/v1/weather/history": {
+      "get": {
+        "tags": [
+          "weather"
+        ],
+        "summary": "Get Weather History",
+        "operationId": "get_weather_history_api_v1_weather_history_get",
+        "parameters": [
+          {
+            "name": "hours",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 48,
+              "minimum": 1,
+              "default": 24,
+              "title": "Hours"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WeatherHistoryPoint"
+                  },
+                  "title": "Response Get Weather History Api V1 Weather History Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/facilities": {
       "get": {
         "tags": [
@@ -855,6 +904,17 @@
             "type": "string",
             "title": "Airline"
           },
+          "airlineCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Airlinecode"
+          },
           "type": {
             "$ref": "#/components/schemas/Direction"
           },
@@ -865,6 +925,17 @@
           "airportCode": {
             "type": "string",
             "title": "Airportcode"
+          },
+          "countryCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Countrycode"
           },
           "scheduledAt": {
             "type": "string",
@@ -1292,6 +1363,17 @@
             ],
             "title": "Windspeed"
           },
+          "windGust": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Windgust"
+          },
           "windDirection": {
             "anyOf": [
               {
@@ -1356,6 +1438,67 @@
           "FOG"
         ],
         "title": "WeatherCondition"
+      },
+      "WeatherHistoryPoint": {
+        "properties": {
+          "observedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Observedat"
+          },
+          "temperature": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature"
+          },
+          "windSpeed": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Windspeed"
+          },
+          "condition": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WeatherCondition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "phenomenon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phenomenon"
+          }
+        },
+        "type": "object",
+        "required": [
+          "observedAt",
+          "temperature",
+          "windSpeed",
+          "condition",
+          "phenomenon"
+        ],
+        "title": "WeatherHistoryPoint"
       }
     }
   }

@@ -1,8 +1,10 @@
 """날씨·운항 여건 mock. 단위: 풍속 m/s, 기압 hPa, 기온 °C, 시정 km."""
 
+from datetime import timedelta
+
 from app.core import rules
 from app.core.timeutil import now_kst
-from app.schemas import Crosswind, OperationScore, Weather, WeatherCondition
+from app.schemas import Crosswind, OperationScore, Weather, WeatherCondition, WeatherHistoryPoint
 
 
 def get_weather() -> Weather:
@@ -17,6 +19,7 @@ def get_weather() -> Weather:
         condition=WeatherCondition.CLEAR,
         temperature=18.0,
         wind_speed=wind_speed,
+        wind_gust=12.0,
         wind_direction=wind_direction,
         visibility=visibility,
         pressure=1016.0,
@@ -37,3 +40,22 @@ def get_weather() -> Weather:
             else rules.OPERATION_MESSAGE_NO_DATA,
         ),
     )
+
+
+def get_weather_history(hours: int = rules.WEATHER_HISTORY_DEFAULT_HOURS) -> list[WeatherHistoryPoint]:
+    """30분 간격 관측 mock. 시각 오름차순이다."""
+    now = now_kst().replace(second=0)
+    latest = now.replace(minute=now.minute - now.minute % 30)
+    points = []
+    for step in range(hours * 2, -1, -1):
+        rain = step % 16 < 3
+        points.append(
+            WeatherHistoryPoint(
+                observed_at=latest - timedelta(minutes=30 * step),
+                temperature=round(15 + 3 * (step % 12) / 12, 1),
+                wind_speed=round(5 + 3 * (step % 8) / 8, 1),
+                condition=WeatherCondition.RAIN if rain else WeatherCondition.CLEAR,
+                phenomenon="-RA" if rain else None,
+            )
+        )
+    return points

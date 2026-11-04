@@ -113,9 +113,11 @@ class LiveTopic(StrEnum):
 class Flight(CamelModel):
     flight_no: str
     airline: str
+    airline_code: str | None = None
     type: Direction
     city: str
     airport_code: str
+    country_code: str | None = None
     scheduled_at: datetime
     estimated_at: datetime | None
     terminal: Terminal
@@ -208,11 +210,20 @@ class Weather(CamelModel):
     condition: WeatherCondition | None
     temperature: float | None
     wind_speed: float | None
+    wind_gust: float | None = None
     wind_direction: float | None
     visibility: float | None
     pressure: float | None
     crosswind: Crosswind
     operation_score: OperationScore
+
+
+class WeatherHistoryPoint(CamelModel):
+    observed_at: datetime
+    temperature: float | None
+    wind_speed: float | None
+    condition: WeatherCondition | None
+    phenomenon: str | None
 
 
 # ---------- Facility ----------
