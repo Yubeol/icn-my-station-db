@@ -1,0 +1,40 @@
+name: OIDC Claims Diagnostic
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  inspect:
+    name: Show OIDC claims
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    timeout-minutes: 5
+
+    steps:
+      - name: Show OIDC claims
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const token = await core.getIDToken('sts.amazonaws.com');
+            const parts = token.split('.');
+            if (parts.length !== 3) {
+              core.setFailed('GitHub returned an invalid OIDC token.');
+              return;
+            }
+
+            const payload = JSON.parse(
+              Buffer.from(parts[1], 'base64url').toString('utf8')
+            );
+
+            core.info(`OIDC_ISS=${payload.iss}`);
+            core.info(`OIDC_AUD=${payload.aud}`);
+            core.info(`OIDC_SUB=${payload.sub}`);
+            core.info(`REPOSITORY_ID=${payload.repository_id}`);
+            core.info(`REPOSITORY_OWNER_ID=${payload.repository_owner_id}`);
+
+            core.notice('The JWT itself was not printed. Copy only OIDC_AUD and OIDC_SUB into the IAM trust-policy review.');
