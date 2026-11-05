@@ -1,5 +1,6 @@
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useLiveUpdates } from "../../../hooks/useLiveUpdates";
 import "./SmartAlerts.css";
 
 type Terminal = "T1" | "T2";
@@ -209,43 +210,13 @@ function getTone(alert: AlertItem): string {
 }
 
 export default function SmartAlerts({ terminal }: Props) {
-  const [alerts, setAlerts] = useState<AlertItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    async function load() {
-      setLoading(true);
-      setError(null);
-      setAlerts([]);
-
-      try {
-        const data = await getAlerts(controller.signal);
-
-        if (controller.signal.aborted) return;
-
-        setAlerts(data);
-      } catch (err) {
-        if (controller.signal.aborted) return;
-
-        setError(
-          err instanceof Error
-            ? err.message
-            : "알림 조회 중 오류가 발생했습니다."
-        );
-      } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void load();
-
-    return () => controller.abort();
-  }, []);
+  const { data, loading, error } = useLiveUpdates<AlertItem[]>({
+    topic: "alerts",
+    scope: null,
+    fetcher: getAlerts,
+    intervalMs: 0,
+  });
+  const alerts = data ?? [];
 
   const visibleAlerts = useMemo(() => {
     const scoped = alerts.filter((alert) => {
@@ -294,7 +265,7 @@ export default function SmartAlerts({ terminal }: Props) {
       .slice(0, 3);
   }, [alerts, terminal]);
 
-  if (loading) {
+  if (loading && !data) {
     return (
       <div className="smart-alerts__state">
         알림 정보를 불러오는 중입니다.
@@ -302,7 +273,7 @@ export default function SmartAlerts({ terminal }: Props) {
     );
   }
 
-  if (error) {
+  if (error && !data) {
     return (
       <div
         className="smart-alerts__state smart-alerts__error"

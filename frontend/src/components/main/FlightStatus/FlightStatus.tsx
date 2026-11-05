@@ -1,5 +1,6 @@
 
 import { useEffect, useMemo, useState } from "react";
+import { useLiveUpdates } from "../../../hooks/useLiveUpdates";
 import type {
   Flight,
   FlightStatusProps,
@@ -36,49 +37,22 @@ function hasGate(flight: Flight): boolean {
 export default function FlightStatus({
   terminal,
 }: FlightStatusProps) {
-  const [flights, setFlights] = useState<Flight[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data, loading, error } = useLiveUpdates<Flight[]>({
+    topic: "flights",
+    // 편명 갱신 scope는 최신 api-contract.md를 확인한 뒤 세분화.
+    scope: null,
+    fetcher: (signal) => getFlights(terminal, "DEPARTURE", signal),
+    intervalMs: 0,
+    // 터미널 전환 시 해당 데이터로 초기화하기 위한 key
+    resourceKey: terminal,
+  });
+  const flights = data ?? [];
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
-    const controller = new AbortController();
-
-    async function loadFlights() {
-      setLoading(true);
-      setError(null);
-      setFlights([]);
-
-      try {
-        const data = await getFlights(
-          terminal,
-          "DEPARTURE",
-          controller.signal
-        );
-
-        if (controller.signal.aborted) return;
-
-        setFlights(data);
-        setNow(new Date());
-      } catch (err) {
-        if (controller.signal.aborted) return;
-
-        setError(
-          err instanceof Error
-            ? err.message
-            : "항공편 조회에 실패했습니다."
-        );
-      } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadFlights();
-
-    return () => controller.abort();
-  }, [terminal]);
+    const clock = window.setInterval(() => setNow(new Date()), 60_000);
+    return () => window.clearInterval(clock);
+  }, []);
 
   const visibleFlights = useMemo(() => {
     const currentTime = now.getTime();
@@ -111,12 +85,12 @@ export default function FlightStatus({
   return (
     <section className="flight-status">
       <div className="flight-status__content">
-        {loading ? (
+        {loading && !data ? (
           <div className="flight-status__message">
             <span className="flight-status__spinner" />
             <span>항공편 정보를 불러오는 중입니다.</span>
           </div>
-        ) : error ? (
+        ) : error && !data ? (
           <div
             className="flight-status__message flight-status__message--error"
             role="alert"

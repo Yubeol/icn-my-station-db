@@ -1,7 +1,7 @@
 
-import { useEffect, useState } from 'react';
-import { getWeather } from '../../../api/client';
-import './WeatherConditions.css';
+import { useLiveUpdates } from "../../../hooks/useLiveUpdates";
+import { getWeather } from "../../../api/client";
+import "./WeatherConditions.css";
 
 type Dict = Record<string, unknown>;
 
@@ -22,18 +22,18 @@ interface WeatherData {
 
 function obj(value: unknown): Dict {
   return value !== null &&
-    typeof value === 'object' &&
+    typeof value === "object" &&
     !Array.isArray(value)
     ? (value as Dict)
     : {};
 }
 
 function num(value: unknown): number | null {
-  if (typeof value === 'number' && Number.isFinite(value)) {
+  if (typeof value === "number" && Number.isFinite(value)) {
     return value;
   }
 
-  if (typeof value === 'string' && value.trim()) {
+  if (typeof value === "string" && value.trim()) {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : null;
   }
@@ -42,7 +42,7 @@ function num(value: unknown): number | null {
 }
 
 function str(value: unknown): string | null {
-  return typeof value === 'string' && value.trim()
+  return typeof value === "string" && value.trim()
     ? value.trim()
     : null;
 }
@@ -57,6 +57,7 @@ function normalize(raw: unknown): WeatherData {
 
   return {
     observedAt: str(source.observedAt),
+
     windDirection: num(source.windDirection),
     windSpeed: num(source.windSpeed),
     windGust: num(source.windGust),
@@ -99,16 +100,16 @@ function formatValue(
   digits = 0
 ): string {
   return value === null
-    ? '확인 중'
+    ? "확인 중"
     : `${value.toFixed(digits)}${unit}`;
 }
 
 function directionName(degrees: number | null): string {
-  if (degrees === null) return '';
+  if (degrees === null) return "";
 
   const names = [
-    '북', '북동', '동', '남동',
-    '남', '남서', '서', '북서',
+    "북", "북동", "동", "남동",
+    "남", "남서", "서", "북서",
   ];
 
   const index =
@@ -118,35 +119,34 @@ function directionName(degrees: number | null): string {
 }
 
 function getRisk(value: string | null) {
-  const normalized = (value ?? '').toUpperCase();
+  const normalized = (value ?? "").toUpperCase();
 
-  if (['LOW', 'GOOD', 'SAFE'].includes(normalized)) {
-    return { label: '낮음', className: 'low' };
+  if (["LOW", "GOOD", "SAFE"].includes(normalized)) {
+    return { label: "낮음", className: "low" };
   }
 
   if (
-    ['MID', 'MEDIUM', 'MODERATE', 'CAUTION']
+    ["MID", "MEDIUM", "MODERATE", "CAUTION"]
       .includes(normalized)
   ) {
-    return { label: '주의', className: 'mid' };
+    return { label: "주의", className: "mid" };
   }
 
   if (
-    ['HIGH', 'DANGER', 'CRITICAL']
+    ["HIGH", "DANGER", "CRITICAL"]
       .includes(normalized)
   ) {
-    return { label: '높음', className: 'high' };
+    return { label: "높음", className: "high" };
   }
 
   return {
-    label: value ?? '확인 중',
-    className: 'unknown',
+    label: value ?? "확인 중",
+    className: "unknown",
   };
 }
 
-function getRunwayBearing(
-  runway: string | null
-): number | null {
+// 활주로 번호에 대응하는 개략 방위
+function getRunwayBearing(runway: string | null): number | null {
   if (!runway) return null;
 
   const match = runway.match(
@@ -190,6 +190,7 @@ export function WindCompass({
       ? null
       : point(runwayBearing + 180, 67);
 
+  // 풍향은 바람이 불어오는 방향
   const wind =
     windDirection === null
       ? null
@@ -202,7 +203,7 @@ export function WindCompass({
       role="img"
       aria-label={
         windDirection === null
-          ? '풍향 확인 중'
+          ? "풍향 확인 중"
           : `${windDirection}도 방향에서 불어오는 바람`
       }
     >
@@ -225,18 +226,14 @@ export function WindCompass({
       />
 
       <line
-        x1="100"
-        y1="27"
-        x2="100"
-        y2="173"
+        x1="100" y1="27"
+        x2="100" y2="173"
         stroke="#dde7f4"
       />
 
       <line
-        x1="27"
-        y1="100"
-        x2="173"
-        y2="100"
+        x1="27" y1="100"
+        x2="173" y2="100"
         stroke="#dde7f4"
       />
 
@@ -309,7 +306,7 @@ function Metric({
   tone?: string;
 }) {
   return (
-    <div className={`weather-metric ${tone ?? ''}`}>
+    <div className={`weather-metric ${tone ?? ""}`}>
       <span className="weather-metric__label">
         {label}
       </span>
@@ -328,48 +325,14 @@ function Metric({
 }
 
 export default function WeatherConditions() {
-  const [weather, setWeather] =
-    useState<WeatherData | null>(null);
+  const { data: weather, loading, error } = useLiveUpdates<WeatherData>({
+    topic: "weather",
+    scope: null,
+    fetcher: async (signal) => normalize(await getWeather(signal)),
+    intervalMs: 0,
+  });
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] =
-    useState<string | null>(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    async function load() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response: unknown =
-          await getWeather(controller.signal);
-
-        if (controller.signal.aborted) return;
-
-        setWeather(normalize(response));
-      } catch (err) {
-        if (controller.signal.aborted) return;
-
-        setError(
-          err instanceof Error
-            ? err.message
-            : '기상 정보를 불러오지 못했습니다.'
-        );
-      } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void load();
-
-    return () => controller.abort();
-  }, []);
-
-  if (loading) {
+  if (loading && !weather) {
     return (
       <div className="weather-message">
         기상 정보 불러오는 중...
@@ -377,7 +340,7 @@ export default function WeatherConditions() {
     );
   }
 
-  if (error) {
+  if (error && !weather) {
     return (
       <div
         className="weather-message weather-error"
@@ -397,7 +360,6 @@ export default function WeatherConditions() {
   }
 
   const risk = getRisk(weather.delayRisk);
-
   return (
     <section className="weather-widget">
       <div className="weather-widget__content">
@@ -408,33 +370,31 @@ export default function WeatherConditions() {
           />
 
           <span className="weather-widget__runway">
-            활주로 {weather.runway ?? '확인 중'}
+            활주로 {weather.runway ?? "확인 중"}
           </span>
         </div>
 
         <div className="weather-widget__metrics">
           <Metric
             label="풍향"
-            value={formatValue(weather.windDirection, '°')}
+            value={formatValue(weather.windDirection, "°")}
             detail={directionName(weather.windDirection)}
           />
 
           <Metric
             label="풍속"
-            value={formatValue(weather.windSpeed, ' m/s', 1)}
+            value={formatValue(weather.windSpeed, " m/s", 1)}
           />
 
           <Metric
             label="측풍"
-            value={formatValue(weather.crosswind, ' kt', 1)}
-            detail={
-              weather.crosswindDirection ?? undefined
-            }
+            value={formatValue(weather.crosswind, " kt", 1)}
+            detail={weather.crosswindDirection ?? undefined}
           />
 
           <Metric
             label="시정"
-            value={formatValue(weather.visibility, ' km', 1)}
+            value={formatValue(weather.visibility, " km", 1)}
           />
 
           <Metric
@@ -447,7 +407,7 @@ export default function WeatherConditions() {
             label="운항 여건 점수"
             value={
               weather.score === null
-                ? '확인 중'
+                ? "확인 중"
                 : `${weather.score.toFixed(0)} / 100`
             }
             detail={

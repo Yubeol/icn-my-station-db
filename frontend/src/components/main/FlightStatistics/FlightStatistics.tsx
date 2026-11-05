@@ -1,5 +1,6 @@
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useLiveUpdates } from "../../../hooks/useLiveUpdates";
 import type { Terminal } from "../../../types/flight";
 import "./FlightStatistics.css";
 
@@ -136,48 +137,13 @@ export default function FlightStatistics({
   // prop은 기존 공동 개발 구조와의 호환성을 위해 유지
   void _terminal;
 
-  const [data, setData] =
-    useState<StatisticsResponse | null>(null);
-
-  const [loading, setLoading] = useState(true);
-
-  const [error, setError] =
-    useState<string | null>(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    async function loadStatistics() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const result = await getFlightStatistics(
-          controller.signal
-        );
-
-        if (controller.signal.aborted) return;
-
-        setData(result);
-      } catch (err) {
-        if (controller.signal.aborted) return;
-
-        setError(
-          err instanceof Error
-            ? err.message
-            : "운항통계를 불러오지 못했습니다."
-        );
-      } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadStatistics();
-
-    return () => controller.abort();
-  }, []);
+  const { data, loading, error } = useLiveUpdates<StatisticsResponse>({
+    topic: "stats",
+    // 통계는 전체 터미널 기준. 실제 scope 값은 계약 확인 후 구체화.
+    scope: null,
+    fetcher: getFlightStatistics,
+    intervalMs: 0,
+  });
 
   // API 데이터로 차트 값 구성
   const statistics = useMemo(() => {
@@ -262,11 +228,11 @@ export default function FlightStatistics({
       </div>
 
       <div className="flight-statistics__body">
-        {loading ? (
+        {loading && !data ? (
           <div className="flight-statistics__message">
             운항통계를 불러오는 중입니다.
           </div>
-        ) : error ? (
+        ) : error && !data ? (
           <div
             className="flight-statistics__message flight-statistics__error"
             role="alert"
