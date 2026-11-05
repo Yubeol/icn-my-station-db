@@ -6,6 +6,12 @@
   min-width: 0;
 }
 
+@property --drift {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 45px;
+}
+
 .icn-w-controls {
   display: flex;
   align-items: center;
@@ -842,5 +848,126 @@
   .icn-weather-page .icn-w-chart {
     height: 250px;
     flex: none;
+  }
+}
+
+/* 한국 시간에 따라 변화하는 하늘 */
+.icn-w-scene.icn-w-time-dawn {
+  background: linear-gradient(
+    180deg,
+    #526b9c 0%,
+    #c88c9b 48%,
+    #f4cba6 100%
+  );
+}
+
+.icn-w-scene.icn-w-time-day {
+  /* 낮에는 기존 날씨별 배경 유지 */
+}
+
+.icn-w-scene.icn-w-time-dusk {
+  background: linear-gradient(
+    180deg,
+    #314c86 0%,
+    #ab6d8c 48%,
+    #f0ae85 100%
+  );
+}
+
+.icn-w-scene.icn-w-time-night {
+  background: linear-gradient(
+    180deg,
+    #07152f 0%,
+    #152c55 58%,
+    #304b72 100%
+  );
+}
+
+/* 태양과 달 */
+.icn-w-sun,
+.icn-w-moon {
+  position: absolute;
+  right: 23%;
+  top: 18%;
+  width: 57px;
+  height: 57px;
+  border-radius: 50%;
+}
+
+.icn-w-sun {
+  background: #fff0ba;
+  box-shadow: 0 0 34px 13px #ffe2a66b;
+}
+
+.icn-w-time-dawn .icn-w-sun,
+.icn-w-time-dusk .icn-w-sun {
+  top: 55%;
+  background: #ffd5a0;
+  box-shadow: 0 0 36px 15px #ffbc9273;
+}
+
+.icn-w-moon {
+  background: #f0f3ff;
+  box-shadow: 0 0 28px 8px #dce8ff55;
+}
+
+.icn-w-moon::after {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: 15px;
+  width: 55px;
+  height: 55px;
+  border-radius: 50%;
+  background: #091a39;
+}
+
+/* 별 */
+.icn-w-stars {
+  position: absolute;
+  inset: 0;
+}
+
+.icn-w-stars i {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 5px #fff;
+  animation:
+    icn-w-star-twinkle 3.5s ease-in-out infinite alternate;
+}
+
+@keyframes icn-w-star-twinkle {
+  from {
+    opacity: 0.25;
+    transform: scale(0.7);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1.25);
+  }
+}
+
+/* 흐림·비·눈·안개·뇌우 시 천체 숨김 */
+.icn-w-scene:is(
+  .icn-w-cloudy,
+  .icn-w-rain,
+  .icn-w-snow,
+  .icn-w-fog,
+  .icn-w-thunder
+) :is(
+  .icn-w-sun,
+  .icn-w-moon,
+  .icn-w-stars
+) {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icn-w-stars i {
+    animation: none;
   }
 }
