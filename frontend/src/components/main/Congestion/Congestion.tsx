@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from "react";
+import { useLiveUpdates } from "../../../hooks/useLiveUpdates";
 
 import {
   getCongestion,
@@ -22,51 +23,18 @@ interface Props {
 export default function Congestion({
   terminal,
 }: Props) {
-  const [halls, setHalls] = useState<Hall[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedId, setSelectedId] =
-    useState<string | null>(null);
+  const { data, loading, error } = useLiveUpdates<Hall[]>({
+    topic: "congestion",
+    scope: terminal,
+    fetcher: (signal) => getCongestion(terminal, signal),
+    intervalMs: 0,
+  });
+  const halls = data ?? [];
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  // 터미널 전환할 때에만 선택 해제. 실시간 갱신은 선택 유지.
   useEffect(() => {
-    const controller = new AbortController();
-
-    async function loadCongestion() {
-      setLoading(true);
-      setError(null);
-      setHalls([]);
-      setSelectedId(null);
-
-      try {
-        const data = await getCongestion(
-          terminal,
-          controller.signal
-        );
-
-        if (controller.signal.aborted) return;
-
-        setHalls(data);
-      } catch (err) {
-        if (controller.signal.aborted) return;
-
-        const message =
-          err instanceof Error
-            ? err.message
-            : "혼잡도 정보를 불러오지 못했습니다.";
-
-        console.error("[출국장 혼잡도]", err);
-
-        setError(message);
-      } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadCongestion();
-
-    return () => controller.abort();
+    setSelectedId(null);
   }, [terminal]);
 
   return (
@@ -86,11 +54,11 @@ export default function Congestion({
           <span>{terminal}</span>
         </div>
 
-        {loading ? (
+        {loading && !data ? (
           <div className="congestion-panel__message">
             출국장 혼잡도를 불러오는 중입니다.
           </div>
-        ) : error ? (
+        ) : error && !data ? (
           <div
             className="congestion-panel__message congestion-panel__error"
             role="alert"

@@ -1,15 +1,16 @@
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useLiveUpdates } from "../../../hooks/useLiveUpdates";
 import "./Facilities.css";
 
 type Terminal = "T1" | "T2";
+type CrowdEstimate = "LOW" | "MID" | "HIGH" | null;
+type CrowdBasis = "HALL" | "TERMINAL" | "FLIGHTS" | null;
 type JsonObject = Record<string, unknown>;
 
 interface Props {
   terminal: Terminal;
 }
-
-type CrowdLevel = "LOW" | "MID" | "HIGH" | null;
 
 interface Facility {
   id: string;
@@ -19,16 +20,15 @@ interface Facility {
   location: string | null;
   openingHours: string | null;
   isOpen: boolean | null;
-  crowdLevel: CrowdLevel;
-  crowdCount: number | null;
-  crowdRate: number | null;
+  crowdEstimate: CrowdEstimate;
+  crowdBasis: CrowdBasis;
 }
 
 const API_BASE_URL = String(
   import.meta.env.VITE_API_BASE_URL ?? ""
 ).replace(/\/+$/, "");
 
-function obj(value: unknown): JsonObject | null {
+function asObject(value: unknown): JsonObject | null {
   if (
     value === null ||
     typeof value !== "object" ||
@@ -36,27 +36,13 @@ function obj(value: unknown): JsonObject | null {
   ) {
     return null;
   }
-
   return value as JsonObject;
 }
 
-function stringValue(value: unknown): string | null {
+function asString(value: unknown): string | null {
   return typeof value === "string" && value.trim()
     ? value.trim()
     : null;
-}
-
-function numberValue(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return value;
-  }
-
-  if (typeof value === "string" && value.trim()) {
-    const result = Number(value);
-    return Number.isFinite(result) ? result : null;
-  }
-
-  return null;
 }
 
 function firstString(
@@ -64,48 +50,54 @@ function firstString(
   keys: string[]
 ): string | null {
   for (const key of keys) {
-    const value = stringValue(source[key]);
+    const value = asString(source[key]);
     if (value !== null) return value;
   }
   return null;
 }
 
-function firstNumber(
-  source: JsonObject,
-  keys: string[]
-): number | null {
-  for (const key of keys) {
-    const value = numberValue(source[key]);
-    if (value !== null) return value;
+function parseCrowd(value: unknown): CrowdEstimate {
+  if (typeof value !== "string") return null;
+  const level = value.toUpperCase();
+
+  if (level === "LOW" || level === "MID" || level === "HIGH") {
+    return level;
   }
   return null;
 }
 
-function openStatus(
-  source: JsonObject
-): boolean | null {
+function parseBasis(value: unknown): CrowdBasis {
+  if (typeof value !== "string") return null;
+  const basis = value.toUpperCase();
+
+  if (
+    basis === "HALL" ||
+    basis === "TERMINAL" ||
+    basis === "FLIGHTS"
+  ) {
+    return basis;
+  }
+  return null;
+}
+
+function parseOpen(source: JsonObject): boolean | null {
   const value =
     source.isOpen ??
     source.is_open ??
-    source.openNow ??
     source.operationStatus ??
     source.status;
 
   if (typeof value === "boolean") return value;
 
   if (typeof value === "string") {
-    const normalized = value.trim().toUpperCase();
+    const status = value.trim().toUpperCase();
 
-    if (
-      ["OPEN", "OPERATING", "영업중", "운영중"]
-        .includes(normalized)
-    ) {
+    if (["OPEN", "OPERATING", "영업중", "운영중"].includes(status)) {
       return true;
     }
 
     if (
-      ["CLOSED", "CLOSE", "휴업", "영업종료", "운영종료"]
-        .includes(normalized)
+      ["CLOSED", "CLOSE", "영업종료", "운영종료"].includes(status)
     ) {
       return false;
     }
@@ -114,42 +106,31 @@ function openStatus(
   return null;
 }
 
-function crowdLevel(value: unknown): CrowdLevel {
-  if (typeof value !== "string") return null;
+function formatHours(source: JsonObject): string | null {
+  const is24h = source.is24h ?? source.is24H;
 
-  const normalized = value.trim().toUpperCase();
+  if (is24h === true) return "24시간";
 
-  if (
-    ["LOW", "RELAXED", "SPACIOUS", "여유", "원활"]
-      .includes(normalized)
-  ) {
-    return "LOW";
-  }
+  const hours = firstString(source, [
+    "openingHours",
+    "opening_hours",
+    "businessHours",
+  ]);
 
-  if (
-    ["MID", "MEDIUM", "NORMAL", "MODERATE", "보통"]
-      .includes(normalized)
-  ) {
-    return "MID";
-  }
+  if (hours) return hours;
 
-  if (
-    [
-      "HIGH", "BUSY", "CROWDED",
-      "VERY_CROWDED", "혼잡", "매우혼잡",
-    ].includes(normalized)
-  ) {
-    return "HIGH";
-  }
+  const open = firstString(source, ["openTime"]);
+  const close = firstString(source, ["closeTime"]);
 
-  return null;
+  if (open && close) return `${open}~${close}`;
+  return open ?? close;
 }
 
 function normalizeFacility(
   raw: unknown,
   index: number
 ): Facility | null {
-  const item = obj(raw);
+  const item = asObject(raw);
   if (!item) return null;
 
   const name = firstString(item, [
@@ -160,47 +141,39 @@ function normalizeFacility(
 
   if (!name) return null;
 
-  const crowd = obj(item.crowd) ?? obj(item.congestion) ?? {};
-
-  const idValue = item.id ?? item.facilityId;
-
+  const rawId = item.id ?? item.facilityId;
   const id =
-    typeof idValue === "string" ||
-    typeof idValue === "number"
-      ? String(idValue)
-      : `row-${index}`;
+    typeof rawId === "string" || typeof rawId === "number"
+      ? String(rawId)
+      : `facility-${index}`;
 
   return {
     id,
     name,
-    terminal: firstString(item, ["terminal", "terminalId"]),
-    category: firstString(item, ["category", "type"]),
-    location: firstString(item, ["location", "floor", "area"]),
-    openingHours: firstString(item, [
-      "openingHours",
-      "opening_hours",
-      "businessHours",
+    terminal: firstString(item, [
+      "terminal",
+      "terminalId",
     ]),
-    isOpen: openStatus(item),
-    crowdLevel: crowdLevel(
-      item.crowdLevel ??
-      item.congestionLevel ??
-      crowd.level
-    ),
-    crowdCount:
-      firstNumber(item, ["crowdCount", "currentCount"]) ??
-      firstNumber(crowd, ["count", "currentCount"]),
-    crowdRate:
-      firstNumber(item, ["crowdRate", "occupancyRate"]) ??
-      firstNumber(crowd, ["rate", "occupancyRate"]),
+    category: firstString(item, [
+      "category",
+      "type",
+    ]),
+    location: firstString(item, [
+      "location",
+      "area",
+      "floor",
+    ]),
+    openingHours: formatHours(item),
+    isOpen: parseOpen(item),
+    crowdEstimate: parseCrowd(item.crowdEstimate),
+    crowdBasis: parseBasis(item.crowdBasis),
   };
 }
 
 function extractFacilities(raw: unknown): unknown[] {
   if (Array.isArray(raw)) return raw;
 
-  const root = obj(raw);
-
+  const root = asObject(raw);
   if (!root) {
     throw new Error("편의시설 응답 형식이 올바르지 않습니다.");
   }
@@ -210,28 +183,29 @@ function extractFacilities(raw: unknown): unknown[] {
 
     if (Array.isArray(value)) return value;
 
-    const nested = obj(value);
-    if (nested) {
-      for (const nestedKey of ["facilities", "items", "results"]) {
-        if (Array.isArray(nested[nestedKey])) {
-          return nested[nestedKey] as unknown[];
-        }
-      }
+    const nested = asObject(value);
+    if (!nested) continue;
+
+    for (const subKey of ["facilities", "items", "results"]) {
+      const list = nested[subKey];
+      if (Array.isArray(list)) return list;
     }
   }
 
   throw new Error("편의시설 목록을 찾지 못했습니다.");
 }
 
-async function getFacilities(
+async function fetchFacilities(
   signal: AbortSignal
 ): Promise<Facility[]> {
   const response = await fetch(
     `${API_BASE_URL}/api/v1/facilities`,
     {
       method: "GET",
-      headers: { Accept: "application/json" },
       signal,
+      headers: {
+        Accept: "application/json",
+      },
     }
   );
 
@@ -246,122 +220,107 @@ async function getFacilities(
   return extractFacilities(raw)
     .map(normalizeFacility)
     .filter(
-      (facility): facility is Facility =>
-        facility !== null
+      (item): item is Facility => item !== null
     );
 }
 
-function levelRank(level: CrowdLevel): number | null {
-  if (level === "LOW") return 0;
-  if (level === "MID") return 1;
-  if (level === "HIGH") return 2;
-  return null;
+function crowdRank(level: CrowdEstimate): number {
+  switch (level) {
+    case "LOW":
+      return 0;
+    case "MID":
+      return 1;
+    case "HIGH":
+      return 2;
+    default:
+      return 3;
+  }
 }
 
-function levelLabel(level: CrowdLevel): string {
-  if (level === "LOW") return "여유";
-  if (level === "MID") return "보통";
-  if (level === "HIGH") return "혼잡";
-  return "혼잡 미확인";
+function crowdLabel(level: CrowdEstimate): string {
+  switch (level) {
+    case "LOW":
+      return "여유";
+    case "MID":
+      return "보통";
+    case "HIGH":
+      return "혼잡";
+    default:
+      return "";
+  }
 }
 
-function isTerminalMatch(
+function basisLabel(basis: CrowdBasis): string {
+  switch (basis) {
+    case "HALL":
+      return "출국장 기준";
+    case "TERMINAL":
+      return "터미널 기준";
+    case "FLIGHTS":
+      return "출발편 기준";
+    default:
+      return "";
+  }
+}
+
+function terminalMatch(
   facility: Facility,
   terminal: Terminal
 ): boolean {
-  const value = facility.terminal?.toUpperCase();
+  const value = facility.terminal?.trim().toUpperCase();
 
-  return (
-    value === terminal ||
-    value === (terminal === "T1" ? "1" : "2")
-  );
+  if (!value) return false;
+
+  const aliases =
+    terminal === "T1"
+      ? ["T1", "1", "TERMINAL1", "TERMINAL 1"]
+      : ["T2", "2", "TERMINAL2", "TERMINAL 2"];
+
+  return aliases.includes(value);
 }
 
 export default function Facilities({ terminal }: Props) {
-  const [facilities, setFacilities] =
-    useState<Facility[]>([]);
-
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    async function load() {
-      setLoading(true);
-      setError(null);
-      setFacilities([]);
-
-      try {
-        const result = await getFacilities(controller.signal);
-
-        if (!controller.signal.aborted) {
-          setFacilities(result);
-        }
-      } catch (err) {
-        if (controller.signal.aborted) return;
-
-        setError(
-          err instanceof Error
-            ? err.message
-            : "편의시설 조회 중 오류가 발생했습니다."
-        );
-      } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void load();
-
-    return () => controller.abort();
-  }, []);
+  // 편의시설 topic은 없음. REST만 60초마다 다시 조회.
+  const { data, loading, error } = useLiveUpdates<Facility[]>({
+    topic: null,
+    fetcher: fetchFacilities,
+    intervalMs: 0,
+  });
+  const facilities = data ?? [];
 
   const recommended = useMemo(() => {
-    const candidates = facilities.filter((facility) => {
-      // 터미널이 일치하고 운영 중이며 혼잡도가 확인된 시설만
+    const candidates = facilities.filter(
+      (facility) =>
+        terminalMatch(facility, terminal) &&
+        facility.isOpen !== false
+    );
+
+    // 예상 혼잡도가 있는 시설을 먼저 추천.
+    // null은 최하위지만 임의로 여유라고 판단하지 않음.
+    const sorted = [...candidates].sort((a, b) => {
       return (
-        isTerminalMatch(facility, terminal) &&
-        facility.isOpen === true &&
-        facility.crowdLevel !== null
+        crowdRank(a.crowdEstimate) -
+          crowdRank(b.crowdEstimate)
       );
-    });
-
-    // 혼잡 단계: 여유 -> 보통 -> 혼잡
-    // 같은 단계에서 혼잡률이 둘 다 있으면 낮은 순으로 정렬
-    const ranked = [...candidates].sort((a, b) => {
-      const rankA = levelRank(a.crowdLevel) ?? Infinity;
-      const rankB = levelRank(b.crowdLevel) ?? Infinity;
-
-      if (rankA !== rankB) return rankA - rankB;
-
-      if (a.crowdRate !== null && b.crowdRate !== null) {
-        return a.crowdRate - b.crowdRate;
-      }
-
-      if (a.crowdCount !== null && b.crowdCount !== null) {
-        return a.crowdCount - b.crowdCount;
-      }
-
-      return 0;
     });
 
     const seen = new Set<string>();
 
-    return ranked.filter((facility) => {
-      const key = facility.id.startsWith("row-")
-        ? `${facility.name}|${facility.location ?? ""}`
-        : facility.id;
+    return sorted
+      .filter((facility) => {
+        const key = facility.id.startsWith("facility-")
+          ? `${facility.name}|${facility.location ?? ""}`
+          : facility.id;
 
-      if (seen.has(key)) return false;
+        if (seen.has(key)) return false;
 
-      seen.add(key);
-      return true;
-    }).slice(0, 3);
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 3);
   }, [facilities, terminal]);
 
-  if (loading) {
+  if (loading && !data) {
     return (
       <div className="facilities-message">
         편의시설 정보를 불러오는 중입니다.
@@ -369,9 +328,12 @@ export default function Facilities({ terminal }: Props) {
     );
   }
 
-  if (error) {
+  if (error && !data) {
     return (
-      <div className="facilities-message facilities-error" role="alert">
+      <div
+        className="facilities-message facilities-error"
+        role="alert"
+      >
         {error}
       </div>
     );
@@ -380,7 +342,7 @@ export default function Facilities({ terminal }: Props) {
   if (recommended.length === 0) {
     return (
       <div className="facilities-message">
-        운영 및 혼잡도가 확인된 추천 시설이 없습니다.
+        표시할 편의시설이 없습니다.
       </div>
     );
   }
@@ -393,44 +355,75 @@ export default function Facilities({ terminal }: Props) {
             className="facilities-widget__item"
             key={facility.id}
           >
-            <span className="facilities-widget__rank">
+            <div className="facilities-widget__rank">
               {index + 1}
-            </span>
+            </div>
 
             <div className="facilities-widget__info">
-              <strong className="facilities-widget__name">
+              <strong
+                className="facilities-widget__name"
+                title={facility.name}
+              >
                 {facility.name}
               </strong>
 
               <div className="facilities-widget__meta">
                 {facility.category && (
-                  <span>{facility.category}</span>
+                  <span title={facility.category}>
+                    {facility.category}
+                  </span>
                 )}
+
                 {facility.location && (
-                  <span>{facility.location}</span>
-                )}
-                {facility.openingHours && (
-                  <span>{facility.openingHours}</span>
+                  <span title={facility.location}>
+                    {facility.location}
+                  </span>
                 )}
               </div>
             </div>
 
             <div className="facilities-widget__status">
-              <span className="facilities-widget__open">
-                운영 중
-              </span>
+              {facility.crowdEstimate !== null && (
+                <div
+                  className={
+                    "facilities-widget__level " +
+                    `facilities-widget__level--${facility.crowdEstimate.toLowerCase()}`
+                  }
+                  title={
+                    `주변 혼잡 예상: ${crowdLabel(facility.crowdEstimate)}` +
+                    (facility.crowdBasis
+                      ? ` (${basisLabel(facility.crowdBasis)})`
+                      : "")
+                  }
+                >
+                  {crowdLabel(facility.crowdEstimate)}
+                </div>
+              )}
 
               <span
                 className={
-                  `facilities-widget__level ` +
-                  `facilities-widget__level--${facility.crowdLevel?.toLowerCase()}`
+                  "facilities-widget__open" +
+                  (facility.isOpen === null
+                    ? " facilities-widget__open--unknown"
+                    : "")
                 }
               >
-                {levelLabel(facility.crowdLevel)}
+                {facility.isOpen === true
+                  ? "운영 중"
+                  : facility.isOpen === null
+                    ? "운영 미확인"
+                    : ""}
               </span>
             </div>
           </article>
         ))}
+      </div>
+
+      <div className="facilities-widget__notice">
+        <strong>주변 혼잡 예상</strong>
+        <span>
+          시설 내 실측값이 아닌 주변 데이터 기반 추정입니다.
+        </span>
       </div>
     </section>
   );
