@@ -1,7 +1,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { getFlights, type Flight } from '../api/client';
-import { useApiResource } from '../hooks/useApiResource';
+import { useLiveUpdates } from '../hooks/useLiveUpdates';
 import 'flag-icons/css/flag-icons.min.css';
 import './FlightsPage.css';
 
@@ -359,22 +359,27 @@ export default function FlightsPage() {
   const [terminal, setTerminal] = useState('ALL');
   const [status, setStatus] = useState('ALL');
   const [search, setSearch] = useState('');
-  const [refresh, setRefresh] = useState(0);
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      setRefresh(value => value + 1);
       setNow(new Date());
     }, 60_000);
 
     return () => window.clearInterval(timer);
   }, []);
 
-  const api = useApiResource(
-    signal => getFlights('DEPARTURE', signal),
-    [refresh]
-  );
+  // 최초 REST 조회 후 WebSocket으로 출발편 자동 갱신
+  const api = useLiveUpdates<Flight[]>({
+    topic: 'flights',
+    scope: 'DEPARTURE',
+    fetcher: signal => getFlights('DEPARTURE', signal),
+    intervalMs: 0,
+    parseMessage: value => {
+      if (!Array.isArray(value)) return undefined;
+      return value as Flight[];
+    },
+  });
 
   const allFlights = useMemo(
     () => (api.data ?? []) as FlightExtra[],
@@ -439,7 +444,7 @@ export default function FlightsPage() {
 
   return (
     <main className="icn-detail icn-flights-page">
-      {api.status === 'error' && (
+      {Boolean(api.error) && (
         <div className="icn-flight-error" role="alert">
           항공편 정보를 불러오지 못했습니다.
           <p>{api.error}</p>
@@ -502,7 +507,7 @@ export default function FlightsPage() {
           </div>
         </div>
 
-        {api.status === 'loading' && (
+        {api.loading && (
           <p className="icn-flight-info">
             실제 항공편 데이터를 불러오는 중입니다.
           </p>
@@ -586,7 +591,7 @@ export default function FlightsPage() {
                 );
               })}
 
-              {api.status === 'success' &&
+              {!api.loading && !api.error &&
                 filteredFlights.length === 0 && (
                   <tr>
                     <td colSpan={7} className="icn-flight-empty">
@@ -600,7 +605,7 @@ export default function FlightsPage() {
 
         <div className="icn-flight-footer">
           <span>
-            실제 백엔드 API 데이터 · 1분 간격 자동 갱신
+            실시간 운항정보 · WebSocket 자동 갱신
           </span>
           <span>
             {lastScheduled > 0

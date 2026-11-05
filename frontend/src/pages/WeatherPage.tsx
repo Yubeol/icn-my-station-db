@@ -5,9 +5,10 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer,
 } from 'recharts';
-import { getWeather } from '../api/client';
+import { getWeather, type Weather } from '../api/client';
 import { getWeatherHistory } from '../api/weatherHistory';
 import { useApiResource } from '../hooks/useApiResource';
+import { useLiveUpdates } from '../hooks/useLiveUpdates';
 import {
   formatObservationTime, formatWeatherNumber,
   formatWindDirection, getDelayRiskLabel,
@@ -323,26 +324,38 @@ function getHeatmapLevel(
 }
 
 export default function WeatherPage() {
-  const [refresh, setRefresh] = useState(0);
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      setRefresh(value => value + 1);
       setNow(new Date());
     }, 60_000);
 
     return () => window.clearInterval(timer);
   }, []);
 
-  const current = useApiResource(
-    signal => getWeather(signal),
-    [refresh]
-  );
+  // 최초 REST 조회 후 WebSocket으로 현재 날씨 자동 갱신
+  const current = useLiveUpdates<Weather>({
+    topic: 'weather',
+    fetcher: signal => getWeather(signal),
+    intervalMs: 0,
+    parseMessage: value => {
+      if (
+        typeof value !== 'object' ||
+        value === null ||
+        Array.isArray(value)
+      ) {
+        return undefined;
+      }
 
+      return value as Weather;
+    },
+  });
+
+  // 기상 이력은 기존 REST API로 조회
   const history = useApiResource(
     signal => getWeatherHistory(24, signal),
-    [refresh]
+    []
   );
 
   const weather = current.data;
@@ -401,7 +414,7 @@ export default function WeatherPage() {
 
   return (
     <main className="icn-detail icn-weather-page">
-      {current.status === 'error' && (
+      {Boolean(current.error) && (
         <p className="icn-w-error" role="alert">
           {current.error}
         </p>
