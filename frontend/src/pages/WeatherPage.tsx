@@ -48,14 +48,12 @@ type HistoryPoint = {
   temperature?: number | null;
   windSpeed?: number | null;
   pressure?: number | null;
-  visibility?: number | null;
 };
 
 type MetricKey =
   | 'temperature'
   | 'windSpeed'
-  | 'pressure'
-  | 'visibility';
+  | 'pressure';
 
 const HEATMAP_METRICS: {
   key: MetricKey;
@@ -66,7 +64,6 @@ const HEATMAP_METRICS: {
   { key: 'temperature', label: '기온', unit: '°C', digits: 1 },
   { key: 'windSpeed', label: '풍속', unit: 'm/s', digits: 1 },
   { key: 'pressure', label: '기압', unit: 'hPa', digits: 0 },
-  { key: 'visibility', label: '시정', unit: 'km', digits: 1 },
 ];
 
 function randomAt(index: number, seed: number) {
@@ -497,35 +494,6 @@ export default function WeatherPage() {
             </div>
           </section>
 
-          <section className="icn-w-risk">
-            <div className="icn-w-risk-item">
-              <span>출발 지연 위험</span>
-
-              <strong
-                className={`icn-w-risk-${riskClass(risk)}`}
-              >
-                {risk
-                  ? getDelayRiskLabel(risk)
-                  : '정보 없음'}
-              </strong>
-            </div>
-
-            <div className="icn-w-risk-item">
-              <span>운항 여건 점수</span>
-
-              <strong>
-                {score == null
-                  ? '정보 없음'
-                  : `${Math.round(score)} / 100`}
-              </strong>
-
-              <small>
-                {minutesAhead == null
-                  ? '기준 시각 정보 없음'
-                  : `${minutesAhead}분 후 기준`}
-              </small>
-            </div>
-          </section>
         </div>
 
         <div className="icn-w-right">
@@ -568,14 +536,6 @@ export default function WeatherPage() {
             </article>
 
             <article>
-              <span>시정</span>
-              <strong>
-                {metric(weather?.visibility, ' km', 1)}
-              </strong>
-              <small>수평 가시거리</small>
-            </article>
-
-            <article>
               <span>기온</span>
               <strong>
                 {metric(weather?.temperature, '°C', 1)}
@@ -583,6 +543,36 @@ export default function WeatherPage() {
               <small>관측 기온</small>
             </article>
           </div>
+
+          <section className="icn-w-risk">
+            <div className="icn-w-risk-item">
+              <span>출발 지연 위험</span>
+
+              <strong
+                className={`icn-w-risk-${riskClass(risk)}`}
+              >
+                {risk
+                  ? getDelayRiskLabel(risk)
+                  : '정보 없음'}
+              </strong>
+            </div>
+
+            <div className="icn-w-risk-item">
+              <span>운항 여건 점수</span>
+
+              <strong>
+                {score == null
+                  ? '정보 없음'
+                  : `${Math.round(score)} / 100`}
+              </strong>
+
+              <small>
+                {minutesAhead == null
+                  ? '기준 시각 정보 없음'
+                  : `${minutesAhead}분 후 기준`}
+              </small>
+            </div>
+          </section>
         </div>
       </div>
 

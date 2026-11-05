@@ -971,3 +971,50 @@
     animation: none;
   }
 }
+
+/* 날씨 페이지: 왼쪽 애니메이션, 오른쪽 안내 → 3개 지표 → 위험도 */
+.icn-weather-page .icn-w-top {
+  align-items: stretch;
+}
+.icn-weather-page .icn-w-left {
+  min-height: 0;
+}
+.icn-weather-page .icn-w-scene {
+  flex: 1 1 auto;
+}
+.icn-weather-page .icn-w-right {
+  min-height: 0;
+}
+.icn-weather-page .icn-w-metrics {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  flex: 1 1 auto;
+}
+.icn-weather-page .icn-w-metrics article {
+  padding: 14px;
+}
+.icn-weather-page .icn-w-risk {
+  flex: 1 1 auto;
+}
+@media (max-width: 900px) {
+  .icn-weather-page .icn-w-scene {
+    min-height: 330px;
+  }
+  .icn-weather-page .icn-w-metrics,
+  .icn-weather-page .icn-w-risk {
+    flex: none;
+  }
+}
+@media (max-width: 480px) {
+  .icn-weather-page .icn-w-metrics {
+    gap: 6px;
+  }
+  .icn-weather-page .icn-w-metrics article {
+    padding: 10px 7px;
+  }
+  .icn-weather-page .icn-w-metrics strong {
+    font-size: 16px;
+  }
+  .icn-weather-page .icn-w-metrics small {
+    overflow-wrap: anywhere;
+  }
+}

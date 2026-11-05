@@ -203,8 +203,9 @@ function GateTimeline({
 }) {
   const HOUR = 60 * 60 * 1000;
   const currentTime = now.getTime();
-  const start = Math.floor(currentTime / HOUR) * HOUR;
-  const end = start + 6 * HOUR;
+  // 현재 시각을 기준으로 앞뒤 운항 일정을 함께 보여줍니다.
+  const start = Math.floor(currentTime / HOUR) * HOUR - HOUR;
+  const end = start + 4 * HOUR;
   const duration = end - start;
 
   const gateFlights = useMemo(() => {
@@ -240,12 +241,15 @@ function GateTimeline({
         const bTime = Math.min(
           ...b[1].map(f => Date.parse(f.scheduledAt))
         );
-        return aTime - bTime;
+        const aPriority = aTime >= currentTime ? 0 : 1;
+        const bPriority = bTime >= currentTime ? 0 : 1;
+        return aPriority - bPriority ||
+          Math.abs(aTime - currentTime) - Math.abs(bTime - currentTime);
       })
       .slice(0, 4);
-  }, [flights, terminal, start, end]);
+  }, [flights, terminal, start, end, currentTime]);
 
-  const ticks = Array.from({ length: 7 }, (_, i) =>
+  const ticks = Array.from({ length: 5 }, (_, i) =>
     new Date(start + i * HOUR).toLocaleTimeString('ko-KR', {
       timeZone: 'Asia/Seoul',
       hour: '2-digit',
@@ -253,8 +257,6 @@ function GateTimeline({
       hour12: false,
     })
   );
-
-  const nowPosition = ((currentTime - start) / duration) * 100;
 
   return (
     <article className="icn-flight-card icn-flight-terminal-card">
@@ -286,11 +288,6 @@ function GateTimeline({
                 </span>
 
                 <div className="icn-flight-track">
-                  <div
-                    className="icn-flight-nowline"
-                    style={{ left: `${nowPosition}%` }}
-                  />
-
                   {items.map((flight, index) => {
                     const scheduled = Date.parse(
                       flight.scheduledAt
@@ -345,11 +342,21 @@ function GateTimeline({
               해당 시간대의 게이트 정보가 없습니다.
             </div>
           )}
+          {gateFlights.length > 0 && currentTime >= start && currentTime <= end && (
+            <div
+              className="icn-flight-current-time-line"
+              style={{
+                left: `calc(var(--gate-label-offset) + (100% - var(--gate-label-offset)) * ${(currentTime - start) / duration})`,
+              }}
+              aria-label={`현재 시각 ${now.toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false })}`}
+              title="현재 시각"
+            />
+          )}
         </div>
       </div>
 
       <p className="icn-flight-timeline-note">
-        출발편 기준 · 게이트별 최대 4개 행 표시
+        현재 시각 기준 · 게이트별 최대 4개 행 표시
       </p>
     </article>
   );
@@ -360,6 +367,9 @@ export default function FlightsPage() {
   const [status, setStatus] = useState('ALL');
   const [search, setSearch] = useState('');
   const [now, setNow] = useState(() => new Date());
+  const [page, setPage] = useState(1);
+  const [pageInitialized, setPageInitialized] = useState(false);
+  const PAGE_SIZE = 20;
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -425,6 +435,30 @@ export default function FlightsPage() {
       );
   }, [allFlights, terminal, status, search]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredFlights.length / PAGE_SIZE));
+  const nearestIndex = useMemo(() => {
+    const current = now.getTime();
+    const futureIndex = filteredFlights.findIndex(f => Date.parse(f.scheduledAt) >= current);
+    return futureIndex >= 0 ? futureIndex : Math.max(0, filteredFlights.length - 1);
+  }, [filteredFlights, now]);
+  const nearestPage = Math.floor(nearestIndex / PAGE_SIZE) + 1;
+
+  useEffect(() => {
+    if (!api.loading && !pageInitialized) {
+      setPage(nearestPage);
+      setPageInitialized(true);
+    }
+  }, [api.loading, pageInitialized, nearestPage]);
+
+  const visibleFlights = filteredFlights.slice(
+    (Math.min(page, totalPages) - 1) * PAGE_SIZE,
+    Math.min(page, totalPages) * PAGE_SIZE
+  );
+
+  const resetToNearest = () => {
+    setPageInitialized(false);
+  };
+
   const delayed = allFlights.filter(
     flight =>
       flight.delayMinutes > 0 ||
@@ -479,13 +513,13 @@ export default function FlightsPage() {
               aria-label="편명 또는 목적지 검색"
               placeholder="⌕ 편명 또는 목적지 검색"
               value={search}
-              onChange={event => setSearch(event.target.value)}
+              onChange={event => { setSearch(event.target.value); resetToNearest(); }}
             />
 
             <select
               aria-label="터미널 필터"
               value={terminal}
-              onChange={event => setTerminal(event.target.value)}
+              onChange={event => { setTerminal(event.target.value); resetToNearest(); }}
             >
               <option value="ALL">전체 터미널</option>
               <option value="T1">T1</option>
@@ -495,7 +529,7 @@ export default function FlightsPage() {
             <select
               aria-label="운항 상태 필터"
               value={status}
-              onChange={event => setStatus(event.target.value)}
+              onChange={event => { setStatus(event.target.value); resetToNearest(); }}
             >
               <option value="ALL">전체 상태</option>
               <option value="정상">정상</option>
@@ -528,7 +562,7 @@ export default function FlightsPage() {
             </thead>
 
             <tbody>
-              {filteredFlights.map((flight, index) => {
+              {visibleFlights.map((flight, index) => {
                 const code = countryCode(flight);
 
                 return (
@@ -602,6 +636,41 @@ export default function FlightsPage() {
             </tbody>
           </table>
         </div>
+
+        {filteredFlights.length > 0 && (
+          <nav className="icn-flight-pagination" aria-label="항공편 페이지 이동">
+            <div className="icn-flight-pagination-top">
+              <span className="icn-flight-pagination-count">총 <strong>{filteredFlights.length.toLocaleString()}</strong>편 · 페이지당 20편</span>
+              <span className="icn-flight-pagination-current"><strong>{Math.min(page, totalPages)}</strong> / {totalPages} 페이지</span>
+            </div>
+            <div className="icn-flight-pagination-controls">
+              <button className="icn-flight-page-arrow" type="button" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))} aria-label="이전 페이지">‹</button>
+              <div className="icn-flight-page-numbers" aria-label="페이지 번호 목록">
+                {(() => {
+                  const current = Math.min(page, totalPages);
+                  const start = Math.max(1, Math.min(current - 2, totalPages - 4));
+                  const end = Math.min(totalPages, start + 4);
+                  const pages = Array.from({ length: end - start + 1 }, (_, i) => start + i);
+                  return (
+                    <>
+                      {start > 1 && <span className="icn-flight-page-ellipsis" aria-hidden="true">…</span>}
+                      {pages.map(p => (
+                        <button type="button" key={p} onClick={() => setPage(p)}
+                          aria-current={p === current ? 'page' : undefined}
+                          className={`icn-flight-page-number ${p === current ? 'is-active' : ''}`}>
+                          {p}
+                        </button>
+                      ))}
+                      {end < totalPages && <span className="icn-flight-page-ellipsis" aria-hidden="true">…</span>}
+                    </>
+                  );
+                })()}
+              </div>
+              <button className="icn-flight-page-arrow" type="button" disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))} aria-label="다음 페이지">›</button>
+            </div>
+
+          </nav>
+        )}
 
         <div className="icn-flight-footer">
           <span>
