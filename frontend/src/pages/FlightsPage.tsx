@@ -1,6 +1,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getFlights, type Flight } from '../api/client';
+import { isDelayedFlight } from '../api/rules';
 import { useLiveUpdates } from '../hooks/useLiveUpdates';
 import 'flag-icons/css/flag-icons.min.css';
 import Skeleton from '../components/layout/Skeleton';
@@ -149,13 +150,25 @@ function statusLabel(value: string) {
   return value || '정보 없음';
 }
 
+/** 표에 보이는 상태 문구. 출발을 마쳤어도 지연 기준 이상 늦었으면 '지연 출발'로 구분합니다. */
+function displayStatus(flight: FlightExtra) {
+  const base = statusLabel(flight.status);
+  if (!isDelayedFlight(flight)) return base;
+  return base === '출발' ? '지연 출발' : '지연';
+}
+
+/** 상태 필터: '지연'은 지연 기준(15분 이상 또는 DELAYED)으로, 나머지는 원래 상태로 거릅니다. */
+function matchesStatus(flight: FlightExtra, filter: string) {
+  return filter === '지연' ? isDelayedFlight(flight) : statusLabel(flight.status) === filter;
+}
+
 function statusClass(flight: FlightExtra) {
   const status = statusLabel(flight.status);
 
-  if (flight.delayMinutes > 0 || status === '지연') {
+  if (status === '결항') return 'cancel';
+  if (isDelayedFlight(flight)) {
     return 'delay';
   }
-  if (status === '결항') return 'cancel';
   if (status === '탑승중') return 'boarding';
 
   return 'normal';
@@ -333,7 +346,7 @@ function GateTimeline({
                           `${flight.flightNo} | ` +
                           `예정 ${flightTime(flight.scheduledAt)} | ` +
                           `변경 ${flightTime(flight.estimatedAt)} | ` +
-                          statusLabel(flight.status)
+                          displayStatus(flight)
                         }
                       >
                         {flight.flightNo}
@@ -465,7 +478,7 @@ useEffect(() => {
 
     return allFlights.filter(flight => {
       if (terminal !== 'ALL' && flight.terminal?.toUpperCase() !== terminal) return false;
-      if (status !== 'ALL' && statusLabel(flight.status) !== status) return false;
+      if (status !== 'ALL' && !matchesStatus(flight, status)) return false;
 
       const searchable = [
         flight.flightNo,
@@ -515,11 +528,8 @@ useEffect(() => {
     Math.min(page, totalPages) * PAGE_SIZE
   );
 
-  const delayed = allFlights.filter(
-    flight =>
-      flight.delayMinutes > 0 ||
-      statusLabel(flight.status) === '지연'
-  ).length;
+  // 지연 편수는 메인·운항통계(백엔드 통계)와 같은 기준입니다.
+  const delayed = allFlights.filter(isDelayedFlight).length;
 
   const cancelled = allFlights.filter(
     flight => statusLabel(flight.status) === '결항'
@@ -686,7 +696,7 @@ useEffect(() => {
                           `icn-flight-status ${statusClass(flight)}`
                         }
                       >
-                        {statusLabel(flight.status)}
+                        {displayStatus(flight)}
                       </span>
                     </td>
                   </tr>
