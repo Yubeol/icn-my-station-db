@@ -11,11 +11,12 @@ import Congestion from "../main/Congestion/Congestion";
 import WeatherConditions from "../main/Weather/WeatherConditions";
 import SmartAlerts from "../main/SmartAlerts/SmartAlerts";
 import Facilities from "../main/Facilities/Facilities";
+import MyFlightCard from "../main/MyFlight/MyFlightCard";
 
-type Props = { navigate: (page: PageKey) => void };
+type Props = { navigate: (page: PageKey) => void; onOpenFlight: (flightNo: string) => void };
 
 /** 메인 화면은 각 상세 페이지의 데이터를 배치할 자리만 담당합니다. */
-export default function MainDashboard({ navigate }: Props) {
+export default function MainDashboard({ navigate, onOpenFlight }: Props) {
   const [terminal, setTerminal] = useState<'T1' | 'T2'>('T1');
   const summary = useApiResource(getDashboardSummary);
   // summary.data는 모든 영역에 전달 가능한 API 응답입니다.
@@ -23,6 +24,7 @@ export default function MainDashboard({ navigate }: Props) {
   return <main className="icn-dashboard">
     <div className="icn-dashboard__left">
       <ApiStatus status={summary.status} error={summary.error} />
+      <MyFlightCard onOpen={onOpenFlight} />
       <SectionBox
         title="운행현황"
         className="icn-summary"

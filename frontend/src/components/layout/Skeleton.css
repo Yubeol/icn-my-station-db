@@ -1,0 +1,55 @@
+/* 공통 로딩 자리표시자 */
+.icn-skeleton { --sk-base: #e8eff7; --sk-shine: #f6f9fd; position: relative; display: flex; flex-direction: column; gap: 8px; width: 100%; min-width: 0; }
+.icn-skeleton__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.icn-skeleton i { display: block; border-radius: 6px; background: linear-gradient(90deg, var(--sk-base) 0 40%, var(--sk-shine) 50%, var(--sk-base) 60% 100%) 0 0 / 300% 100%; animation: icn-skeleton-shine 1.6s ease-in-out infinite; }
+@keyframes icn-skeleton-shine { from { background-position: 100% 0; } to { background-position: 0 0; } }
+
+/* 목록 */
+.icn-skeleton__row { display: grid; grid-template-columns: 34px minmax(0, 1fr); align-items: center; gap: 10px; min-height: 48px; padding: 6px 10px; border: 1px solid #e0eaf6; border-radius: 10px; background: #fff; }
+.icn-skeleton__row .icn-skeleton__dot { width: 34px; height: 34px; border-radius: 9px; }
+.icn-skeleton__row span { display: grid; gap: 6px; }
+.icn-skeleton__row span i { height: 10px; }
+
+/* 큰 영역 */
+.icn-skeleton--block { flex: 1 1 auto; min-height: 160px; }
+.icn-skeleton__fill { flex: 1; min-height: inherit; border-radius: 14px !important; }
+
+.icn-skeleton--page { flex: 1 1 0; min-height: 320px; }
+.my-flight__skeleton { flex: 1 1 0; min-height: 0; }
+
+/* 도넛 */
+.icn-skeleton__donut { display: flex; align-items: center; gap: 16px; }
+.icn-skeleton__donut .icn-skeleton__ring { flex: none; width: 96px; height: 96px; border-radius: 50%; -webkit-mask: radial-gradient(circle, transparent 54%, #000 55%); mask: radial-gradient(circle, transparent 54%, #000 55%); }
+.icn-skeleton__donut span { display: grid; flex: 1; gap: 6px; }
+.icn-skeleton__donut span i { height: 22px; border-radius: 7px; }
+
+/* 막대 */
+.icn-skeleton--chart { flex: 1 1 auto; min-height: 120px; }
+.icn-skeleton__bars { display: flex; flex: 1; align-items: flex-end; gap: 6px; min-height: inherit; padding-bottom: 4px; border-bottom: 1px solid #e0eaf6; }
+.icn-skeleton__bars i { flex: 1; border-radius: 4px 4px 0 0; }
+
+/* 탑승권 */
+.icn-skeleton__pass { display: grid; grid-template-columns: minmax(0, 1fr) 280px; min-height: 190px; overflow: hidden; border-radius: 16px; background: #fff; }
+.icn-skeleton__pass > div { display: grid; align-content: space-between; gap: 14px; padding: 20px 24px; }
+.icn-skeleton__pass > div:first-child { background: var(--night, #0b2b52); }
+.icn-skeleton__pass > div:first-child i { --sk-base: #173c69; --sk-shine: #24507f; }
+.icn-skeleton__pass > div:last-child { border-left: 2px dashed #c9d9ea; }
+.icn-skeleton__pass i { height: 16px; }
+.icn-skeleton__pass i:nth-child(1) { width: 40%; }
+.icn-skeleton__pass i:nth-child(2) { width: 80%; height: 44px; }
+.icn-skeleton__pass i:nth-child(3) { width: 65%; }
+
+/* 카드 묶음 */
+.icn-skeleton__cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; flex: 1; }
+.icn-skeleton__cards > div { display: grid; align-content: start; gap: 8px; min-height: 150px; padding: 14px 16px; border: 1px solid #e0eaf6; border-radius: 14px; background: #fff; }
+.icn-skeleton__cards i { height: 12px; }
+.icn-skeleton__cards i:first-child { width: 45%; height: 15px; margin-bottom: 4px; }
+.icn-skeleton__cards i:nth-child(n+2) { height: 28px; border-radius: 8px; }
+
+@media (max-width: 700px) {
+  .icn-skeleton__pass { grid-template-columns: 1fr; }
+  .icn-skeleton__pass > div:last-child { border-top: 2px dashed #c9d9ea; border-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .icn-skeleton i { animation: none; background: var(--sk-base); }
+}
