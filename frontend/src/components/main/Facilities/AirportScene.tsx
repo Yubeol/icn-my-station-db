@@ -43,13 +43,21 @@ const CLICK_TOLERANCE = 5;
 const SELECTED_COLOR = 0xff6a4d;
 const MUTED_COLOR = 0xe6ecf2;
 
-// ── 에이프런 비주얼 조절용 상수 (색은 헤더 남색 #0b1f45, 노랑 #ffc726 톤과 맞춤) ──
-const GROUND_COLOR = 0xaebccd;        // 아스팔트 톤 바닥
-const GROUND_RADIUS = 80;             // 바닥 반지름
-const GROUND_FADE_START = .5;         // 이 비율 바깥부터 배경색으로 페이드
-const DOT_COLOR = '#2a4a7a';          // 점 격자 색
-const DOT_OPACITY = .26;              // 점 격자 진하기 (0이면 없음)
-const DOT_STEP = 6;                   // 점 간격
+// ── 공항 조감도 비주얼 조절용 상수 (남색 #0b1f45, 노랑 #ffc726 톤과 맞춤) ──
+// 바깥으로 갈수록 진해지는 명암: 터미널(흰색) → 계류장(밝은 청회색) → 유도로(짙은 청회색) → 잔디(세이지 그린)
+const BACKDROP_COLOR = 0xe8f0f8;      // 지도 카드 배경색 (Facilities 페이지 CSS의 .fac-map 배경과 같게)
+const APRON_COLOR = 0xc3cfdc;         // 계류장 콘크리트
+const TAXI_COLOR = 0x8294ab;          // 유도로 아스팔트
+const GRASS_COLOR = 0xaec3a4;         // 잔디(채도 낮은 세이지 그린)
+const TAXI_LINE_COLOR = 0xffc726;     // 유도로 중심선(노랑)
+const TAXI_LINE_OPACITY = 1;
+const APRON_OFFSET = 5;               // 터미널 외곽선에서 계류장 끝까지 거리
+const TAXI_WIDTH = 2.4;                 // 유도로 띠 폭 (안쪽·바깥 같은 폭)
+const GRASS_WIDTH = 3.6;                // 두 유도로 사이 잔디 폭
+const CONNECTOR_STEP = 12;            // 유도로 연결로 간격(클수록 잔디 조각이 큼)
+const CONNECTOR_WIDTH = 2.2;
+const FADE_RADIUS_SCALE = 1.5;        // 바닥 페이드 반지름 = 지도 크기 × 이 값
+const FADE_START = .4;                // 이 비율 안쪽은 선명, 바깥으로 갈수록 배경색으로 페이드
 const SLAB_COLOR = 0x8ea6c3;          // 층판 옆면
 const OUTLINE_COLOR = 0x14305e;       // 건물 외곽선(남색)
 const OUTLINE_WIDTH = 1.6;            // 외곽선 두께(px)
@@ -58,12 +66,12 @@ const SHADOW_COLOR = 0x0b1f45;        // 컨택트 섀도
 const SHADOW_OPACITY = .14;           // 그림자 가장 진한 곳
 const SHADOW_OFFSET = { x: 1.8, z: -1.4 };
 const SHADOW_LAYERS = [{ grow: .5, weight: 1 }, { grow: 1.8, weight: .55 }, { grow: 3.4, weight: .3 }];
-const AIRCRAFT_COLOR = 0x0b2a63;      // 지상 비행기 실루엣
-const AIRCRAFT_OPACITY = .38;
-const AIRCRAFT_SCALE = 1.6;
-const TAXI_COLOR = 0xffc726;          // 노란 유도로 선
-const TAXI_OPACITY = .95;
-const TAXI_DISTANCE = 9.5;            // 게이트에서 유도로까지 거리
+const AIRCRAFT_COUNT = 8;             // 게이트에 세우는 비행기 수
+const AIRCRAFT_COLOR = 0xffffff;
+const AIRCRAFT_SCALE = 1.9;
+const AIRCRAFT_SHADOW_OPACITY = .18;
+const GROUND_Y = -1.06;               // 바닥 맨 아래 층 높이
+const LAYER_GAP = .006;               // 바닥 층 사이 높이 간격
 const CATEGORY_COLOR: Record<string, number> = {
   FOOD_CAFE: 0xffd2ad,
   SHOPPING: 0xb5d9fb,
@@ -121,21 +129,15 @@ function pieceMesh(piece: Piece, grow: number, height: number, material: THREE.M
   return mesh;
 }
 
-/** 지상 비행기 실루엣: 납작한 단색 도형입니다. */
-function airplane() {
+/** 지상 비행기: 납작한 도형입니다. 지오메트리는 한 번만 만들어 모든 비행기가 함께 씁니다. */
+function airplaneGeometry() {
   const shape = new THREE.Shape();
   [[0, 1.5], [.12, .55], [1.05, -.1], [1.05, -.3], [.12, -.1], [.09, -.9], [.38, -1.2], [.38, -1.32], [0, -1.2],
     [-.38, -1.32], [-.38, -1.2], [-.09, -.9], [-.12, -.1], [-1.05, -.3], [-1.05, -.1], [-.12, .55]]
     .forEach(([x, y], index) => (index ? shape.lineTo(x, y) : shape.moveTo(x, y)));
   const geometry = new THREE.ShapeGeometry(shape);
   geometry.rotateX(-Math.PI / 2);
-  const material = new THREE.MeshBasicMaterial({
-    color: AIRCRAFT_COLOR, transparent: true, opacity: AIRCRAFT_OPACITY, depthWrite: false, side: THREE.DoubleSide,
-  });
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.scale.setScalar(AIRCRAFT_SCALE);
-  mesh.renderOrder = 1;
-  return mesh;
+  return geometry;
 }
 
 /** 두 점 사이를 잇는 낮은 막대(복도·칸막이)입니다. */
@@ -147,99 +149,143 @@ function strip(from: { x: number; z: number }, to: { x: number; z: number }, wid
   return mesh;
 }
 
-/** 가운데는 보이고 가장자리로 갈수록 투명해지는 원형 알파 맵입니다. */
-function radialAlphaMap() {
+/** 가운데는 투명하고 가장자리로 갈수록 배경색이 되는 원형 알파 맵입니다. */
+function fadeAlphaMap() {
   const canvas = document.createElement('canvas');
   canvas.width = 256;
   canvas.height = 256;
   const context = canvas.getContext('2d')!;
   const gradient = context.createRadialGradient(128, 128, 0, 128, 128, 128);
-  gradient.addColorStop(0, '#fff');
-  gradient.addColorStop(GROUND_FADE_START, '#fff');
-  gradient.addColorStop(1, '#000');
+  gradient.addColorStop(0, '#000');
+  gradient.addColorStop(FADE_START, '#000');
+  gradient.addColorStop(1, '#fff');
   context.fillStyle = gradient;
   context.fillRect(0, 0, 256, 256);
   return new THREE.CanvasTexture(canvas);
 }
 
-function dotTexture() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 64;
-  canvas.height = 64;
-  const context = canvas.getContext('2d')!;
-  context.fillStyle = DOT_COLOR;
-  context.beginPath();
-  context.arc(32, 32, 3.2, 0, Math.PI * 2);
-  context.fill();
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set((GROUND_RADIUS * 2) / DOT_STEP, (GROUND_RADIUS * 2) / DOT_STEP);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  return texture;
+/** 조각의 위치와 회전(pieceMesh와 같은 규칙)입니다. */
+function placement(piece: Piece) {
+  if (piece.kind === 'arc' || piece.kind === 'circle') return { x: piece.center.x, z: piece.center.z, rotation: 0 };
+  return {
+    x: (piece.from.x + piece.to.x) / 2,
+    z: (piece.from.z + piece.to.z) / 2,
+    rotation: -Math.atan2(piece.to.z - piece.from.z, piece.to.x - piece.from.x),
+  };
 }
 
-/** 바닥(아스팔트 톤, 가장자리 페이드), 점 격자, 건물 컨택트 섀도, 노란 유도로 선. */
+/** 윤곽선을 따라 도는 점선입니다(유도로 중심선). */
+function pieceLine(piece: Piece, grow: number, y: number, material: THREE.Material) {
+  const shape = new THREE.Shape();
+  outline(shape, piece, grow);
+  const points = shape.getPoints(64).map(point => new THREE.Vector3(point.x, 0, -point.y));
+  points.push(points[0].clone());
+  const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), material);
+  line.computeLineDistances();
+  const place = placement(piece);
+  line.position.set(place.x, y, place.z);
+  line.rotation.y = place.rotation;
+  return line;
+}
+
+/**
+ * 조감도 바닥. 모두 정적이라 터미널을 열 때 한 번만 만듭니다.
+ * 아래 층부터: 바깥 유도로 → 잔디 → 연결로 → 안쪽 유도로 → 계류장, 그 위에 가장자리 페이드.
+ */
 function addGround(world: THREE.Group, terminal: MapTerminal) {
-  const alphaMap = radialAlphaMap();
-  const plane = (y: number, material: THREE.Material, order: number) => {
-    const geometry = new THREE.PlaneGeometry(GROUND_RADIUS * 2, GROUND_RADIUS * 2);
-    geometry.rotateX(-Math.PI / 2);
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.y = y;
-    mesh.renderOrder = order;
-    world.add(mesh);
-  };
-  plane(-1.05, new THREE.MeshBasicMaterial({ color: GROUND_COLOR, alphaMap, transparent: true, depthWrite: false }), -4);
-  if (DOT_OPACITY > 0) {
-    plane(-1.04, new THREE.MeshBasicMaterial({ map: dotTexture(), alphaMap, transparent: true, opacity: DOT_OPACITY, depthWrite: false }), -3);
+  const plan = PLANS[terminal];
+  const pieces = [...plan.floors, ...plan.landside];
+  const flat = (color: number) => new THREE.MeshBasicMaterial({ color });
+  const taxi = flat(TAXI_COLOR);
+  const grass = flat(GRASS_COLOR);
+  const apron = flat(APRON_COLOR);
+  const dash = new THREE.LineDashedMaterial({
+    color: TAXI_LINE_COLOR, dashSize: 1.2, gapSize: .9, transparent: TAXI_LINE_OPACITY < 1, opacity: TAXI_LINE_OPACITY,
+  });
+  const innerEdge = APRON_OFFSET + TAXI_WIDTH;
+  const grassEdge = innerEdge + GRASS_WIDTH;
+  const outerEdge = grassEdge + TAXI_WIDTH;
+  const layer = (index: number) => GROUND_Y + index * LAYER_GAP;
+  const thin = .004;
+
+  for (const piece of pieces) {
+    world.add(pieceMesh(piece, outerEdge, thin, taxi, layer(0)));
+    world.add(pieceLine(piece, grassEdge + TAXI_WIDTH / 2, layer(1), dash));
+    world.add(pieceMesh(piece, grassEdge, thin, grass, layer(2)));
+  }
+  // 연결로: 잔디를 조각내고 두 유도로를 잇습니다.
+  for (const spot of gateSpots(terminal, CONNECTOR_STEP)) {
+    const from = { x: spot.x + spot.normalX * 5, z: spot.z + spot.normalZ * 5 };
+    const to = { x: spot.x + spot.normalX * (outerEdge + 2), z: spot.z + spot.normalZ * (outerEdge + 2) };
+    world.add(strip(from, to, CONNECTOR_WIDTH, thin, taxi, layer(3)));
+    const line = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(from.x, layer(4), from.z),
+        new THREE.Vector3(to.x, layer(4), to.z),
+      ]),
+      dash,
+    );
+    line.computeLineDistances();
+    world.add(line);
+  }
+  for (const piece of pieces) {
+    world.add(pieceMesh(piece, innerEdge, thin, taxi, layer(5)));
+    world.add(pieceLine(piece, APRON_OFFSET + TAXI_WIDTH / 2, layer(6), dash));
+    world.add(pieceMesh(piece, APRON_OFFSET, thin, apron, layer(7)));
   }
 
   // 컨택트 섀도: 건물 윤곽을 키운 반투명 판을 겹쳐 부드러운 가장자리를 만듭니다(실시간 shadow map 없음).
-  const plan = PLANS[terminal];
-  for (const piece of [...plan.floors, ...plan.landside]) {
-    for (const layer of SHADOW_LAYERS) {
+  for (const piece of pieces) {
+    for (const shade of SHADOW_LAYERS) {
       const material = new THREE.MeshBasicMaterial({
-        color: SHADOW_COLOR, transparent: true, opacity: SHADOW_OPACITY * layer.weight * .6, depthWrite: false,
+        color: SHADOW_COLOR, transparent: true, opacity: SHADOW_OPACITY * shade.weight * .6, depthWrite: false,
       });
-      const shadow = pieceMesh(piece, layer.grow, .01, material, -1.03);
+      const shadow = pieceMesh(piece, shade.grow, .01, material, layer(8));
       shadow.position.x += SHADOW_OFFSET.x;
       shadow.position.z += SHADOW_OFFSET.z;
-      shadow.renderOrder = -2;
+      shadow.renderOrder = -3;
       world.add(shadow);
     }
   }
 
-  // 노란 점선 유도로: 게이트 앞 계류장을 따라 이어지는 선입니다.
-  const spots = gateSpots(terminal, 3);
-  const runs: THREE.Vector3[][] = [];
-  spots.forEach((spot, index) => {
-    const point = new THREE.Vector3(spot.x + spot.normalX * TAXI_DISTANCE, -.98, spot.z + spot.normalZ * TAXI_DISTANCE);
-    const last = runs[runs.length - 1];
-    const before = spots[index - 1];
-    if (last && before && Math.hypot(spot.x - before.x, spot.z - before.z) < 12) last.push(point);
-    else runs.push([point]);
-  });
-  const taxiMaterial = new THREE.LineDashedMaterial({
-    color: TAXI_COLOR, dashSize: 1.2, gapSize: .9, transparent: true, opacity: TAXI_OPACITY, depthWrite: false,
-  });
-  for (const run of runs) {
-    if (run.length < 2) continue;
-    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(run), taxiMaterial);
-    line.computeLineDistances();
-    line.renderOrder = -1;
-    world.add(line);
-  }
+  // 가장자리 페이드: 바닥이 배경색에 녹아 지도가 카드 안에 떠 있는 느낌을 줍니다.
+  const radius = plan.viewHalf * FADE_RADIUS_SCALE;
+  const fadeGeometry = new THREE.PlaneGeometry(radius * 2, radius * 2);
+  fadeGeometry.rotateX(-Math.PI / 2);
+  const fade = new THREE.Mesh(fadeGeometry, new THREE.MeshBasicMaterial({
+    color: BACKDROP_COLOR, alphaMap: fadeAlphaMap(), transparent: true, depthWrite: false,
+  }));
+  fade.position.y = layer(9);
+  fade.renderOrder = -2;
+  world.add(fade);
 }
 
-/** 항공기는 지상(계류장)에 둡니다. */
+/** 비행기는 탑승동 게이트 몇 군데에만, 계류장 위에 세웁니다(흰색 + 옅은 그림자). */
 function addApron(world: THREE.Group, terminal: MapTerminal) {
-  for (const spot of gateSpots(terminal, 3)) {
-    const distance = terminal === 'T1' ? 6.4 : 7.4;
-    const plane = airplane();
-    plane.position.set(spot.x + spot.normalX * distance, -.9, spot.z + spot.normalZ * distance);
-    plane.rotation.y = Math.atan2(spot.normalX, -spot.normalZ) * -1;
-    world.add(plane);
+  const spots = gateSpots(terminal, 3);
+  const count = Math.min(AIRCRAFT_COUNT, spots.length);
+  const geometry = airplaneGeometry();
+  const body = new THREE.MeshBasicMaterial({ color: AIRCRAFT_COLOR, side: THREE.DoubleSide });
+  const shade = new THREE.MeshBasicMaterial({
+    color: SHADOW_COLOR, transparent: true, opacity: AIRCRAFT_SHADOW_OPACITY, depthWrite: false, side: THREE.DoubleSide,
+  });
+  const distance = terminal === 'T1' ? 6.4 : 7.4;
+  for (let index = 0; index < count; index += 1) {
+    const spot = spots[Math.floor(((index + .5) * spots.length) / count)];
+    const x = spot.x + spot.normalX * distance;
+    const z = spot.z + spot.normalZ * distance;
+    const turn = Math.atan2(spot.normalX, -spot.normalZ) * -1;
+    const plane = new THREE.Mesh(geometry, body);
+    plane.position.set(x, -.9, z);
+    plane.rotation.y = turn;
+    plane.scale.setScalar(AIRCRAFT_SCALE);
+    plane.renderOrder = 1;
+    const shadow = new THREE.Mesh(geometry, shade);
+    shadow.position.set(x + 1, GROUND_Y + 9 * LAYER_GAP + .002, z - .8);
+    shadow.rotation.y = turn;
+    shadow.scale.setScalar(AIRCRAFT_SCALE);
+    shadow.renderOrder = -3;
+    world.add(shadow, plane);
   }
 }
 
