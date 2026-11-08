@@ -82,3 +82,17 @@ def test_boarding_alert_gets_flight_terminal(monkeypatch):
     alerts = db_alerts._boarding(set())
 
     assert [a.terminal for a in alerts] == [Terminal.T2]
+
+
+def test_mock_flight_alerts_follow_flight_terminal(client):
+    """mock 모드도 DB 모드와 같은 규칙: 항공편 알림의 terminal은 그 항공편의 터미널이다."""
+    alerts = client.get("/api/v1/alerts").json()
+    flight_alerts = [a for a in alerts if a["flightNo"]]
+    assert flight_alerts
+    for alert in flight_alerts:
+        flight = client.get(f"/api/v1/flights/{alert['flightNo']}").json()
+        assert alert["terminal"] == flight["terminal"]
+    assert {a["alertId"]: a["terminal"] for a in alerts if a["type"] in ("CONGESTION", "WEATHER")} == {
+        "a4": "T1",
+        "a5": None,
+    }
