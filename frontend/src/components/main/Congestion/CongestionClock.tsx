@@ -72,10 +72,13 @@ export default function CongestionClock({ data, currentHour }: Props) {
     return () => observer.disconnect();
   }, []);
 
-  // 현재 시각 다음 시간부터. 자정을 넘기는 칸은 어제 데이터 범위(0~23시) 밖이라 '-'로 둡니다.
+  // 현재 시각 다음 시간부터. 값은 '하루 전 같은 시간'입니다.
+  // 자정 전 칸은 어제 값(yesterday), 자정을 넘긴 칸(내일 0시~)은 하루 전이 오늘이므로 오늘 같은 시간 값(today)을 씁니다.
   const ahead = Array.from({ length: AHEAD_COUNT }, (_, index) => {
     const hour = currentHour + 1 + index;
-    return { hour, label: hour % 24, value: hour <= 23 ? hours.find(item => item.hour === hour)?.yesterday ?? null : null };
+    const next = hour > 23;
+    const row = hours.find(item => item.hour === hour % 24);
+    return { hour, label: hour % 24, value: (next ? row?.today : row?.yesterday) ?? null };
   });
 
   const track = (event: MouseEvent, hour: number) => {
@@ -149,10 +152,10 @@ export default function CongestionClock({ data, currentHour }: Props) {
     <li><i data-level="HIGH" />혼잡</li>
     <li><i className="is-yesterday" />어제</li>
   </ul>
-  {roomy && hasData && <section className="cong-ahead" aria-label="앞으로 몇 시간 (어제 기준)">
+  {roomy && hasData && <section className="cong-ahead" aria-label="앞으로 몇 시간 (하루 전 같은 시간 기준)">
     <div className="cong-ahead__head">
       <h3>앞으로 {AHEAD_COUNT}시간</h3>
-      <small>어제 같은 시간 기준 · 예측 아님</small>
+      <small>하루 전 같은 시간 기준 · 예측 아님</small>
     </div>
     <ol>
       {ahead.map((item, index) => <li key={item.hour} className={index === 0 ? 'is-next' : undefined}>
