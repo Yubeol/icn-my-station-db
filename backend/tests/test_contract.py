@@ -234,6 +234,7 @@ def test_openapi_has_all_rest_paths(client):
         f"{API}/flights/{{flightNo}}",
         f"{API}/flights/{{flightNo}}/detail",
         f"{API}/congestion",
+        f"{API}/congestion/hourly",
         f"{API}/stats/flights",
         f"{API}/alerts",
         f"{API}/weather",

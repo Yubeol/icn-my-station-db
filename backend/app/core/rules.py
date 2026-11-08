@@ -227,13 +227,11 @@ WEATHER_HISTORY_DEFAULT_HOURS = 24
 WEATHER_HISTORY_MAX_HOURS = 48
 WEATHER_HISTORY_LIMIT = 300
 
-# 운항 여건 점수(풍속·시정 기반 자체 계산). 임시 공식이며 실제 운항 확률이 아니다.
-# 풍속: WIND_OK 이하면 감점 없음, WIND_LIMIT 이상이면 최대 감점. 시정은 반대 방향.
+# 운항 여건 점수(풍속·돌풍 기반 자체 계산). 임시 공식이며 실제 운항 확률이 아니다.
+# 풍속(돌풍이 더 크면 돌풍): WIND_OK 이하면 감점 없음, WIND_LIMIT 이상이면 최대 감점.
 WIND_OK_MS = 10.0
 WIND_LIMIT_MS = 25.0
-VISIBILITY_OK_KM = 5.0
-VISIBILITY_LIMIT_KM = 0.8
-MAX_PENALTY_PER_FACTOR = 50.0
+MAX_PENALTY = 100.0
 SCORE_HIGH_FROM = 80
 SCORE_MID_FROM = 50
 OPERATION_SCORE_MINUTES_AHEAD = 60
@@ -249,20 +247,17 @@ OPERATION_MESSAGE_NO_DATA = "데이터 부족"
 
 
 def _penalty(value: float, ok: float, limit: float) -> float:
-    """ok에서 limit 쪽으로 갈수록 0 → MAX_PENALTY_PER_FACTOR로 선형 증가."""
+    """ok에서 limit 쪽으로 갈수록 0 → MAX_PENALTY로 선형 증가."""
     ratio = (value - ok) / (limit - ok)
-    return MAX_PENALTY_PER_FACTOR * min(max(ratio, 0.0), 1.0)
+    return MAX_PENALTY * min(max(ratio, 0.0), 1.0)
 
 
-def operation_score(wind_speed: float | None, visibility: float | None) -> int | None:
-    if wind_speed is None or visibility is None:
+def operation_score(wind_speed: float | None, wind_gust: float | None = None) -> int | None:
+    """돌풍은 관측될 때만 값이 있으므로 없으면 풍속만 본다."""
+    if wind_speed is None:
         return None
-    score = (
-        100
-        - _penalty(wind_speed, WIND_OK_MS, WIND_LIMIT_MS)
-        - _penalty(visibility, VISIBILITY_OK_KM, VISIBILITY_LIMIT_KM)
-    )
-    return round(score)
+    wind = max(wind_speed, wind_gust or 0.0)
+    return round(100 - _penalty(wind, WIND_OK_MS, WIND_LIMIT_MS))
 
 
 def filter_terminal(items: list, terminal: Terminal | None) -> list:

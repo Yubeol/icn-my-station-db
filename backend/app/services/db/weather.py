@@ -2,7 +2,7 @@
 
 - 현재 기상: weather_observations(METAR)의 인천공항(RKSI) 최신 관측.
 - 운항 여건 점수: OPERATION_SCORE_MINUTES_AHEAD분 뒤에 가장 가까운 이륙예보의 풍속을 쓰고,
-  예보가 없으면 현재 관측 풍속을 쓴다. 시정은 예보에 없으므로 현재 관측값을 쓴다.
+  예보가 없으면 현재 관측 풍속을 쓴다. 돌풍은 예보에 없으므로 현재 관측값을 쓴다.
   관측이 WEATHER_MAX_AGE_MINUTES보다 오래됐으면 점수를 내지 않는다(데이터 부족).
 - 수집 단계에서 단위를 변환해 저장한다(풍속 m/s, 기압 hPa, 시정 km).
 """
@@ -88,13 +88,13 @@ def get_weather() -> Weather:
     observed_at = obs["observed_at"].astimezone(KST)
     wind_speed = _float(obs["wind_speed_mps"])
     wind_direction = _float(obs["wind_direction_degrees"])
-    visibility = _float(obs["visibility_km"])
+    wind_gust = _float(obs["wind_gust_mps"])
 
     fresh = now - observed_at <= timedelta(minutes=rules.WEATHER_MAX_AGE_MINUTES)
     forecast = _forecast_near(now + timedelta(minutes=rules.OPERATION_SCORE_MINUTES_AHEAD))
     forecast_wind = _float(forecast["wind_speed_mps"]) if forecast else None
     score_wind = forecast_wind if forecast_wind is not None else wind_speed
-    score = rules.operation_score(score_wind, visibility) if fresh else None
+    score = rules.operation_score(score_wind, wind_gust) if fresh else None
     level = rules.operation_level(score)
 
     return Weather(
@@ -102,9 +102,9 @@ def get_weather() -> Weather:
         condition=rules.weather_condition(obs["weather_phenomena"]),
         temperature=_float(obs["temperature_c"]),
         wind_speed=wind_speed,
-        wind_gust=_float(obs["wind_gust_mps"]),
+        wind_gust=wind_gust,
         wind_direction=wind_direction,
-        visibility=visibility,
+        visibility=_float(obs["visibility_km"]),
         pressure=_float(obs["pressure_hpa"]),
         crosswind=Crosswind(
             runway=rules.RUNWAY_NAME,
