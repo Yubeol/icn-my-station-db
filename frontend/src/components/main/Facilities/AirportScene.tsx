@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js';
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js';
-import { floorLayout, gateSpots, MAP_FLOORS, PLANS } from './facilityMap';
+import { floorLayout, MAP_FLOORS, PLANS } from './facilityMap';
 import type { FloorMap, MapTerminal, MapUnit, Piece } from './facilityMap';
 
 type Props = {
@@ -67,12 +67,14 @@ const SHADOW_COLOR = 0x0b1f45;        // 컨택트 섀도
 const SHADOW_OPACITY = .14;           // 그림자 가장 진한 곳
 const SHADOW_OFFSET = { x: 1.8, z: -1.4 };
 const SHADOW_LAYERS = [{ grow: .5, weight: 1 }, { grow: 1.8, weight: .55 }, { grow: 3.4, weight: .3 }];
-const AIRCRAFT_COUNT = 8;             // 게이트에 세우는 비행기 수
+const AIRCRAFT_MAX = 12;              // 터미널당 비행기 최대 수
+const STAND_PITCH = 9;                // 같은 쪽 게이트 사이 간격
+const STAND_MIN_GAP = 8;              // 비행기 중심끼리 최소 거리
+const STAND_LINE_OPACITY = .85;       // 주기장 유도선(노랑) 진하기
 const AIRCRAFT_COLOR = 0xffffff;
 const AIRCRAFT_SCALE = 3;
 const AIRCRAFT_GAP = .6;              // 기수와 건물 사이 간격
 const AIRCRAFT_SHADOW_OPACITY = .2;
-const AIRCRAFT_CLEAR_PX = 54;         // 숫자 마커가 이 거리(px) 안에 있으면 그 비행기는 숨김
 const GROUND_Y = -1.06;               // 바닥 맨 아래 층 높이
 const LAYER_GAP = .006;               // 바닥 층 사이 높이 간격
 const CATEGORY_COLOR: Record<string, number> = {
@@ -310,31 +312,105 @@ function addGround(world: THREE.Group, terminal: MapTerminal) {
   world.add(fade);
 }
 
-type Aircraft = { group: THREE.Group; x: number; z: number };
+/** 점이 건물 조각(margin만큼 키운) 안에 있는지 확인합니다. */
+function nearPiece(piece: Piece, point: Pt, margin: number) {
+  if (piece.kind === 'circle') return Math.hypot(point.x - piece.center.x, point.z - piece.center.z) <= piece.radius + margin;
+  if (piece.kind === 'arc') {
+    const dx = point.x - piece.center.x;
+    const dz = point.z - piece.center.z;
+    const radius = Math.hypot(dx, dz);
+    const angle = (Math.atan2(dx, -dz) * 180) / Math.PI;
+    const slack = ((margin / Math.max(radius, 1)) * 180) / Math.PI;
+    return radius >= piece.inner - margin && radius <= piece.outer + margin && angle >= piece.from - slack && angle <= piece.to + slack;
+  }
+  const lx = piece.to.x - piece.from.x;
+  const lz = piece.to.z - piece.from.z;
+  const ratio = Math.max(0, Math.min(1, ((point.x - piece.from.x) * lx + (point.z - piece.from.z) * lz) / (lx * lx + lz * lz || 1)));
+  return Math.hypot(point.x - (piece.from.x + lx * ratio), point.z - (piece.from.z + lz * ratio)) <= piece.width / 2 + margin;
+}
 
-/** 비행기는 탑승동 게이트 몇 군데에만, 기수를 건물 쪽으로 향해 계류장 위에 붙입니다. */
-function addApron(world: THREE.Group, terminal: MapTerminal): Aircraft[] {
-  const spots = gateSpots(terminal, 3);
-  const count = Math.min(AIRCRAFT_COUNT, spots.length);
+type Stand = { edge: Pt; normal: Pt };
+
+/** 탑승동 양옆(그리고 T1 본동 바깥쪽)에 일정 간격으로 놓을 게이트 후보입니다. normal은 건물에서 바깥쪽입니다. */
+function standCandidates(plan: { floors: Piece[]; landside: Piece[] }): Stand[] {
+  const stands: Stand[] = [];
+  for (const piece of plan.floors) {
+    if (piece.kind === 'bar') {
+      const length = Math.hypot(piece.to.x - piece.from.x, piece.to.z - piece.from.z);
+      const tangent = { x: (piece.to.x - piece.from.x) / length, z: (piece.to.z - piece.from.z) / length };
+      const inset = piece.width / 2 + AIRCRAFT_SCALE * 1.4;
+      const count = Math.floor((length - inset * 2) / STAND_PITCH) + 1;
+      if (count < 1) continue;
+      const used = (count - 1) * STAND_PITCH;
+      for (let index = 0; index < count; index += 1) {
+        const along = (length - used) / 2 + index * STAND_PITCH;
+        const base = { x: piece.from.x + tangent.x * along, z: piece.from.z + tangent.z * along };
+        for (const side of [1, -1]) {
+          const normal = { x: tangent.z * side, z: -tangent.x * side };
+          stands.push({ edge: { x: base.x + normal.x * piece.width / 2, z: base.z + normal.z * piece.width / 2 }, normal });
+        }
+      }
+    } else if (piece.kind === 'arc' && piece.to - piece.from > 100) {
+      // 본동 원호: 양 끝 쪽 바깥면에 게이트를 둡니다.
+      const step = (STAND_PITCH / piece.outer) * (180 / Math.PI);
+      for (const sign of [-1, 1]) {
+        for (let angle = 40; angle <= 64; angle += step) {
+          const radians = (sign * angle * Math.PI) / 180;
+          const normal = { x: Math.sin(radians), z: -Math.cos(radians) };
+          stands.push({
+            edge: { x: piece.center.x + normal.x * piece.outer, z: piece.center.z + normal.z * piece.outer },
+            normal,
+          });
+        }
+      }
+    }
+  }
+  return stands;
+}
+
+/**
+ * 비행기를 게이트에 나란히 세웁니다. 기수는 건물 쪽, 크기와 그림자 방향은 모두 같습니다.
+ * 건물과 겹치거나 계류장 밖(유도로·잔디)으로 나가는 자리는 월드 좌표로 한 번만 걸러냅니다.
+ */
+function addApron(world: THREE.Group, terminal: MapTerminal) {
+  const plan = PLANS[terminal];
+  const pieces = [...plan.floors, ...plan.landside];
+  const apron = offsetHull(footprintPoints(plan), APRON_MARGIN - 1);
+  const reach = AIRCRAFT_GAP + AIRCRAFT_SCALE * 1.5;
+  // 비행기 윤곽 위의 주요 점(기수, 꼬리, 날개 끝)을 로컬 좌표로 둡니다. 로컬 z는 기수가 -입니다.
+  const probes = [[0, -1.5], [0, 1.32], [1.05, .3], [-1.05, .3], [0, 0]].map(([x, z]) => ({ x: x * AIRCRAFT_SCALE, z: z * AIRCRAFT_SCALE }));
+
+  const placed: { stand: Stand; x: number; z: number; turn: number }[] = [];
+  for (const stand of standCandidates(plan)) {
+    const x = stand.edge.x + stand.normal.x * reach;
+    const z = stand.edge.z + stand.normal.z * reach;
+    const turn = Math.atan2(stand.normal.x, stand.normal.z);
+    const cos = Math.cos(turn);
+    const sin = Math.sin(turn);
+    const fits = probes.every(probe => {
+      const point = { x: x + probe.x * cos + probe.z * sin, z: z - probe.x * sin + probe.z * cos };
+      return insideHull(apron, point) && !pieces.some(piece => nearPiece(piece, point, .3));
+    });
+    if (!fits) continue;
+    if (placed.some(other => Math.hypot(other.x - x, other.z - z) < STAND_MIN_GAP)) continue;
+    placed.push({ stand, x, z, turn });
+  }
+  // 너무 많으면 고르게 덜어냅니다.
+  const chosen = placed.length > AIRCRAFT_MAX
+    ? Array.from({ length: AIRCRAFT_MAX }, (_, index) => placed[Math.floor(((index + .5) * placed.length) / AIRCRAFT_MAX)])
+    : placed;
+
   const geometry = airplaneGeometry();
   const body = new THREE.MeshBasicMaterial({ color: AIRCRAFT_COLOR, side: THREE.DoubleSide });
   const shade = new THREE.MeshBasicMaterial({
     color: SHADOW_COLOR, transparent: true, opacity: AIRCRAFT_SHADOW_OPACITY, depthWrite: false, side: THREE.DoubleSide,
   });
   const edge = new THREE.LineBasicMaterial({ color: OUTLINE_COLOR });
-  const edgeGeometry = new THREE.BufferGeometry().setFromPoints(
-    AIRCRAFT_OUTLINE.map(([x, y]) => new THREE.Vector3(x, 0, -y)),
-  );
-  const half = terminal === 'T1' ? 4.5 : 4;  // 게이트 선에서 건물 가장자리까지
-  const distance = half + AIRCRAFT_GAP + 1.5 * AIRCRAFT_SCALE;
+  const edgeGeometry = new THREE.BufferGeometry().setFromPoints(AIRCRAFT_OUTLINE.map(([x, y]) => new THREE.Vector3(x, 0, -y)));
+  const standLine = new THREE.LineBasicMaterial({ color: TAXI_LINE_COLOR, transparent: STAND_LINE_OPACITY < 1, opacity: STAND_LINE_OPACITY });
   const planeY = -.9;
-  const result: Aircraft[] = [];
-  for (let index = 0; index < count; index += 1) {
-    const spot = spots[Math.floor(((index + .5) * spots.length) / count)];
-    const x = spot.x + spot.normalX * distance;
-    const z = spot.z + spot.normalZ * distance;
-    // 지오메트리의 기수는 -z 방향입니다. 건물 방향(-normal)을 보게 돌립니다.
-    const turn = Math.atan2(spot.normalX, spot.normalZ);
+  const lineY = GROUND_Y + 6 * LAYER_GAP;
+  for (const { stand, x, z, turn } of chosen) {
     const group = new THREE.Group();
     group.position.set(x, planeY, z);
     group.rotation.y = turn;
@@ -344,17 +420,29 @@ function addApron(world: THREE.Group, terminal: MapTerminal): Aircraft[] {
     const outlineLine = new THREE.LineLoop(edgeGeometry, edge);
     outlineLine.position.y = .002;
     outlineLine.renderOrder = 2;
-    // 옅은 그림자: 월드 기준 (1.2, -1) 방향으로 바닥에 떨어뜨립니다.
+    // 그림자: 월드 기준 (1.2, -1) 방향으로 모두 같게 떨어뜨립니다.
     const shadow = new THREE.Mesh(geometry, shade);
     const ox = 1.2 / AIRCRAFT_SCALE;
     const oz = -1 / AIRCRAFT_SCALE;
-    shadow.position.set(Math.cos(turn) * ox - Math.sin(turn) * oz, (GROUND_Y + 6.5 * LAYER_GAP - planeY) / AIRCRAFT_SCALE, Math.sin(turn) * ox + Math.cos(turn) * oz);
+    shadow.position.set(
+      Math.cos(turn) * ox - Math.sin(turn) * oz,
+      (GROUND_Y + 6.5 * LAYER_GAP - planeY) / AIRCRAFT_SCALE,
+      Math.sin(turn) * ox + Math.cos(turn) * oz,
+    );
     shadow.renderOrder = -3;
     group.add(shadow, plane, outlineLine);
     world.add(group);
-    result.push({ group, x, z });
+
+    // 주기장 유도선: 건물 가장자리에서 기수 쪽으로 들어와 비행기 아래를 지나 뒤쪽 유도로 쪽으로 이어집니다.
+    const guide = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(stand.edge.x, lineY, stand.edge.z),
+        new THREE.Vector3(stand.edge.x + stand.normal.x * (APRON_MARGIN - 1), lineY, stand.edge.z + stand.normal.z * (APRON_MARGIN - 1)),
+      ]),
+      standLine,
+    );
+    world.add(guide);
   }
-  return result;
 }
 
 /** 선택 층에서 가장 아래 표시 층까지 잇는 기둥입니다. 길이는 프레임마다 맞춥니다. */
@@ -561,7 +649,7 @@ export default function AirportScene({ terminal, floor, map, activeZone = null, 
     const groundGroup = new THREE.Group();
     world.add(groundGroup);
     addGround(groundGroup, terminal);
-    const aircraft = addApron(groundGroup, terminal);
+    addApron(groundGroup, terminal);
     const columns = addColumns(world, terminal);
     const rigs = MAP_FLOORS.map((name, index) => buildFloor(terminal, name, index === floorIndexRef.current));
     rigs.forEach(rig => world.add(rig.group));
@@ -670,7 +758,6 @@ export default function AirportScene({ terminal, floor, map, activeZone = null, 
     canvas.addEventListener('pointermove', onMove);
 
     const projected = new THREE.Vector3();
-    const pinScreens: { x: number; y: number }[] = [];
     const clock = new THREE.Clock();
     let frame = 0;
     const animate = () => {
@@ -713,25 +800,15 @@ export default function AirportScene({ terminal, floor, map, activeZone = null, 
       renderer.render(scene, camera);
 
       const zoomed = camera.zoom >= ZOOM_SHOW;
-      pinScreens.length = 0;
       for (const { key, point, area } of overlaysRef.current) {
         const element = overlayRefs.current.get(key);
         if (!element) continue;
         projected.set(point.x, point.y + units.position.y, point.z).project(camera);
-        const screenX = ((projected.x + 1) / 2) * host.clientWidth;
-        const screenY = ((1 - projected.y) / 2) * host.clientHeight;
-        if (key.startsWith('zone:') || key === 'marker') pinScreens.push({ x: screenX, y: screenY });
-        element.style.transform = `translate(${screenX}px, ${screenY}px) translate(-50%, -50%)`;
+        element.style.transform = `translate(${((projected.x + 1) / 2) * host.clientWidth}px, ${((1 - projected.y) / 2) * host.clientHeight}px) translate(-50%, -50%)`;
         // 구역 이름은 줌인했거나 그 구역에 마우스를 올렸을 때만 보입니다.
         if (area) element.classList.toggle('is-shown', zoomed || hoveredAreaRef.current === area);
       }
-      // 숫자 마커와 겹치는 비행기는 숨깁니다.
-      for (const plane of aircraft) {
-        projected.set(plane.x, plane.group.position.y + groundGroup.position.y, plane.z + world.position.z).project(camera);
-        const planeX = ((projected.x + 1) / 2) * host.clientWidth;
-        const planeY = ((1 - projected.y) / 2) * host.clientHeight;
-        plane.group.visible = !pinScreens.some(pin => Math.hypot(pin.x - planeX, pin.y - planeY) < AIRCRAFT_CLEAR_PX);
-      }
+
     };
     animate();
 
