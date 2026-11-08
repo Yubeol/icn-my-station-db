@@ -110,7 +110,7 @@ const SKY_FRAGMENT = /* glsl */ `
   const vec3 SKY_TOP = vec3(.16, .42, .84);
   const vec3 CLOUD_LIT = vec3(1., 1., 1.);
   const vec3 CLOUD_SHADE = vec3(.55, .66, .82);
-  const vec3 NAVY = vec3(.06, .13, .30);
+  const vec3 NAVY = vec3(.05, .20, .47);
   const vec3 SUN_DIR = vec3(.55, .35, 1.);
 
   // sin 없는 해시(Dave Hoskins hash13): 카메라가 멀리 가도 정밀도가 유지됩니다.
@@ -219,7 +219,7 @@ const SKY_FRAGMENT = /* glsl */ `
     }
 
     // 왼쪽 문구 뒤만 남색으로 살짝 덮기
-    float cover = pow(1. - smoothstep(-.9, .25, nx), .6) * .85 * (1. - smoothstep(.5, .9, e));
+    float cover = pow(1. - smoothstep(-.95, .15, nx), .65) * .8 * (1. - smoothstep(.5, .9, e));
     col = mix(col, NAVY, cover);
     // 이전 프레임과 섞어 시간 누적 (시작 전환 중에는 잔상이 번지지 않도록 비율을 낮춤)
     vec3 prev = texture2D(tPrev, vUv).rgb;
