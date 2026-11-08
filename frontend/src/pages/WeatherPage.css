@@ -851,47 +851,80 @@
   }
 }
 
-/* 한국 시간에 따라 변화하는 하늘 */
-.icn-w-scene.icn-w-time-dawn {
-  background: linear-gradient(
-    180deg,
-    #526b9c 0%,
-    #c88c9b 48%,
-    #f4cba6 100%
-  );
+/* 한국 시간에 따라 변화하는 하늘
+   05~07 새벽, 07~17 낮, 17~19 노을, 그 외 밤.
+   노을은 출국장 혼잡도 화면의 하늘과 같은 색을 씁니다. */
+.icn-w-sky-layer {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 1.8s ease;
 }
 
-.icn-w-scene.icn-w-time-day {
-  /* 낮에는 기존 날씨별 배경 유지 */
+.icn-w-sky-layer[data-active='true'] {
+  opacity: 1;
 }
 
-.icn-w-scene.icn-w-time-dusk {
-  background: linear-gradient(
-    180deg,
-    #314c86 0%,
-    #ab6d8c 48%,
-    #f0ae85 100%
-  );
+.icn-w-sky-dawn {
+  background: linear-gradient(180deg, #24406c 0%, #6f7fae 42%, #e3a993 80%, #f7d4a8 100%);
 }
 
-.icn-w-scene.icn-w-time-night {
-  background: linear-gradient(
-    180deg,
-    #07152f 0%,
-    #152c55 58%,
-    #304b72 100%
-  );
+.icn-w-sky-day {
+  background: linear-gradient(180deg, #5e96d4 0%, #a8ccef 52%, #e3eef8 86%, #f4e7d6 100%);
 }
 
-/* 태양과 달 */
+.icn-w-sky-dusk {
+  background: linear-gradient(180deg, #14335d 0%, #3f6a9c 62%, #e8ad84 88%, #f7d4a8 100%);
+}
+
+.icn-w-sky-night {
+  background: linear-gradient(180deg, #061630 0%, #0b2b52 58%, #1d3d66 100%);
+}
+
+/* 날씨 덧칠: 맑음은 그대로, 나머지는 시간대 하늘 위에 반투명하게 */
+.icn-w-tint {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+
+.icn-w-cloudy .icn-w-tint {
+  opacity: 1;
+  background: linear-gradient(180deg, rgba(118, 136, 160, .5), rgba(170, 184, 200, .28));
+}
+
+.icn-w-rain .icn-w-tint {
+  opacity: 1;
+  background: linear-gradient(180deg, rgba(62, 80, 108, .6), rgba(104, 122, 146, .36));
+}
+
+.icn-w-thunder .icn-w-tint {
+  opacity: 1;
+  background: linear-gradient(180deg, rgba(24, 32, 54, .7), rgba(64, 74, 100, .46));
+}
+
+.icn-w-snow .icn-w-tint {
+  opacity: 1;
+  background: linear-gradient(180deg, rgba(214, 223, 235, .5), rgba(240, 244, 250, .36));
+}
+
+.icn-w-fog .icn-w-tint {
+  opacity: 1;
+  background: linear-gradient(180deg, rgba(210, 218, 228, .62), rgba(226, 232, 238, .5));
+}
+
+/* 태양과 달: 시간대에 따라 자리와 밝기가 바뀝니다 */
 .icn-w-sun,
 .icn-w-moon {
   position: absolute;
-  right: 23%;
-  top: 18%;
-  width: 57px;
-  height: 57px;
+  top: 16%;
+  right: 22%;
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
+  opacity: 0;
+  transition: top 1.8s ease, right 1.8s ease, opacity 1.8s ease, background-color 1.8s ease, box-shadow 1.8s ease;
 }
 
 .icn-w-sun {
@@ -899,14 +932,28 @@
   box-shadow: 0 0 34px 13px #ffe2a66b;
 }
 
-.icn-w-time-dawn .icn-w-sun,
+.icn-w-time-day .icn-w-sun {
+  opacity: 1;
+}
+
+.icn-w-time-dawn .icn-w-sun {
+  top: 50%;
+  right: 68%;
+  opacity: 1;
+  background: #ffd9a8;
+  box-shadow: 0 0 36px 15px #f3b18a70;
+}
+
 .icn-w-time-dusk .icn-w-sun {
-  top: 55%;
-  background: #ffd5a0;
-  box-shadow: 0 0 36px 15px #ffbc9273;
+  top: 52%;
+  right: 16%;
+  opacity: 1;
+  background: #ffcf98;
+  box-shadow: 0 0 40px 18px #e8ad8478;
 }
 
 .icn-w-moon {
+  overflow: hidden;
   background: #f0f3ff;
   box-shadow: 0 0 28px 8px #dce8ff55;
 }
@@ -916,16 +963,26 @@
   position: absolute;
   top: -7px;
   left: 15px;
-  width: 55px;
-  height: 55px;
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
-  background: #091a39;
+  background: #07193a;
 }
 
-/* 별 */
+.icn-w-time-night .icn-w-moon {
+  opacity: 1;
+}
+
+/* 별: 밤에만 */
 .icn-w-stars {
   position: absolute;
   inset: 0;
+  opacity: 0;
+  transition: opacity 1.8s ease;
+}
+
+.icn-w-time-night .icn-w-stars {
+  opacity: 1;
 }
 
 .icn-w-stars i {
@@ -951,25 +1008,57 @@
   }
 }
 
-/* 흐림·비·눈·안개·뇌우 시 천체 숨김 */
-.icn-w-scene:is(
-  .icn-w-cloudy,
-  .icn-w-rain,
-  .icn-w-snow,
-  .icn-w-fog,
-  .icn-w-thunder
-) :is(
-  .icn-w-sun,
-  .icn-w-moon,
-  .icn-w-stars
-) {
+/* 구름이 낀 날은 천체를 흐리게, 비·뇌우는 가립니다 */
+.icn-w-scene:is(.icn-w-cloudy, .icn-w-snow, .icn-w-fog) :is(.icn-w-sun, .icn-w-moon, .icn-w-stars) {
+  opacity: .28;
+}
+
+.icn-w-scene:is(.icn-w-rain, .icn-w-thunder) :is(.icn-w-sun, .icn-w-moon, .icn-w-stars) {
   opacity: 0;
+}
+
+/* 지상 풍경도 시간대에 맞춰 어둡게 */
+.icn-w-landscape,
+.icn-w-effects {
+  transition: filter 1.8s ease;
+}
+
+.icn-w-time-dawn .icn-w-landscape {
+  filter: brightness(.82) sepia(.12);
+}
+
+.icn-w-time-dusk .icn-w-landscape {
+  filter: brightness(.8) sepia(.2) saturate(1.05);
+}
+
+.icn-w-time-night .icn-w-landscape {
+  filter: brightness(.55) saturate(.75);
+}
+
+.icn-w-time-night .icn-w-effects {
+  filter: brightness(.7);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .icn-w-stars i {
     animation: none;
   }
+
+  .icn-w-sky-layer,
+  .icn-w-tint,
+  .icn-w-sun,
+  .icn-w-moon,
+  .icn-w-stars,
+  .icn-w-landscape,
+  .icn-w-effects {
+    transition: none;
+  }
+}
+
+/* 기상 이력 로딩 자리 */
+.icn-w-skeleton {
+  flex: 1 1 auto;
+  padding-top: 8px;
 }
 
 /* 날씨 페이지: 왼쪽 애니메이션, 오른쪽 안내 → 3개 지표 → 위험도 */

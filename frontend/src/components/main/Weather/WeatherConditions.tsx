@@ -1,6 +1,7 @@
 
 import { useLiveUpdates } from "../../../hooks/useLiveUpdates";
 import { getWeather } from "../../../api/client";
+import Skeleton from "../../layout/Skeleton";
 import "./WeatherConditions.css";
 
 type Dict = Record<string, unknown>;
@@ -334,9 +335,7 @@ export default function WeatherConditions() {
 
   if (loading && !weather) {
     return (
-      <div className="weather-message">
-        기상 정보 불러오는 중...
-      </div>
+      <Skeleton label="기상 정보를 불러오는 중입니다." variant="rows" count={2} />
     );
   }
 
@@ -390,11 +389,6 @@ export default function WeatherConditions() {
             label="측풍"
             value={formatValue(weather.crosswind, " kt", 1)}
             detail={weather.crosswindDirection ?? undefined}
-          />
-
-          <Metric
-            label="시정"
-            value={formatValue(weather.visibility, " km", 1)}
           />
 
           <Metric

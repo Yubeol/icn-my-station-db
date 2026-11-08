@@ -2,6 +2,7 @@
 import { useMemo } from "react";
 import { useLiveUpdates } from "../../../hooks/useLiveUpdates";
 import type { Terminal } from "../../../types/flight";
+import Skeleton from "../../layout/Skeleton";
 import "./FlightStatistics.css";
 
 // 기존 MainDashboard와 연결 호환성 유지
@@ -43,27 +44,27 @@ const ITEMS: {
   {
     category: "NORMAL",
     label: "정상 운항",
-    color: "#2484f5",
+    color: "#4f92cf",
   },
   {
     category: "DELAYED",
     label: "지연",
-    color: "#ffb020",
+    color: "#e7a54b",
   },
   {
     category: "CANCELLED",
     label: "결항",
-    color: "#ff625d",
+    color: "#dc6c73",
   },
   {
     category: "DIVERTED",
     label: "회항",
-    color: "#78879d",
+    color: "#a494ec",
   },
   {
     category: "OTHER",
     label: "기타/미확인",
-    color: "#cbd5e1",
+    color: "#c9d6e4",
   },
 ];
 
@@ -229,9 +230,7 @@ export default function FlightStatistics({
 
       <div className="flight-statistics__body">
         {loading && !data ? (
-          <div className="flight-statistics__message">
-            운항통계를 불러오는 중입니다.
-          </div>
+          <Skeleton label="운항통계를 불러오는 중입니다." variant="donut" />
         ) : error && !data ? (
           <div
             className="flight-statistics__message flight-statistics__error"
@@ -240,7 +239,7 @@ export default function FlightStatistics({
             {error}
           </div>
         ) : statistics ? (
-          <>
+          <div className="flight-statistics__summary">
             {/* 도넛 차트 */}
             <div className="flight-statistics__chart-area">
               <div
@@ -297,13 +296,36 @@ export default function FlightStatistics({
                 );
               })}
             </div>
-          </>
+          </div>
         ) : (
           <div className="flight-statistics__message">
             운항통계 데이터가 없습니다.
           </div>
         )}
       </div>
+
+      {/* 시간대별 출발 미니 차트 */}
+      {data && data.hourly?.length > 0 && (
+        <div className="flight-statistics__hours">
+          <div className="flight-statistics__hours-head">
+            <span>시간대별 출발</span>
+            <small>지연 포함</small>
+          </div>
+          <div className="flight-statistics__bars" role="img" aria-label="시간대별 출발 편수">
+            {data.hourly.map((hour) => {
+              const peak = Math.max(...data.hourly.map((item) => item.count), 1);
+              return (
+                <i key={hour.hour} title={`${hour.hour}시 ${hour.count}편`} style={{ height: `${Math.max(4, (hour.count / peak) * 100)}%` }} />
+              );
+            })}
+          </div>
+          <div className="flight-statistics__axis">
+            <span>0시</span>
+            <span>12시</span>
+            <span>23시</span>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

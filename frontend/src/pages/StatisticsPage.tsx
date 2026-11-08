@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import ApiStatus from '../components/layout/ApiStatus';
+import Skeleton from '../components/layout/Skeleton';
 import { getFlightStats, getLiveUrl } from '../api/client';
 import type { FlightStats, LiveMessage } from '../api/client';
 import { useApiResource } from '../hooks/useApiResource';
@@ -15,7 +16,7 @@ const CATEGORIES: { key: Category; label: string }[] = [
   { key: 'CANCELLED', label: '결항' },
   { key: 'DIVERTED', label: '회항' },
 ];
-const COLORS = { normal: '#74a8ee', delayed: '#f2b64a', cancelled: '#ec8585', diverted: '#a494ec' };
+const COLORS = { normal: '#4f92cf', delayed: '#e7a54b', cancelled: '#dc6c73', diverted: '#a494ec' };
 const PLANE_PATH = 'M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z';
 const RECONNECT_MS = 5000;
 const MIN_FLIGHTS_FOR_RATE = 5;
@@ -90,24 +91,43 @@ function headline(stats: FlightStats) {
   return `오늘 출발 ${total}편, 지연과 결항 없이 운항 중입니다.`;
 }
 
-const CLIMB = { left: 34, right: 786, ground: 322, top: 54 };
+const CLIMB = { left: 34, right: 786, width: 820, baseHeight: 380, minHeight: 240, groundDepth: 58, top: 44 };
 
 /** 시간대별 예정편을 누적해, 하루의 출발 흐름을 항공기 상승 곡선으로 그립니다. */
 function ClimbScene({ stats, currentHour }: { stats: FlightStats; currentHour: number | null }) {
   const [active, setActive] = useState<number | null>(null);
+  const [sceneHeight, setSceneHeight] = useState(CLIMB.baseHeight);
+  const plotRef = useRef<HTMLDivElement>(null);
+
+  // 패널 비율에 맞춰 그림 높이를 정합니다. 곡선의 위쪽이 잘리지 않게 하기 위함입니다.
+  useEffect(() => {
+    const plot = plotRef.current;
+    if (!plot) return;
+    const measure = () => {
+      if (!plot.clientWidth || !plot.clientHeight) return;
+      const next = Math.round((CLIMB.width * plot.clientHeight) / plot.clientWidth);
+      setSceneHeight(Math.max(CLIMB.minHeight, next));
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(plot);
+    measure();
+    return () => observer.disconnect();
+  }, []);
+
+  const ground = sceneHeight - CLIMB.groundDepth;
   const points = useMemo(() => {
-    const scale = (CLIMB.ground - CLIMB.top) / Math.max(stats.total, 1);
+    const scale = (ground - CLIMB.top) / Math.max(stats.total, 1);
     const toX = (hour: number) => CLIMB.left + (hour / 24) * (CLIMB.right - CLIMB.left);
     let flights = 0;
     let delayed = 0;
-    const result = [{ x: toX(0), y: CLIMB.ground, delayY: CLIMB.ground, flights: 0 }];
+    const result = [{ x: toX(0), y: ground, delayY: ground, flights: 0 }];
     for (const hour of stats.hourly) {
       flights += hour.count;
       delayed += hour.delayedCount;
-      result.push({ x: toX(hour.hour + 1), y: CLIMB.ground - flights * scale, delayY: CLIMB.ground - delayed * scale, flights });
+      result.push({ x: toX(hour.hour + 1), y: ground - flights * scale, delayY: ground - delayed * scale, flights });
     }
     return result;
-  }, [stats]);
+  }, [stats, ground]);
   const nowIndex = currentHour === null ? null : currentHour + 1;
   const toPath = (items: typeof points, key: 'y' | 'delayY') => items.map((point, index) => `${index ? 'L' : 'M'}${point.x.toFixed(1)} ${point[key].toFixed(1)}`).join(' ');
   const flown = nowIndex === null ? points : points.slice(0, nowIndex + 1);
@@ -122,31 +142,33 @@ function ClimbScene({ stats, currentHour }: { stats: FlightStats; currentHour: n
       <h2 id="flightstats-headline">{headline(stats)}</h2>
       {nowIndex !== null && <p>{formatHour(currentHour ?? 0)}까지 예정 {formatNumber(points[nowIndex].flights)}편</p>}
     </div>
-    <div className="icn-flightstats__scene-plot">
-      <svg viewBox="0 0 820 380" role="img" aria-label="하루 누적 출발 예정 편수와 누적 지연 편수를 나타낸 상승 곡선">
-        <g fill="#fff" opacity=".62">
-          <ellipse cx="200" cy="82" rx="58" ry="20" /><circle cx="180" cy="72" r="24" /><circle cx="218" cy="66" r="31" />
+    <div className="icn-flightstats__scene-plot" ref={plotRef}>
+      <svg viewBox={`0 0 ${CLIMB.width} ${sceneHeight}`} preserveAspectRatio="xMidYMax meet" role="img" aria-label="하루 누적 출발 예정 편수와 누적 지연 편수를 나타낸 상승 곡선">
+        <g transform={`translate(0 ${sceneHeight - CLIMB.baseHeight})`}>
+          <g fill="#9cc4ee" opacity=".16">
+            <ellipse cx="200" cy="82" rx="58" ry="20" /><circle cx="180" cy="72" r="24" /><circle cx="218" cy="66" r="31" />
+          </g>
+          <g fill="#9cc4ee" opacity=".12">
+            <ellipse cx="460" cy="158" rx="46" ry="15" /><circle cx="446" cy="150" r="18" /><circle cx="476" cy="146" r="23" />
+          </g>
+          <g fill="#0d2748">
+            <path d="M648 322v-74h-9l9-20h34l9 20h-9v74z" />
+            <rect x="655" y="210" width="20" height="8" rx="2" /><rect x="663" y="218" width="4" height="10" />
+            <path d="M520 322v-28c44-18 92-18 128-6v34zM682 322v-34c34-11 70-11 104-2v36z" />
+          </g>
+          <rect x="0" y="322" width="820" height="58" fill="#16304f" />
+          <rect x="0" y="360" width="820" height="20" fill="#0f2744" />
+          {stats.hourly.filter(hour => hour.hour % 3 === 0).map(hour =>
+            <g key={hour.hour}>
+              <circle cx={points[hour.hour].x} cy="341" r="3.5" fill="#ffe6a8" />
+              <text x={points[hour.hour].x} y="374" textAnchor="middle" className="icn-flightstats__scene-tick">{hour.hour}시</text>
+            </g>)}
         </g>
-        <g fill="#fff" opacity=".42">
-          <ellipse cx="460" cy="158" rx="46" ry="15" /><circle cx="446" cy="150" r="18" /><circle cx="476" cy="146" r="23" />
-        </g>
-        <g fill="#f8fbfe">
-          <path d="M648 322v-74h-9l9-20h34l9 20h-9v74z" />
-          <rect x="655" y="210" width="20" height="8" rx="2" /><rect x="663" y="218" width="4" height="10" />
-          <path d="M520 322v-28c44-18 92-18 128-6v34zM682 322v-34c34-11 70-11 104-2v36z" />
-        </g>
-        <rect x="0" y="322" width="820" height="58" fill="#9fb4cc" />
-        <rect x="0" y="360" width="820" height="20" fill="#bcd8c3" />
-        {stats.hourly.filter(hour => hour.hour % 3 === 0).map(hour =>
-          <g key={hour.hour}>
-            <circle cx={points[hour.hour].x} cy="341" r="3.5" fill="#ffe6a8" />
-            <text x={points[hour.hour].x} y="374" textAnchor="middle" className="icn-flightstats__scene-tick">{hour.hour}시</text>
-          </g>)}
-        <path className="icn-flightstats__fade-in" d={`${toPath(flown, 'y')} L${lastFlown.x} ${CLIMB.ground} L${CLIMB.left} ${CLIMB.ground} Z`} fill="#fff" opacity=".3" />
+        <path className="icn-flightstats__fade-in" d={`${toPath(flown, 'y')} L${lastFlown.x} ${ground} L${CLIMB.left} ${ground} Z`} fill="#fff" opacity=".3" />
         <path className="icn-flightstats__draw" pathLength={1} d={toPath(flown, 'y')} fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
         {ahead.length > 1 && <path d={toPath(ahead, 'y')} fill="none" stroke="#fff" strokeWidth="3" strokeDasharray="2 10" strokeLinecap="round" />}
         <path className="icn-flightstats__draw" pathLength={1} d={toPath(flown, 'delayY')} fill="none" stroke={COLORS.delayed} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-        {plane && <g className="icn-flightstats__plane" style={{ offsetPath: `path('${toPath(flown, 'y')}')` }}>
+        {plane && <g key={sceneHeight} className="icn-flightstats__plane" style={{ offsetPath: `path('${toPath(flown, 'y')}')` }}>
           <g transform="rotate(90) scale(1.75) translate(-11.5 -12)"><path d={PLANE_PATH} fill="#fff" stroke="#6f9bd0" strokeWidth=".5" /></g>
         </g>}
         {shownPoint && <circle cx={shownPoint.x} cy={shownPoint.y} r="6" fill="#4f86c8" stroke="#fff" strokeWidth="2" />}
@@ -154,9 +176,9 @@ function ClimbScene({ stats, currentHour }: { stats: FlightStats; currentHour: n
           {stats.hourly.map(hour => <rect
             key={hour.hour}
             x={points[hour.hour].x}
-            y="40"
+            y={CLIMB.top - 14}
             width={points[hour.hour + 1].x - points[hour.hour].x}
-            height="282"
+            height={ground - CLIMB.top + 14}
             fill="transparent"
             tabIndex={0}
             aria-label={`${hourLabel(hour)}, 누적 ${points[hour.hour + 1].flights}편`}
@@ -169,7 +191,7 @@ function ClimbScene({ stats, currentHour }: { stats: FlightStats; currentHour: n
       </svg>
       {shown && shownPoint && <div
         className={`icn-flightstats__tooltip${shown.hour > 18 ? ' is-end' : ''}`}
-        style={{ left: `${(shownPoint.x / 820) * 100}%`, top: `${Math.max((shownPoint.y / 380) * 100 - 6, 2)}%` }}
+        style={{ left: `${(shownPoint.x / CLIMB.width) * 100}%`, top: `${Math.max((shownPoint.y / sceneHeight) * 100 - 6, 2)}%` }}
       >
         <b>{formatHour(shown.hour)}까지</b>
         <span>누적 <em>{formatNumber(shownPoint.flights)}편</em></span>
@@ -225,7 +247,6 @@ function OnTimeGauge({ stats }: { stats: FlightStats }) {
   });
   return <section className="icn-flightstats__card icn-flightstats__gauge" aria-labelledby="flightstats-gauge">
     <h2 id="flightstats-gauge">정상 운항 계기판</h2>
-    <p className="icn-flightstats__note">바늘이 오른쪽 끝에 가까울수록 지연과 결항 없이 운항되고 있습니다.</p>
     <svg viewBox="0 0 320 208" role="img" aria-label={`오늘 정상 운항 비율 ${percent.toFixed(1)}%`}>
       <path d={gaugeArc(0, 100)} fill="none" stroke="#edf2f9" strokeWidth="20" />
       {arcs.map((arc, index) => <path
@@ -253,33 +274,189 @@ function OnTimeGauge({ stats }: { stats: FlightStats }) {
   </section>;
 }
 
-const STREAM = { width: 1000, height: 210, middle: 105, reach: 98 };
+const WAVE = { top: .1, floor: .97, delayMax: .34 };
+const WAVE_LAYERS = [
+  { amplitude: 10, length: 240, speed: .8, alpha: .32 },
+  { amplitude: 7, length: 150, speed: -1.1, alpha: .45 },
+  { amplitude: 5, length: 92, speed: 1.5, alpha: 1 },
+];
+const BUBBLE_COUNT = 26;
 
-function smoothPath(points: [number, number][]) {
-  return points.reduce((path, [x, y], index) => {
-    if (index === 0) return `M${x} ${y}`;
-    const [previousX, previousY] = points[index - 1];
-    const middle = (previousX + x) / 2;
-    return `${path}C${middle.toFixed(1)} ${previousY.toFixed(1)} ${middle.toFixed(1)} ${y.toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)}`;
-  }, '');
+/** 앞뒤 시간을 섞어 수면이 뾰족한 산이 아니라 완만한 물결이 되도록 합니다. */
+function softened(values: number[]) {
+  return values.map((_, index) => {
+    const around = [-2, -1, 0, 1, 2].map(offset => values[Math.max(0, Math.min(values.length - 1, index + offset))]);
+    return (around[0] + around[1] * 2 + around[2] * 3 + around[3] * 2 + around[4]) / 9;
+  });
 }
 
-function ribbon(xs: number[], widths: number[]) {
-  const edgeXs = [0, ...xs, STREAM.width];
-  const edgeWidths = [0, ...widths, 0];
-  const upper = edgeXs.map((x, index): [number, number] => [x, STREAM.middle - edgeWidths[index]]);
-  const lower = edgeXs.map((x, index): [number, number] => [x, STREAM.middle + edgeWidths[index]]).reverse();
-  return `${smoothPath(upper)}L${lower[0][0]} ${lower[0][1]}${smoothPath(lower).replace(/^M[^C]*/, '')}Z`;
+function smoothLevel(values: number[], position: number) {
+  const scaled = Math.max(0, Math.min(position * (values.length - 1), values.length - 1));
+  const left = Math.floor(scaled);
+  const right = Math.min(left + 1, values.length - 1);
+  const ratio = scaled - left;
+  const eased = ratio * ratio * (3 - 2 * ratio);
+  return values[left] + (values[right] - values[left]) * eased;
 }
 
-/** 시간대별 출발량을 강물처럼 흐르는 띠로 그립니다. 띠가 두꺼울수록 출발이 많고, 가운데 물길이 지연입니다. */
+/** 시간대별 출발량을 수조의 수위처럼 그립니다. 수면이 높을수록 출발이 많고, 바닥의 호박색 층이 지연입니다. */
 function FlightStream({ stats, currentHour }: { stats: FlightStats; currentHour: number | null }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [active, setActive] = useState<number | null>(null);
-  const [reduceMotion] = useState(prefersReducedMotion);
-  const peak = Math.max(...stats.hourly.map(hour => hour.count), 1);
-  const xs = stats.hourly.map(hour => 20 + ((hour.hour + 0.5) / 24) * (STREAM.width - 40));
-  const step = (STREAM.width - 40) / 24;
   const shown = active === null ? null : stats.hourly[active];
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const context = canvas?.getContext('2d');
+    if (!canvas || !context) return;
+
+    const peak = Math.max(...stats.hourly.map(hour => hour.count), 1);
+    const levels = softened(stats.hourly.map(hour => .24 + (hour.count / peak) * .7));
+    const delays = softened(stats.hourly.map(hour => hour.delayedCount / peak));
+    const bubbles = Array.from({ length: BUBBLE_COUNT }, (_, index) => ({
+      x: (index * 37 % 100) / 100,
+      phase: (index * 53 % 100) / 100,
+      size: 1 + (index % 3) * .8,
+      speed: .05 + (index % 5) * .012,
+    }));
+    let width = 0;
+    let height = 0;
+    let frame = 0;
+
+    const resize = () => {
+      const ratio = Math.min(window.devicePixelRatio, 2);
+      width = canvas.clientWidth;
+      height = canvas.clientHeight;
+      canvas.width = width * ratio;
+      canvas.height = height * ratio;
+      context.setTransform(ratio, 0, 0, ratio, 0, 0);
+    };
+
+    const surface = (x: number, time: number, layer: (typeof WAVE_LAYERS)[number]) => {
+      const usable = height * (WAVE.floor - WAVE.top);
+      const base = height * WAVE.floor - smoothLevel(levels, x / width) * usable;
+      const ripple = Math.sin((x / layer.length) * Math.PI * 2 + time * layer.speed) * layer.amplitude
+        + Math.sin((x / (layer.length * .43)) * Math.PI * 2 - time * layer.speed * .7) * layer.amplitude * .35;
+      return base + ripple;
+    };
+
+    const draw = (time: number) => {
+      context.clearRect(0, 0, width, height);
+      const sky = context.createLinearGradient(0, 0, 0, height);
+      sky.addColorStop(0, '#f3f8fd');
+      sky.addColorStop(1, '#e3eef8');
+      context.fillStyle = sky;
+      context.fillRect(0, 0, width, height);
+
+      WAVE_LAYERS.forEach((layer, index) => {
+        context.beginPath();
+        context.moveTo(0, height);
+        for (let x = 0; x <= width; x += 3) context.lineTo(x, surface(x, time, layer) + (2 - index) * 7);
+        context.lineTo(width, height);
+        context.closePath();
+        const water = context.createLinearGradient(0, height * WAVE.top, 0, height);
+        water.addColorStop(0, '#a9d3f3');
+        water.addColorStop(.42, '#6aa8dc');
+        water.addColorStop(1, '#2f6fae');
+        context.globalAlpha = layer.alpha;
+        context.fillStyle = water;
+        context.fill();
+      });
+      context.globalAlpha = 1;
+
+      const front = WAVE_LAYERS[2];
+      context.save();
+      context.beginPath();
+      context.moveTo(0, height);
+      for (let x = 0; x <= width; x += 3) context.lineTo(x, surface(x, time, front));
+      context.lineTo(width, height);
+      context.closePath();
+      context.clip();
+
+      for (let beam = 0; beam < 6; beam += 1) {
+        const x = ((beam + .5) / 6) * width + Math.sin(time * .4 + beam * 1.7) * 26;
+        const light = context.createLinearGradient(0, 0, 0, height);
+        light.addColorStop(0, 'rgba(255,255,255,.1)');
+        light.addColorStop(1, 'rgba(255,255,255,0)');
+        context.fillStyle = light;
+        context.beginPath();
+        context.moveTo(x - 14, 0);
+        context.lineTo(x + 18, 0);
+        context.lineTo(x + 54, height);
+        context.lineTo(x - 28, height);
+        context.closePath();
+        context.fill();
+      }
+
+      for (const bubble of bubbles) {
+        const progress = (bubble.phase + time * bubble.speed) % 1;
+        const x = bubble.x * width + Math.sin(time + bubble.phase * 9) * 5;
+        const y = height - progress * height * .92;
+        context.beginPath();
+        context.arc(x, y, bubble.size, 0, Math.PI * 2);
+        context.fillStyle = `rgba(255,255,255,${(.5 * (1 - progress)).toFixed(2)})`;
+        context.fill();
+      }
+
+      context.beginPath();
+      context.moveTo(0, height);
+      for (let x = 0; x <= width; x += 3) {
+        const level = smoothLevel(delays, x / width) * height * WAVE.delayMax * 2.4;
+        context.lineTo(x, height - level + Math.sin(x / 46 + time * 1.1) * 1.6);
+      }
+      context.lineTo(width, height);
+      context.closePath();
+      const delay = context.createLinearGradient(0, height * .6, 0, height);
+      delay.addColorStop(0, 'rgba(240,190,110,.95)');
+      delay.addColorStop(1, 'rgba(231,165,75,.95)');
+      context.fillStyle = delay;
+      context.fill();
+      context.restore();
+
+      context.beginPath();
+      for (let x = 0; x <= width; x += 3) {
+        const y = surface(x, time, front);
+        if (x) context.lineTo(x, y);
+        else context.moveTo(x, y);
+      }
+      context.strokeStyle = 'rgba(255,255,255,.85)';
+      context.lineWidth = 1.6;
+      context.stroke();
+
+      if (currentHour !== null) {
+        const x = ((currentHour + .5) / 24) * width;
+        context.setLineDash([3, 5]);
+        context.strokeStyle = 'rgba(11,43,82,.5)';
+        context.lineWidth = 1;
+        context.beginPath();
+        context.moveTo(x, 4);
+        context.lineTo(x, height);
+        context.stroke();
+        context.setLineDash([]);
+      }
+    };
+
+    const observer = new ResizeObserver(() => {
+      resize();
+      draw(0);
+    });
+    observer.observe(canvas);
+    resize();
+    if (prefersReducedMotion()) {
+      draw(0);
+    } else {
+      const animate = (now: number) => {
+        draw(now / 1000);
+        frame = requestAnimationFrame(animate);
+      };
+      frame = requestAnimationFrame(animate);
+    }
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [stats, currentHour]);
+
   return <section className="icn-flightstats__card icn-flightstats__stream" aria-labelledby="flightstats-stream">
     <div className="icn-flightstats__section-head">
       <h2 id="flightstats-stream">하루 출발 물결</h2>
@@ -288,44 +465,25 @@ function FlightStream({ stats, currentHour }: { stats: FlightStats; currentHour:
         <li><i className="is-delayed" />그중 지연</li>
       </ul>
     </div>
-    <p className="icn-flightstats__note">띠가 두꺼울수록 출발이 몰리는 시간이고, 가운데 물길이 넓을수록 지연이 많습니다.</p>
     <div className="icn-flightstats__stream-plot">
-      <svg viewBox={`0 0 ${STREAM.width} ${STREAM.height}`} preserveAspectRatio="none" role="img" aria-label="시간대별 출발량과 지연량을 나타낸 흐름 그래프">
-        <defs>
-          <linearGradient id="flightstats-flow" x1="0" x2="1" y1="0" y2="0">
-            <stop offset="0" stopColor="#cfe2f8" /><stop offset=".5" stopColor={COLORS.normal} /><stop offset="1" stopColor="#c4c6f2" />
-          </linearGradient>
-          <clipPath id="flightstats-reveal">
-            <rect x="0" y="0" width={STREAM.width} height={STREAM.height}>
-              {!reduceMotion && <animate attributeName="width" from="0" to={STREAM.width} dur="1.5s" fill="freeze" calcMode="spline" keySplines=".35 0 .25 1" keyTimes="0;1" />}
-            </rect>
-          </clipPath>
-        </defs>
-        <g clipPath="url(#flightstats-reveal)">
-          <path d={ribbon(xs, stats.hourly.map(hour => (hour.count / peak) * STREAM.reach + 1))} fill="url(#flightstats-flow)" />
-          <path d={ribbon(xs, stats.hourly.map(hour => (hour.delayedCount / peak) * STREAM.reach))} fill={COLORS.delayed} />
-        </g>
-        {currentHour !== null && <line x1={xs[currentHour]} x2={xs[currentHour]} y1="2" y2={STREAM.height - 2} stroke="#6d84a3" strokeDasharray="3 5" vectorEffect="non-scaling-stroke" />}
-        {stats.hourly.map(hour => <rect
+      <canvas ref={canvasRef} aria-hidden="true" />
+      <div className="icn-flightstats__stream-hours">
+        {stats.hourly.map(hour => <button
+          type="button"
           key={hour.hour}
-          x={xs[hour.hour] - step / 2}
-          y="0"
-          width={step}
-          height={STREAM.height}
-          fill={active === hour.hour ? 'rgba(90,130,190,.1)' : 'transparent'}
-          tabIndex={0}
           aria-label={hourLabel(hour)}
           onMouseEnter={() => setActive(hour.hour)}
           onMouseLeave={() => setActive(null)}
           onFocus={() => setActive(hour.hour)}
-          onBlur={() => setActive(null)}
-        />)}
-      </svg>
+          onBlur={() => setActive(null)} />)}
+      </div>
       <div className="icn-flightstats__stream-ticks" aria-hidden="true">
         {stats.hourly.filter(hour => hour.hour % 3 === 0).map(hour =>
-          <span key={hour.hour} style={{ left: `${(xs[hour.hour] / STREAM.width) * 100}%` }}>{hour.hour}시</span>)}
+          <span key={hour.hour} style={{ left: `${((hour.hour + .5) / 24) * 100}%` }}>{hour.hour}시</span>)}
       </div>
-      {shown && <div className={`icn-flightstats__tooltip${shown.hour > 18 ? ' is-end' : shown.hour < 5 ? ' is-start-at' : ''}`} style={{ left: `${(xs[shown.hour] / STREAM.width) * 100}%`, top: '4%' }}>
+      {shown && <div
+        className={`icn-flightstats__tooltip${shown.hour > 18 ? ' is-end' : shown.hour < 5 ? ' is-start-at' : ''}`}
+        style={{ left: `${((shown.hour + .5) / 24) * 100}%`, top: '6%' }}>
         <b>{formatHour(shown.hour)}</b>
         <span>전체 <em>{shown.count}편</em></span>
         <span>지연 <em>{shown.delayedCount}편</em></span>
@@ -384,7 +542,6 @@ function HourlyChart({ stats, currentHour }: { stats: FlightStats; currentHour: 
         </button>;
       })}
     </div>
-    <p className="icn-flightstats__note">아래 띠는 지연율입니다. 진할수록 지연 비율이 높고, 5편 미만인 시간대는 표시하지 않습니다.</p>
   </section>;
 }
 
@@ -418,11 +575,10 @@ function FlightRadar({ stats, currentHour }: { stats: FlightStats; currentHour: 
         <li><i className="is-delayed" />지연율 {HIGH_DELAY_RATE}% 이상</li>
       </ul>
     </div>
-    <p className="icn-flightstats__note">점 하나가 한 시간대입니다. 바깥일수록 출발이 많고, 점이 클수록 지연이 많습니다.</p>
     <svg className="icn-flightstats__radar" viewBox="0 0 360 360" role="img" aria-label="시간대별 출발량과 지연량을 레이더 점으로 나타낸 차트">
       <defs>
         <radialGradient id="flightstats-scope">
-          <stop offset="0" stopColor="#4f7cb0" /><stop offset="1" stopColor="#35598a" />
+          <stop offset="0" stopColor="#1b4a7f" /><stop offset="1" stopColor="#0b2b52" />
         </radialGradient>
       </defs>
       <circle cx="180" cy="180" r={RADAR.outer} fill="url(#flightstats-scope)" />
@@ -460,25 +616,6 @@ function FlightRadar({ stats, currentHour }: { stats: FlightStats; currentHour: 
   </section>;
 }
 
-function HourlyTable({ stats }: { stats: FlightStats }) {
-  return <details className="icn-flightstats__card icn-flightstats__table">
-    <summary>시간대별 수치를 표로 보기</summary>
-    <div>
-      <table>
-        <thead><tr><th scope="col">시간</th><th scope="col">전체</th><th scope="col">지연</th><th scope="col">지연율</th></tr></thead>
-        <tbody>
-          {stats.hourly.map(hour => <tr key={hour.hour}>
-            <th scope="row">{formatHour(hour.hour)}</th>
-            <td>{hour.count}</td>
-            <td>{hour.delayedCount}</td>
-            <td>{delayRate(hour).toFixed(1)}%</td>
-          </tr>)}
-        </tbody>
-      </table>
-    </div>
-  </details>;
-}
-
 /** 운항통계 상세 화면. 출발편 기준이며 터미널 구분 없이 공항 전체를 집계합니다. */
 export default function StatisticsPage() {
   const api = useApiResource(signal => getFlightStats('DEPARTURE', signal));
@@ -490,23 +627,23 @@ export default function StatisticsPage() {
   }, [stats]);
 
   return <main className="icn-detail icn-flightstats">
-    <div className="icn-detail__heading">
-      <h1>운항통계</h1>
-      <p>{stats ? `${formatDate(stats.date)} 출발편, 공항 전체 기준` : '인천공항 출발편 기준'}</p>
+    <div className="icn-flightstats__top">
+      <div className="icn-detail__heading">
+        <h1>운항통계</h1>
+        <p>{stats ? `${formatDate(stats.date)} 출발편, 공항 전체 기준` : '인천공항 출발편 기준'}</p>
+      </div>
+      {stats && stats.total > 0 && <Highlights stats={stats} currentHour={currentHour} />}
     </div>
-    {!stats && <ApiStatus status={api.status} error={api.error} />}
+    {!stats && api.status === 'loading' && <Skeleton label="운항통계를 불러오는 중입니다." variant="cards" count={3} />}
+    {!stats && api.status === 'error' && <ApiStatus status={api.status} error={api.error} />}
     {stats && stats.total === 0 && <p className="icn-flightstats__empty">오늘 출발편 데이터가 아직 없습니다. 수집이 시작되면 이 화면에 표시됩니다.</p>}
     {stats && stats.total > 0 && <div className="icn-flightstats__grid">
       <ClimbScene stats={stats} currentHour={currentHour} />
-      <div className="icn-flightstats__side">
-        <Composition stats={stats} />
-        <OnTimeGauge stats={stats} />
-        <Highlights stats={stats} currentHour={currentHour} />
-      </div>
       <HourlyChart stats={stats} currentHour={currentHour} />
-      <FlightRadar stats={stats} currentHour={currentHour} />
       <FlightStream stats={stats} currentHour={currentHour} />
-      <HourlyTable stats={stats} />
+      <Composition stats={stats} />
+      <OnTimeGauge stats={stats} />
+      <FlightRadar stats={stats} currentHour={currentHour} />
     </div>}
   </main>;
 }

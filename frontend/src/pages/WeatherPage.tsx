@@ -14,6 +14,7 @@ import {
   formatWindDirection, getDelayRiskLabel,
 } from '../api/weather';
 import { WindCompass } from '../components/main/Weather/WeatherConditions';
+import Skeleton from '../components/layout/Skeleton';
 import '../components/main/Weather/WeatherConditions.css';
 import './WeatherPage.css';
 
@@ -88,6 +89,8 @@ function formatHour(value: string) {
 }
 
 type TimePhase = 'dawn' | 'day' | 'dusk' | 'night';
+
+const TIME_PHASES: TimePhase[] = ['dawn', 'day', 'dusk', 'night'];
 
 function getKoreaTimePhase(date: Date): TimePhase {
   const hour = Number(
@@ -426,37 +429,37 @@ export default function WeatherPage() {
             }
           >
             <div className="icn-w-sky" aria-hidden="true">
-              {(timePhase === 'night' ||
-                timePhase === 'dawn') && (
-                <div className="icn-w-stars">
-                  {Array.from(
-                    { length: 24 },
-                    (_, index) => (
-                      <i
-                        key={index}
-                        style={{
-                          left: `${randomAt(index, 11) * 100}%`,
-                          top: `${randomAt(index, 12) * 68}%`,
-                          animationDelay:
-                            `${-randomAt(index, 13) * 4}s`,
-                        }}
-                      />
-                    )
-                  )}
-                </div>
-              )}
+              {/* 시간대별 하늘을 겹쳐 두고 현재 시간대만 서서히 드러냅니다 */}
+              {TIME_PHASES.map(phase => (
+                <div
+                  key={phase}
+                  className={`icn-w-sky-layer icn-w-sky-${phase}`}
+                  data-active={timePhase === phase}
+                />
+              ))}
 
-              {timePhase === 'night' && (
-                <div className="icn-w-moon" />
-              )}
+              <div className="icn-w-stars">
+                {Array.from(
+                  { length: 24 },
+                  (_, index) => (
+                    <i
+                      key={index}
+                      style={{
+                        left: `${randomAt(index, 11) * 100}%`,
+                        top: `${randomAt(index, 12) * 58}%`,
+                        animationDelay:
+                          `${-randomAt(index, 13) * 4}s`,
+                      }}
+                    />
+                  )
+                )}
+              </div>
 
-              {(
-                timePhase === 'day' ||
-                timePhase === 'dawn' ||
-                timePhase === 'dusk'
-              ) && (
-                <div className="icn-w-sun" />
-              )}
+              <div className="icn-w-sun" />
+              <div className="icn-w-moon" />
+
+              {/* 날씨 상태는 시간대 하늘 위에 색을 덧씌웁니다 */}
+              <div className="icn-w-tint" />
             </div>
 
             <AirportLandscape />
@@ -695,11 +698,11 @@ export default function WeatherPage() {
                 })}
               </div>
             </div>
+          ) : history.status === 'loading' ? (
+            <Skeleton label="기상 이력을 불러오는 중입니다." variant="rows" count={3} className="icn-w-skeleton" />
           ) : (
             <p className="icn-w-placeholder">
-              {history.status === 'loading'
-                ? '기상 이력 조회 중'
-                : '기상 이력 데이터가 없습니다.'}
+              기상 이력 데이터가 없습니다.
             </p>
           )}
 
@@ -786,11 +789,11 @@ export default function WeatherPage() {
                 </LineChart>
               </ResponsiveContainer>
             </div>
+          ) : history.status === 'loading' ? (
+            <Skeleton label="그래프를 불러오는 중입니다." variant="chart" className="icn-w-skeleton" />
           ) : (
             <p className="icn-w-placeholder">
-              {history.status === 'loading'
-                ? '그래프 불러오는 중'
-                : '그래프 데이터가 없습니다.'}
+              그래프 데이터가 없습니다.
             </p>
           )}
         </section>
