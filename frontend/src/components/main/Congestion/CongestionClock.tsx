@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { MouseEvent } from 'react';
 import type { CongestionHourly } from '../../../api/client';
 
@@ -20,6 +20,10 @@ const HAND_END = OUTER + 3;
 const LEVEL_COLOR: Record<string, string> = { LOW: '#3bb886', MID: '#f0b13c', HIGH: '#ec6a5e' };
 const LEVEL_LABEL: Record<string, string> = { LOW: '여유', MID: '보통', HIGH: '혼잡' };
 const YESTERDAY_COLOR = '#8fa6bd';
+const AHEAD_COUNT = 4;          // 앞으로 보여줄 시간 수
+const AHEAD_RESERVE = 132;      // "앞으로 몇 시간" 섹션이 차지하는 높이(px, 여백 포함)
+const LEGEND_RESERVE = 30;      // 범례 높이(px, 여백 포함)
+const CLOCK_WIDTH_RATIO = .9;   // CSS의 시계 폭 비율과 같아야 합니다
 const minuteFormat = new Intl.DateTimeFormat('en-GB', { minute: 'numeric', timeZone: 'Asia/Seoul' });
 
 function point(radius: number, hour: number) {
@@ -41,6 +45,8 @@ export default function CongestionClock({ data, currentHour }: Props) {
   const [active, setActive] = useState<number | null>(null);
   const [tip, setTip] = useState<{ x: number; y: number } | null>(null);
   const boxRef = useRef<HTMLDivElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [roomy, setRoomy] = useState(false);
   const hours = data?.hours ?? [];
   const peak = Math.max(1, ...hours.flatMap(hour => [hour.today ?? 0, hour.yesterday ?? 0]));
   const shownHour = active ?? currentHour;
@@ -54,6 +60,24 @@ export default function CongestionClock({ data, currentHour }: Props) {
   // 오른쪽 끝에서는 툴팁이 카드 밖으로 잘리지 않게 왼쪽으로 펼칩니다.
   const flip = tip !== null && boxRef.current !== null && tip.x > boxRef.current.clientWidth * .55;
 
+  // 시계가 줄어들지 않을 만큼 카드 높이에 여유가 있을 때만 '앞으로 몇 시간'을 보여줍니다.
+  useEffect(() => {
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      setRoomy(height - LEGEND_RESERVE - AHEAD_RESERVE >= width * CLOCK_WIDTH_RATIO);
+    });
+    observer.observe(wrap);
+    return () => observer.disconnect();
+  }, []);
+
+  // 현재 시각 다음 시간부터. 자정을 넘기는 칸은 어제 데이터 범위(0~23시) 밖이라 '-'로 둡니다.
+  const ahead = Array.from({ length: AHEAD_COUNT }, (_, index) => {
+    const hour = currentHour + 1 + index;
+    return { hour, label: hour % 24, value: hour <= 23 ? hours.find(item => item.hour === hour)?.yesterday ?? null : null };
+  });
+
   const track = (event: MouseEvent, hour: number) => {
     const box = boxRef.current?.getBoundingClientRect();
     setActive(hour);
@@ -64,7 +88,8 @@ export default function CongestionClock({ data, currentHour }: Props) {
     setTip(null);
   };
 
-  return <div className="cong-clock" ref={boxRef}>
+  return <div className="cong-clock-wrap" ref={wrapRef}>
+  <div className="cong-clock" ref={boxRef}>
     <svg viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-label="시간대별 출국장 대기 인원 시계">
       <circle cx={CENTER} cy={CENTER} r={BEZEL} fill="#f3f7fd" stroke="#b9c8d8" strokeWidth="1.5" />
       <circle cx={CENTER} cy={CENTER} r={INNER - 4} fill="#fff" />
@@ -117,5 +142,25 @@ export default function CongestionClock({ data, currentHour }: Props) {
       {hovered.yesterday !== null && <span>어제 {hovered.yesterday.toLocaleString()}명</span>}
     </div>}
     {!hasData && <p className="cong-clock__empty">쌓인 측정값이 아직 없습니다.</p>}
+  </div>
+  <ul className="cong-card__legend">
+    <li><i data-level="LOW" />여유</li>
+    <li><i data-level="MID" />보통</li>
+    <li><i data-level="HIGH" />혼잡</li>
+    <li><i className="is-yesterday" />어제</li>
+  </ul>
+  {roomy && hasData && <section className="cong-ahead" aria-label="앞으로 몇 시간 (어제 기준)">
+    <div className="cong-ahead__head">
+      <h3>앞으로 {AHEAD_COUNT}시간</h3>
+      <small>어제 같은 시간 기준 · 예측 아님</small>
+    </div>
+    <ol>
+      {ahead.map((item, index) => <li key={item.hour} className={index === 0 ? 'is-next' : undefined}>
+        <span className="cong-ahead__bar" aria-hidden="true"><i style={{ height: item.value === null ? 0 : `${Math.max(6, (item.value / peak) * 100)}%` }} /></span>
+        <b>{item.label}시</b>
+        <span>{item.value === null ? '-' : `${item.value.toLocaleString()}명`}</span>
+      </li>)}
+    </ol>
+  </section>}
   </div>;
 }

@@ -41,7 +41,8 @@
 }
 
 /* 혼잡 시계 */
-.cong-clock { position: relative; display: grid; flex: 1 1 0; place-items: center; min-height: 170px; container-type: size; }
+.cong-clock-wrap { display: flex; flex: 1 1 0; flex-direction: column; min-width: 0; min-height: 170px; }
+.cong-clock { position: relative; display: grid; flex: 1 1 0; place-items: center; min-height: 0; container-type: size; }
 /* 정사각형을 유지하며 카드 폭의 90%까지 키우고, 높이가 모자라면 높이에 맞춥니다 */
 .cong-clock svg { display: block; width: min(90cqw, 100cqh); height: min(90cqw, 100cqh); }
 .cong-clock__hour { outline: none; cursor: default; }
@@ -55,6 +56,18 @@
 .cong-clock__center em[data-level='MID'] { color: var(--mid); }
 .cong-clock__center em[data-level='HIGH'] { color: var(--high); }
 .cong-clock__empty { position: absolute; bottom: 0; margin: 0; color: var(--muted); font-size: 12px; }
+/* 앞으로 몇 시간(어제 기준): 시계 아래 미니 막대. 카드 높이가 모자라면 컴포넌트가 렌더링하지 않습니다 */
+.cong-ahead { flex: none; margin: 12px 0 0; padding: 9px 12px 10px; border-radius: 10px; background: #f7f9fd; }
+.cong-ahead__head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.cong-ahead h3 { margin: 0; color: var(--night); font-size: 13px; font-weight: 700; }
+.cong-ahead__head small { color: #8aa0b6; font-size: 10.5px; }
+.cong-ahead ol { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 8px 0 0; padding: 0; list-style: none; }
+.cong-ahead li { display: grid; justify-items: center; gap: 2px; color: var(--muted); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.cong-ahead li b { color: var(--night); font-size: 12px; }
+.cong-ahead__bar { display: flex; align-items: flex-end; width: 100%; height: 34px; }
+.cong-ahead__bar i { display: block; width: 100%; border-radius: 4px 4px 0 0; background: #8fa6bd; opacity: .55; }
+.cong-ahead li.is-next .cong-ahead__bar i { background: #5f86b0; opacity: 1; }
+.cong-ahead li.is-next span:last-child { color: var(--night); font-weight: 700; }
 .cong-clock__tip { position: absolute; z-index: 3; display: grid; gap: 1px; padding: 6px 10px; border-radius: 8px; background: var(--night); box-shadow: 0 6px 16px rgba(11, 31, 69, .3); color: #fff; font-size: 12.5px; white-space: nowrap; pointer-events: none; transform: translate(12px, calc(-100% - 10px)); }
 .cong-clock__tip.is-left { transform: translate(calc(-100% - 12px), calc(-100% - 10px)); }
 .cong-clock__tip b { font-weight: 700; }

@@ -129,12 +129,6 @@ export default function CongestionPage() {
       <section className="cong-card">
         <h2>시간대별 혼잡 시계</h2>
         <CongestionClock data={hourly.data} currentHour={currentHour} />
-        <ul className="cong-card__legend">
-          <li><i data-level="LOW" />여유</li>
-          <li><i data-level="MID" />보통</li>
-          <li><i data-level="HIGH" />혼잡</li>
-          <li><i className="is-yesterday" />어제</li>
-        </ul>
         <dl className="cong-facts">
           <div><dt>오늘 가장 붐빈 시간</dt><dd>{todayPeak ? `${todayPeak.hour}시 · ${todayPeak.value.toLocaleString()}명` : '-'}</dd></div>
           <div><dt>어제 가장 붐빈 시간</dt><dd>{yesterdayPeak ? `${yesterdayPeak.hour}시 · ${yesterdayPeak.value.toLocaleString()}명` : '-'}</dd></div>
