@@ -17,6 +17,49 @@ type Props = {
   onPickPlace: (id: string, zoneKey: string) => void;
 };
 type Overlay = { key: string; point: THREE.Vector3; area?: string };
+type PinScreen = { element: HTMLElement; x: number; y: number };
+
+const PIN_MIN_DISTANCE = 28;          // 숫자 마커 중심끼리 이 거리(px)보다 가까우면 서로 밀어냄
+const PIN_MAX_SHIFT = 26;             // 마커가 원래 위치에서 밀려나는 최대 거리(px)
+
+/** 겹치는 숫자 마커를 서로 살짝 밀어내 모두 보이게 합니다. 거리에 따라 연속적으로 변해 튀지 않습니다. */
+function spreadPins(pins: PinScreen[]) {
+  if (pins.length < 2) return;
+  const origin = pins.map(pin => ({ x: pin.x, y: pin.y }));
+  for (let pass = 0; pass < 4; pass += 1) {
+    for (let i = 0; i < pins.length; i += 1) {
+      for (let j = i + 1; j < pins.length; j += 1) {
+        let dx = pins[j].x - pins[i].x;
+        let dy = pins[j].y - pins[i].y;
+        let distance = Math.hypot(dx, dy);
+        if (distance >= PIN_MIN_DISTANCE) continue;
+        if (distance < .01) {
+          // 완전히 겹치면 짝마다 고정된 방향으로 벌립니다.
+          const angle = i * 1.7 + j * .9;
+          dx = Math.cos(angle);
+          dy = Math.sin(angle);
+          distance = 1;
+        }
+        const push = (PIN_MIN_DISTANCE - Math.min(distance, PIN_MIN_DISTANCE)) / 2;
+        const ux = dx / distance;
+        const uy = dy / distance;
+        pins[i].x -= ux * push;
+        pins[i].y -= uy * push;
+        pins[j].x += ux * push;
+        pins[j].y += uy * push;
+      }
+    }
+    pins.forEach((pin, index) => {
+      const moveX = pin.x - origin[index].x;
+      const moveY = pin.y - origin[index].y;
+      const moved = Math.hypot(moveX, moveY);
+      if (moved > PIN_MAX_SHIFT) {
+        pin.x = origin[index].x + (moveX / moved) * PIN_MAX_SHIFT;
+        pin.y = origin[index].y + (moveY / moved) * PIN_MAX_SHIFT;
+      }
+    });
+  }
+}
 type Rig = {
   group: THREE.Group;
   detail: THREE.Group;
@@ -70,9 +113,9 @@ const SHADOW_LAYERS = [{ grow: .5, weight: 1 }, { grow: 1.8, weight: .55 }, { gr
 // ── 지상 비행기: 눈에 띄지 않는 배경 장식 ──
 const SHOW_AIRCRAFT = true;           // false로 바꾸면 비행기와 주기장 유도선이 모두 사라집니다
 const AIRCRAFT_MAX = 8;               // 터미널당 비행기 최대 수 (6~8대)
-const AIRCRAFT_SCALE = 1.5;           // 크기 (탑승동 폭보다 작게)
-const AIRCRAFT_COLOR = 0xd7e0ea;      // 계류장보다 조금 밝은 청회색
-const AIRCRAFT_SHADOW_OPACITY = .1;   // 그림자 진하기
+const AIRCRAFT_SCALE = 1.95;          // 크기 (탑승동 폭보다 작게)
+const AIRCRAFT_COLOR = 0xe2e9f2;      // 계류장보다 조금 밝은 청회색
+const AIRCRAFT_SHADOW_OPACITY = .16;  // 그림자 진하기
 const AIRCRAFT_GAP = .2;              // 기수 끝과 건물 벽 사이 간격
 const AIRCRAFT_KEEP_OUT = 8;          // 구역 라벨·시설 구역 중심에서 이 거리(월드 단위) 안에는 놓지 않음
 const STAND_PITCH = 9;                // 같은 쪽 게이트 사이 간격
@@ -418,6 +461,9 @@ function addApron(world: THREE.Group, terminal: MapTerminal) {
       return insideHull(apron, point) && !pieces.some(piece => nearPiece(piece, point, 0));
     });
     if (!fits) continue;
+    // 기수 끝이 건물 벽에 닿아 있지 않으면(계류장에 떠 있으면) 제외합니다.
+    const nose = { x: x + probes[0].x * cos + probes[0].z * sin, z: z - probes[0].x * sin + probes[0].z * cos };
+    if (!pieces.some(piece => nearPiece(piece, nose, AIRCRAFT_GAP + .4))) continue;
     if (keepOut.some(point => Math.hypot(point.x - x, point.z - z) < AIRCRAFT_KEEP_OUT)) continue;
     if (placed.some(other => Math.hypot(other.x - x, other.z - z) < STAND_MIN_GAP)) continue;
     placed.push({ stand, x, z, turn });
@@ -780,6 +826,7 @@ export default function AirportScene({ terminal, floor, map, activeZone = null, 
     canvas.addEventListener('pointermove', onMove);
 
     const projected = new THREE.Vector3();
+    const pinScreens: PinScreen[] = [];
     const clock = new THREE.Clock();
     let frame = 0;
     const animate = () => {
@@ -822,14 +869,24 @@ export default function AirportScene({ terminal, floor, map, activeZone = null, 
       renderer.render(scene, camera);
 
       const zoomed = camera.zoom >= ZOOM_SHOW;
+      pinScreens.length = 0;
       for (const { key, point, area } of overlaysRef.current) {
         const element = overlayRefs.current.get(key);
         if (!element) continue;
         projected.set(point.x, point.y + units.position.y, point.z).project(camera);
-        element.style.transform = `translate(${((projected.x + 1) / 2) * host.clientWidth}px, ${((1 - projected.y) / 2) * host.clientHeight}px) translate(-50%, -50%)`;
+        const screenX = ((projected.x + 1) / 2) * host.clientWidth;
+        const screenY = ((1 - projected.y) / 2) * host.clientHeight;
+        // 숫자 마커(구역 핀)는 아래에서 겹침을 풀고 한꺼번에 배치합니다.
+        if (key.startsWith('zone:')) {
+          pinScreens.push({ element, x: screenX, y: screenY });
+          continue;
+        }
+        element.style.transform = `translate(${screenX}px, ${screenY}px) translate(-50%, -50%)`;
         // 구역 이름은 줌인했거나 그 구역에 마우스를 올렸을 때만 보입니다.
         if (area) element.classList.toggle('is-shown', zoomed || hoveredAreaRef.current === area);
       }
+      spreadPins(pinScreens);
+      for (const pin of pinScreens) pin.element.style.transform = `translate(${pin.x}px, ${pin.y}px) translate(-50%, -50%)`;
 
     };
     animate();
