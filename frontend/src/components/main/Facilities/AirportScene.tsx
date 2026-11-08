@@ -67,14 +67,17 @@ const SHADOW_COLOR = 0x0b1f45;        // 컨택트 섀도
 const SHADOW_OPACITY = .14;           // 그림자 가장 진한 곳
 const SHADOW_OFFSET = { x: 1.8, z: -1.4 };
 const SHADOW_LAYERS = [{ grow: .5, weight: 1 }, { grow: 1.8, weight: .55 }, { grow: 3.4, weight: .3 }];
-const AIRCRAFT_MAX = 12;              // 터미널당 비행기 최대 수
+// ── 지상 비행기: 눈에 띄지 않는 배경 장식 ──
+const SHOW_AIRCRAFT = true;           // false로 바꾸면 비행기와 주기장 유도선이 모두 사라집니다
+const AIRCRAFT_MAX = 8;               // 터미널당 비행기 최대 수 (6~8대)
+const AIRCRAFT_SCALE = 1.5;           // 크기 (탑승동 폭보다 작게)
+const AIRCRAFT_COLOR = 0xd7e0ea;      // 계류장보다 조금 밝은 청회색
+const AIRCRAFT_SHADOW_OPACITY = .1;   // 그림자 진하기
+const AIRCRAFT_GAP = .2;              // 기수 끝과 건물 벽 사이 간격
+const AIRCRAFT_KEEP_OUT = 8;          // 구역 라벨·시설 구역 중심에서 이 거리(월드 단위) 안에는 놓지 않음
 const STAND_PITCH = 9;                // 같은 쪽 게이트 사이 간격
 const STAND_MIN_GAP = 8;              // 비행기 중심끼리 최소 거리
-const STAND_LINE_OPACITY = .85;       // 주기장 유도선(노랑) 진하기
-const AIRCRAFT_COLOR = 0xffffff;
-const AIRCRAFT_SCALE = 3;
-const AIRCRAFT_GAP = .6;              // 기수와 건물 사이 간격
-const AIRCRAFT_SHADOW_OPACITY = .2;
+const STAND_LINE_OPACITY = .45;       // 주기장 유도선(노랑) 진하기
 const GROUND_Y = -1.06;               // 바닥 맨 아래 층 높이
 const LAYER_GAP = .006;               // 바닥 층 사이 높이 간격
 const CATEGORY_COLOR: Record<string, number> = {
@@ -331,6 +334,26 @@ function nearPiece(piece: Piece, point: Pt, margin: number) {
 
 type Stand = { edge: Pt; normal: Pt };
 
+/** 숫자 마커·구역 라벨이 놓이는 월드 좌표(모든 층)입니다. 비행기를 이 근처에는 두지 않습니다. */
+function keepOutPoints(terminal: MapTerminal): Pt[] {
+  const points: Pt[] = [];
+  for (const floor of MAP_FLOORS) {
+    const layout = floorLayout(terminal, floor);
+    for (const label of layout.labels) points.push({ x: label.x, z: label.z });
+    for (const patch of layout.patches) {
+      const piece = patch.piece;
+      if (piece.kind === 'bar') points.push({ x: (piece.from.x + piece.to.x) / 2, z: (piece.from.z + piece.to.z) / 2 });
+      else if (piece.kind === 'circle') points.push(piece.center);
+      else {
+        const radians = (((piece.from + piece.to) / 2) * Math.PI) / 180;
+        const radius = (piece.inner + piece.outer) / 2;
+        points.push({ x: piece.center.x + radius * Math.sin(radians), z: piece.center.z - radius * Math.cos(radians) });
+      }
+    }
+  }
+  return points;
+}
+
 /** 탑승동 양옆(그리고 T1 본동 바깥쪽)에 일정 간격으로 놓을 게이트 후보입니다. normal은 건물에서 바깥쪽입니다. */
 function standCandidates(plan: { floors: Piece[]; landside: Piece[] }): Stand[] {
   const stands: Stand[] = [];
@@ -369,15 +392,18 @@ function standCandidates(plan: { floors: Piece[]; landside: Piece[] }): Stand[] 
 }
 
 /**
- * 비행기를 게이트에 나란히 세웁니다. 기수는 건물 쪽, 크기와 그림자 방향은 모두 같습니다.
- * 건물과 겹치거나 계류장 밖(유도로·잔디)으로 나가는 자리는 월드 좌표로 한 번만 걸러냅니다.
+ * 비행기를 탑승동 벽에 수직으로 붙여 조용한 배경 장식으로 세웁니다. 기수 끝이 벽에 거의 닿고,
+ * 크기와 그림자 방향은 모두 같습니다. 건물과 겹치거나 계류장 밖으로 나가는 자리, 라벨 근처는
+ * 월드 좌표로 배치할 때 한 번만 걸러냅니다.
  */
 function addApron(world: THREE.Group, terminal: MapTerminal) {
+  if (!SHOW_AIRCRAFT) return;
   const plan = PLANS[terminal];
   const pieces = [...plan.floors, ...plan.landside];
   const apron = offsetHull(footprintPoints(plan), APRON_MARGIN - 1);
+  const keepOut = keepOutPoints(terminal);
   const reach = AIRCRAFT_GAP + AIRCRAFT_SCALE * 1.5;
-  // 비행기 윤곽 위의 주요 점(기수, 꼬리, 날개 끝)을 로컬 좌표로 둡니다. 로컬 z는 기수가 -입니다.
+  // 비행기 윤곽 위의 주요 점(기수, 꼬리, 날개 끝, 중심)을 로컬 좌표로 둡니다. 로컬 z는 기수가 -입니다.
   const probes = [[0, -1.5], [0, 1.32], [1.05, .3], [-1.05, .3], [0, 0]].map(([x, z]) => ({ x: x * AIRCRAFT_SCALE, z: z * AIRCRAFT_SCALE }));
 
   const placed: { stand: Stand; x: number; z: number; turn: number }[] = [];
@@ -389,9 +415,10 @@ function addApron(world: THREE.Group, terminal: MapTerminal) {
     const sin = Math.sin(turn);
     const fits = probes.every(probe => {
       const point = { x: x + probe.x * cos + probe.z * sin, z: z - probe.x * sin + probe.z * cos };
-      return insideHull(apron, point) && !pieces.some(piece => nearPiece(piece, point, .3));
+      return insideHull(apron, point) && !pieces.some(piece => nearPiece(piece, point, 0));
     });
     if (!fits) continue;
+    if (keepOut.some(point => Math.hypot(point.x - x, point.z - z) < AIRCRAFT_KEEP_OUT)) continue;
     if (placed.some(other => Math.hypot(other.x - x, other.z - z) < STAND_MIN_GAP)) continue;
     placed.push({ stand, x, z, turn });
   }
@@ -405,11 +432,10 @@ function addApron(world: THREE.Group, terminal: MapTerminal) {
   const shade = new THREE.MeshBasicMaterial({
     color: SHADOW_COLOR, transparent: true, opacity: AIRCRAFT_SHADOW_OPACITY, depthWrite: false, side: THREE.DoubleSide,
   });
-  const edge = new THREE.LineBasicMaterial({ color: OUTLINE_COLOR });
-  const edgeGeometry = new THREE.BufferGeometry().setFromPoints(AIRCRAFT_OUTLINE.map(([x, y]) => new THREE.Vector3(x, 0, -y)));
-  const standLine = new THREE.LineBasicMaterial({ color: TAXI_LINE_COLOR, transparent: STAND_LINE_OPACITY < 1, opacity: STAND_LINE_OPACITY });
+  const standLine = new THREE.LineBasicMaterial({ color: TAXI_LINE_COLOR, transparent: true, opacity: STAND_LINE_OPACITY });
   const planeY = -.9;
   const lineY = GROUND_Y + 6 * LAYER_GAP;
+  const tail = reach + AIRCRAFT_SCALE * 1.32;
   for (const { stand, x, z, turn } of chosen) {
     const group = new THREE.Group();
     group.position.set(x, planeY, z);
@@ -417,31 +443,27 @@ function addApron(world: THREE.Group, terminal: MapTerminal) {
     group.scale.setScalar(AIRCRAFT_SCALE);
     const plane = new THREE.Mesh(geometry, body);
     plane.renderOrder = 1;
-    const outlineLine = new THREE.LineLoop(edgeGeometry, edge);
-    outlineLine.position.y = .002;
-    outlineLine.renderOrder = 2;
-    // 그림자: 월드 기준 (1.2, -1) 방향으로 모두 같게 떨어뜨립니다.
+    // 그림자: 월드 기준 (1, -.8) 방향으로 모두 같게 아주 옅게 떨어뜨립니다.
     const shadow = new THREE.Mesh(geometry, shade);
-    const ox = 1.2 / AIRCRAFT_SCALE;
-    const oz = -1 / AIRCRAFT_SCALE;
+    const ox = 1 / AIRCRAFT_SCALE;
+    const oz = -.8 / AIRCRAFT_SCALE;
     shadow.position.set(
       Math.cos(turn) * ox - Math.sin(turn) * oz,
       (GROUND_Y + 6.5 * LAYER_GAP - planeY) / AIRCRAFT_SCALE,
       Math.sin(turn) * ox + Math.cos(turn) * oz,
     );
     shadow.renderOrder = -3;
-    group.add(shadow, plane, outlineLine);
+    group.add(shadow, plane);
     world.add(group);
 
-    // 주기장 유도선: 건물 가장자리에서 기수 쪽으로 들어와 비행기 아래를 지나 뒤쪽 유도로 쪽으로 이어집니다.
-    const guide = new THREE.Line(
+    // 주기장 유도선: 건물 벽에서 시작해 비행기 아래를 지나 꼬리 쪽까지 한 줄(기수 앞으로는 나오지 않음).
+    world.add(new THREE.Line(
       new THREE.BufferGeometry().setFromPoints([
         new THREE.Vector3(stand.edge.x, lineY, stand.edge.z),
-        new THREE.Vector3(stand.edge.x + stand.normal.x * (APRON_MARGIN - 1), lineY, stand.edge.z + stand.normal.z * (APRON_MARGIN - 1)),
+        new THREE.Vector3(stand.edge.x + stand.normal.x * tail, lineY, stand.edge.z + stand.normal.z * tail),
       ]),
       standLine,
-    );
-    world.add(guide);
+    ));
   }
 }
 
