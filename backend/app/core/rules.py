@@ -267,6 +267,17 @@ def filter_terminal(items: list, terminal: Terminal | None) -> list:
     return [item for item in items if item.terminal == terminal]
 
 
+def alert_terminal(
+    alert_type: str, zone_terminal_code: str | None, flight_terminal_code: str | None
+) -> Terminal | None:
+    """알림과 관련된 터미널. 혼잡 알림은 구역 기준, 항공편 알림(지연·게이트 변경·탑승)은 항공편의 터미널 기준.
+
+    탑승동(CONCOURSE)은 T1이다. 터미널을 특정할 수 없으면 None(공통 알림).
+    """
+    code = zone_terminal_code if alert_type == "congestion" else flight_terminal_code
+    return to_terminal(code)
+
+
 def filter_alert_terminal(alerts: list, terminal: Terminal | None) -> list:
     """알림을 터미널로 거른다. 지정하면 같은 터미널의 알림과 공통(terminal=None) 알림만 남긴다."""
     if terminal is None:
