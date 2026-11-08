@@ -647,6 +647,12 @@
   padding: 20px !important;
 }
 
+.icn-w-chart-period {
+  margin: -8px 0 8px;
+  color: #8aa0b6;
+  font-size: 11.5px;
+}
+
 .icn-w-line-card h2 {
   margin: 0 0 12px;
   color: #173f77;
