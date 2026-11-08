@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { getFlightDetail } from '../api/client';
+import { OPERATION_SCORE_BASIS } from '../api/rules';
 import type { Flight, FlightDetail } from '../api/client';
 import type { PageKey } from '../App';
 import { useLiveUpdates } from '../hooks/useLiveUpdates';
@@ -181,7 +182,11 @@ function Detail({ detail }: { detail: FlightDetail }) {
         <h2>운항 여건</h2>
         <div className="my-weather">
           <div><small>출발 지연 위험</small><strong data-level={risk ?? undefined}>{risk ? RISK_LABEL[risk] : '-'}</strong></div>
-          <div><small>운항 여건 점수</small><strong>{weather.operationScore.score ?? '-'}<i> / 100</i></strong></div>
+          <div>
+            <small>운항 여건 점수</small>
+            <strong>{weather.operationScore.score ?? '-'}<i> / 100</i></strong>
+            <span className="my-weather__basis">{weather.operationScore.minutesAhead}분 후 · {OPERATION_SCORE_BASIS}</span>
+          </div>
           <div><small>풍속</small><strong>{weather.windSpeed ?? '-'}<i> m/s</i></strong></div>
           <div><small>돌풍</small><strong>{weather.windGust ?? '-'}<i> m/s</i></strong></div>
         </div>
