@@ -87,6 +87,7 @@ export default function FacilitiesPage() {
   const [limit, setLimit] = useState(PAGE_SIZE);
   const [allFloors, setAllFloors] = useState(false);
   const [activeZone, setActiveZone] = useState<string | null>(null);
+  const [zoneFilter, setZoneFilter] = useState(false); // 핀을 직접 눌렀을 때만 목록을 구역으로 거릅니다
 
   const filtered = useMemo(() => {
     const word = search.trim().toLowerCase();
@@ -105,8 +106,9 @@ export default function FacilitiesPage() {
   );
   const floorPlaces = useMemo(() => filtered.filter(place => normalizeFloor(place.floor) === floor), [filtered, floor]);
   const zone = floorMap.zones.find(item => item.key === activeZone) ?? null;
-  // 구역이 선택되면 목록은 그 구역의 시설만 보여줍니다.
-  const list = zone ? zone.places : allFloors ? filtered : floorPlaces;
+  // 핀을 직접 눌러 구역을 고른 경우에만 목록을 그 구역 시설로 거릅니다.
+  const filterZone = zoneFilter ? zone : null;
+  const list = filterZone ? filterZone.places : allFloors ? filtered : floorPlaces;
   const selected = filtered.find(place => place.facilityId === selectedId) ?? null;
   const selectedFloor = selected ? normalizeFloor(selected.floor) : null;
   const onMap = floorMap.units.some(unit => unit.place.facilityId === selectedId);
@@ -114,16 +116,27 @@ export default function FacilitiesPage() {
     : selectedFloor && selectedFloor !== floor && FLOORS.includes(selectedFloor) ? `${selectedFloor} 지도에서 확인할 수 있어요`
     : '상세 위치 정보 없음';
 
-  // 시설을 고르면 그 시설이 속한 구역도 같이 선택합니다. 지도에 없는 시설이면 구역 선택을 풉니다.
+  // 시설을 고르면 지도에서 그 시설의 구역 핀만 강조합니다(목록은 거르지 않음). 지도에 없는 시설이면 강조를 풉니다.
   const pickPlace = (id: string, zoneKey?: string) => {
     setSelectedId(id);
+    setZoneFilter(false);
     setActiveZone(zoneKey ?? floorMap.zones.find(item => item.places.some(place => place.facilityId === id))?.key ?? null);
   };
-  const toggleZone = (key: string) => setActiveZone(current => (current === key ? null : key));
+  // 핀을 누르면 구역 강조 + 목록 필터. 이미 필터 중인 핀을 다시 누르면 해제합니다.
+  const toggleZone = (key: string) => {
+    if (activeZone === key && zoneFilter) {
+      setActiveZone(null);
+      setZoneFilter(false);
+    } else {
+      setActiveZone(key);
+      setZoneFilter(true);
+    }
+  };
 
   useEffect(() => {
     setSelectedId(null);
     setActiveZone(null);
+    setZoneFilter(false);
     setLimit(PAGE_SIZE);
   }, [terminal, floor, category, openOnly, search]);
 
@@ -159,9 +172,9 @@ export default function FacilitiesPage() {
         <button type="button" aria-pressed={allFloors} onClick={() => { setAllFloors(value => !value); setLimit(PAGE_SIZE); }}>{allFloors ? `${floor}만 보기` : '다른 층 포함'}</button>
       </div>
       <div className="fac-list">
-        {zone && <div className="fac-zonechip">
-          <span>{zone.label} · {zone.places.length}곳</span>
-          <button type="button" aria-label="구역 선택 해제" onClick={() => setActiveZone(null)}><X size={13} /></button>
+        {filterZone && <div className="fac-zonechip">
+          <span>{filterZone.label} · {filterZone.places.length}곳</span>
+          <button type="button" aria-label="구역 선택 해제" onClick={() => { setActiveZone(null); setZoneFilter(false); }}><X size={13} /></button>
         </div>}
         {loading && !data && <Skeleton label="시설을 불러오는 중입니다." variant="rows" count={6} />}
         {error && !data && <p role="alert">{error}</p>}
