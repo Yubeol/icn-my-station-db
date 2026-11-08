@@ -575,6 +575,7 @@ function FlightRadar({ stats, currentHour }: { stats: FlightStats; currentHour: 
         <li><i className="is-delayed" />지연율 {HIGH_DELAY_RATE}% 이상</li>
       </ul>
     </div>
+    <p className="icn-flightstats__radar-note">바깥일수록 출발 많음 · 큰 점은 지연 많음</p>
     <svg className="icn-flightstats__radar" viewBox="0 0 360 360" role="img" aria-label="시간대별 출발량과 지연량을 레이더 점으로 나타낸 차트">
       <defs>
         <radialGradient id="flightstats-scope">

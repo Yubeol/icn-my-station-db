@@ -176,6 +176,7 @@
 .icn-flightstats__gauge svg { flex: 1; width: 100%; min-height: 0; }
 .icn-flightstats__radar-card .icn-flightstats__radar { flex: 1; width: 100%; min-height: 0; margin: 2px 0 0; }
 .icn-flightstats__radar-card .icn-flightstats__section-head ul { display: none; }
+.icn-flightstats__radar-note { flex: none; margin: 4px 0 0; color: var(--stats-muted); font-size: 11.5px; line-height: 1.4; opacity: .85; }
 .icn-flightstats__readout { flex: none; margin: 2px 0 0; font-size: 11.5px; }
 .icn-flightstats__stream .icn-flightstats__section-head { flex: none; }
 .icn-flightstats__stream-plot { position: relative; flex: 1; min-height: 0; margin-top: 8px; overflow: hidden; border-radius: 10px; }
