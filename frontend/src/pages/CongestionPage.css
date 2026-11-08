@@ -1,0 +1,104 @@
+.cong-page { display: flex; flex-direction: column; gap: 10px; }
+.cong-page__top { display: flex; flex: none; align-items: center; gap: 24px; }
+.cong-page__top h1 { margin: 0; color: var(--night); font-size: 22px; }
+.cong-page__top p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+.cong-page__summary { display: flex; gap: 28px; margin: 0 0 0 auto; }
+.cong-page__summary dt { color: var(--muted); font-size: 12px; }
+.cong-page__summary dd { margin: 0; color: var(--night); font-size: 19px; font-weight: 700; }
+.cong-page__summary dd.is-good { color: var(--low); }
+.cong-page__summary em { margin-left: 2px; font-size: 13px; font-style: normal; font-weight: 500; }
+
+.cong-page__grid { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(250px, .8fr) minmax(280px, .9fr); gap: 10px; flex: 1; min-height: 0; }
+.cong-page__left { display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; }
+.cong-page__map { flex: 1 1 0; min-width: 0; min-height: 300px; overflow: hidden; border-radius: 14px; }
+.cong-page__live { color: var(--muted); font-weight: 600; }
+.cong-page__live.is-on { color: var(--low); }
+.cong-card { display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 14px; overflow: hidden; border: 1px solid #e0eaf6; border-radius: 14px; background: #fff; }
+.cong-card h2 { flex: none; margin: 0 0 8px; color: var(--night); font-size: 15px; font-weight: 700; }
+
+/* 출국장 실내 장면 *//* 출국장 실내 장면 */
+.cong-map { position: relative; width: 100%; height: 100%; min-height: 300px; overflow: hidden; border-radius: 14px; background: #0a2243; }
+.cong-map__scene { display: block; width: 100%; height: 100%; }
+.cong-map__mullion { stroke: rgba(10, 30, 58, .55); stroke-width: 2; }
+.cong-map__rib { stroke: rgba(150, 190, 230, .16); stroke-width: 1.5; }
+.cong-map__strip { fill: none; stroke: #fff1d6; stroke-linecap: round; stroke-width: 2.5; }
+.cong-map__glow { fill: none; stroke: #ffdca6; stroke-width: 12; opacity: .55; }
+.cong-map__tile { stroke: rgba(170, 205, 240, .08); stroke-width: 1; }
+.cong-hall { cursor: pointer; outline: none; }
+.cong-hall__lane { transition: opacity .2s; }
+.cong-hall__body { fill: #0b2747; stroke: rgba(190, 220, 250, .32); stroke-width: 1; transition: stroke .2s; }
+.cong-hall__seam { stroke: rgba(255, 255, 255, .28); stroke-width: 1; }
+.cong-hall__no { fill: #dbe8f6; font-size: 17px; font-weight: 600; }
+.cong-hall__count { fill: #fff; font-size: 21px; font-weight: 700; font-variant-numeric: tabular-nums; text-anchor: end; }
+.cong-hall.is-high .cong-hall__door { animation: cong-lamp 3.6s ease-in-out infinite; }
+.cong-hall:hover .cong-hall__body, .cong-hall:focus-visible .cong-hall__body, .cong-hall.is-selected .cong-hall__body { stroke: var(--sign); stroke-width: 2.5; }
+@keyframes cong-lamp { 50% { opacity: .55; } }
+.cong-map__note { position: absolute; right: 12px; bottom: 8px; margin: 0; color: rgba(214, 230, 247, .75); font-size: 11.5px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cong-hall.is-high .cong-hall__door { animation: none; }
+}
+
+/* 혼잡 시계 */
+.cong-clock { position: relative; display: grid; flex: 1 1 0; place-items: center; min-height: 170px; }
+.cong-clock svg { display: block; width: 100%; max-width: 300px; height: 100%; max-height: 300px; }
+.cong-clock__hour { outline: none; cursor: default; }
+.cong-clock__hour:focus-visible path:first-child { stroke: #2d7bdb; }
+.cong-clock__tick { fill: #8295a9; font-size: 9px; }
+.cong-clock__center { position: absolute; display: grid; justify-items: center; pointer-events: none; }
+.cong-clock__center small { color: var(--muted); font-size: 11px; }
+.cong-clock__center strong { color: var(--night); font-size: 19px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.cong-clock__center em { color: var(--muted); font-size: 11px; font-style: normal; font-weight: 700; }
+.cong-clock__center em[data-level='LOW'] { color: var(--low); }
+.cong-clock__center em[data-level='MID'] { color: var(--mid); }
+.cong-clock__center em[data-level='HIGH'] { color: var(--high); }
+.cong-clock__empty { position: absolute; bottom: 0; margin: 0; color: var(--muted); font-size: 12px; }
+.cong-card__legend { display: flex; flex: none; flex-wrap: wrap; justify-content: center; gap: 4px 12px; margin: 6px 0 0; padding: 0; color: var(--muted); font-size: 12px; list-style: none; }
+.cong-card__legend i { display: inline-block; width: 9px; height: 9px; margin-right: 4px; border-radius: 3px; background: #d3dfec; }
+.cong-card__legend i[data-level='LOW'], .cong-rank__track i[data-level='LOW'] { background: #3bb886; }
+.cong-card__legend i[data-level='MID'], .cong-rank__track i[data-level='MID'] { background: #f0b13c; }
+.cong-card__legend i[data-level='HIGH'], .cong-rank__track i[data-level='HIGH'] { background: #ec6a5e; }
+
+/* 시계 아래 수치 */
+.cong-facts { display: grid; flex: none; gap: 3px; margin: 10px 0 0; }
+.cong-facts div { display: flex; justify-content: space-between; gap: 8px; padding: 5px 9px; border-radius: 7px; background: #f3f7fd; font-size: 12.5px; }
+.cong-facts dt { color: var(--muted); }
+.cong-facts dd { margin: 0; color: var(--night); font-weight: 700; white-space: nowrap; }
+
+/* 30분 변화 */
+.cong-change { flex: none; padding: 10px 14px; }
+.cong-change h2 { margin-bottom: 6px; }
+.cong-change ul { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px 18px; margin: 0; padding: 0; list-style: none; }
+.cong-change li { display: grid; grid-template-columns: 32px minmax(0, 1fr) 52px; align-items: center; gap: 6px; color: var(--ink); font-size: 12px; }
+.cong-change small { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; text-align: right; }
+.cong-change__track { position: relative; height: 8px; border-radius: 4px; background: #eef3f9; }
+.cong-change__track::after { content: ''; position: absolute; top: -2px; bottom: -2px; left: 50%; width: 1px; background: #b9c8d8; }
+.cong-change__track i { position: absolute; top: 0; bottom: 0; border-radius: 4px; }
+.cong-change__track i.is-up { background: #ec6a5e; }
+.cong-change__track i.is-down { background: #3bb886; }
+
+/* 여유로운 순서 */
+.cong-rank { display: grid; flex: 1; align-content: start; grid-auto-rows: minmax(0, 104px); gap: 5px; min-height: 0; margin: 0; padding: 0; list-style: none; }
+.cong-rank li { min-height: 0; }
+.cong-rank button { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-content: center; gap: 3px 8px; width: 100%; height: 100%; padding: 6px 10px; border: 1px solid transparent; border-radius: 9px; background: #f3f7fd; color: var(--night); text-align: left; transition: background-color .18s, border-color .18s; }
+.cong-rank button:hover { background: #e8f0f9; }
+.cong-rank button.is-selected { border-color: #2d7bdb; background: #e7f0fc; }
+.cong-rank__name { font-size: 14px; font-weight: 600; }
+.cong-rank__name b { margin-left: 6px; padding: 1px 6px; border-radius: 999px; background: #e3f4ec; color: var(--low); font-size: 11px; }
+.cong-rank__count { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.cong-rank__track { grid-column: 1 / -1; height: 5px; overflow: hidden; border-radius: 3px; background: #dee8f2; }
+.cong-rank__track i { display: block; height: 100%; border-radius: 3px; transition: width .4s; }
+.cong-rank small { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+
+@media (max-width: 1100px) {
+  .cong-page__top { flex-wrap: wrap; }
+  .cong-page__summary { order: 3; width: 100%; margin: 0; }
+  .icn-switch { margin-left: auto; }
+  .cong-page__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cong-page__left { grid-column: 1 / -1; }
+  .cong-clock svg { max-height: 260px; }
+}
+@media (max-width: 700px) {
+  .cong-page__grid { grid-template-columns: 1fr; }
+  .cong-page__summary { gap: 16px; }
+}

@@ -1,536 +1,230 @@
+import { useEffect, useMemo, useState } from 'react';
+import type { Hall, Terminal } from '../../../api/congestion';
+import AnimatedNumber from '../../layout/AnimatedNumber';
+import { getHallLevel, getLevelLabel } from './HallCard';
+import { isMainHallChecking } from './hallStatus';
+import './TerminalScene.css';
 
-import { useEffect, useRef } from 'react';
-import * as THREE from 'three';
-
-import type {
-  Hall,
-  Terminal,
-} from '../../../api/congestion';
-
-import './Terminal3D.css';
-
-interface Props {
+type Props = {
   terminal: Terminal;
   halls: Hall[];
   selectedId: string | null;
   onSelect: (id: string) => void;
-}
-
-type Level = 'LOW' | 'MID' | 'HIGH' | 'UNKNOWN';
-
-const COLORS: Record<Level, number> = {
-  LOW: 0x7fd6bb,
-  MID: 0xf5cd78,
-  HIGH: 0xec7d80,
-  UNKNOWN: 0xaab8ca,
 };
 
-const LABELS: Record<Level, string> = {
-  LOW: '여유',
-  MID: '보통',
-  HIGH: '혼잡',
-  UNKNOWN: '확인 필요',
+type Layout = {
+  cx: number;
+  cy: number;
+  radius: number;
+  buildingSpan: number;
+  hallSpan: number;
+  planes: number;
 };
 
-const HEIGHTS: Record<Level, number> = {
-  LOW: 1.0,
-  MID: 2.2,
-  HIGH: 4.0,
-  UNKNOWN: 0.6,
+const VIEW_WIDTH = 1000;
+const VIEW_HEIGHT = 800;
+const BAND = 62;
+const ROAD_OFFSET = 196;
+const FLOW_DOTS = { relaxed: 2, normal: 4, busy: 7, unknown: 0 };
+const FLOW_SECONDS = { relaxed: 3.4, normal: 2.6, busy: 1.8, unknown: 3 };
+
+// 실제 축척이 아니라 터미널 형태를 단순화한 개략도입니다.
+const LAYOUTS: Record<Terminal, Layout> = {
+  T1: { cx: 500, cy: 1010, radius: 770, buildingSpan: 50, hallSpan: 40, planes: 13 },
+  T2: { cx: 500, cy: 945, radius: 700, buildingSpan: 42, hallSpan: 15, planes: 11 },
 };
 
-function getLevel(hall?: Hall): Level {
-  if (!hall || hall.operationStatus === 'CHECK_REQUIRED') {
-    return 'UNKNOWN';
-  }
-
-  const value = String(hall.level ?? '').trim().toUpperCase();
-
-  if (
-    ['LOW', 'RELAXED', 'SPACIOUS', 'FREE', '여유', '원활']
-      .includes(value)
-  ) {
-    return 'LOW';
-  }
-
-  if (
-    ['MID', 'MEDIUM', 'NORMAL', 'MODERATE', '보통']
-      .includes(value)
-  ) {
-    return 'MID';
-  }
-
-  if (
-    [
-      'HIGH', 'BUSY', 'CROWDED',
-      'VERY_CROWDED', '혼잡', '매우혼잡',
-    ].includes(value)
-  ) {
-    return 'HIGH';
-  }
-
-  return 'UNKNOWN';
+function polar(layout: Layout, degree: number, radius: number) {
+  const angle = (degree * Math.PI) / 180;
+  return {
+    x: layout.cx + radius * Math.sin(angle),
+    y: layout.cy - radius * Math.cos(angle),
+  };
 }
 
-function getHallNumber(hall: Hall): string | null {
-  const name = String(hall.name ?? '');
-  const id = String(hall.id ?? '');
-
-  const match =
-    name.match(/([1-6])\s*번?\s*출국장/) ??
-    name.match(/출국장\s*([1-6])/) ??
-    id.match(/^(?:H|HALL)?0*([1-6])$/i);
-
-  return match?.[1] ?? null;
+function arcPath(layout: Layout, radius: number, span: number) {
+  const start = polar(layout, -span, radius);
+  const end = polar(layout, span, radius);
+  return `M${start.x} ${start.y}A${radius} ${radius} 0 0 1 ${end.x} ${end.y}`;
 }
 
-function findHall(halls: Hall[], number: string) {
-  return halls.find(hall => getHallNumber(hall) === number);
+function bandPath(layout: Layout, inner: number, outer: number, span: number) {
+  const a = polar(layout, -span, outer);
+  const b = polar(layout, span, outer);
+  const c = polar(layout, span, inner);
+  const d = polar(layout, -span, inner);
+  return `M${a.x} ${a.y}A${outer} ${outer} 0 0 1 ${b.x} ${b.y}L${c.x} ${c.y}A${inner} ${inner} 0 0 0 ${d.x} ${d.y}Z`;
 }
 
-function createArcShape(
-  inner: number,
-  outer: number,
-  start: number,
-  end: number
-) {
-  const shape = new THREE.Shape();
-  const steps = 48;
-
-  for (let i = 0; i <= steps; i++) {
-    const angle = start + (end - start) * (i / steps);
-    const x = Math.cos(angle) * outer;
-    const y = Math.sin(angle) * outer;
-
-    if (i === 0) shape.moveTo(x, y);
-    else shape.lineTo(x, y);
-  }
-
-  for (let i = steps; i >= 0; i--) {
-    const angle = start + (end - start) * (i / steps);
-
-    shape.lineTo(
-      Math.cos(angle) * inner,
-      Math.sin(angle) * inner
-    );
-  }
-
-  shape.closePath();
-  return shape;
+function spread(count: number, span: number) {
+  if (count <= 1) return [0];
+  return Array.from({ length: count }, (_, index) => -span + (index * span * 2) / (count - 1));
 }
 
-function createArcMesh(
-  inner: number,
-  outer: number,
-  start: number,
-  end: number,
-  height: number,
-  color: number
-) {
-  const geometry = new THREE.ExtrudeGeometry(
-    createArcShape(inner, outer, start, end),
-    {
-      depth: height,
-      bevelEnabled: false,
-      curveSegments: 48,
-    }
-  );
-
-  geometry.rotateX(-Math.PI / 2);
-
-  const material = new THREE.MeshStandardMaterial({
-    color,
-    roughness: 0.75,
-    metalness: 0,
-  });
-
-  const mesh = new THREE.Mesh(geometry, material);
-
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-
-  return mesh;
-}
-
-interface LabelItem {
-  element: HTMLButtonElement;
-  position: THREE.Vector3;
-}
-
-export default function TerminalMap({
-  terminal,
-  halls,
-  selectedId,
-  onSelect,
-}: Props) {
-  const mountRef = useRef<HTMLDivElement>(null);
-
+function usePrefersMotion() {
+  const [enabled, setEnabled] = useState(true);
   useEffect(() => {
-    const mount = mountRef.current;
-
-    if (!mount) return;
-
-    const scene = new THREE.Scene();
-
-    const camera = new THREE.OrthographicCamera(
-      -30, 30, 20, -20, 0.1, 300
-    );
-
-    const renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      alpha: true,
-    });
-
-    renderer.setPixelRatio(
-      Math.min(window.devicePixelRatio || 1, 2)
-    );
-
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
-    renderer.domElement.className = 'terminal3d-canvas';
-    mount.appendChild(renderer.domElement);
-
-    scene.add(
-      new THREE.HemisphereLight(0xffffff, 0xd7e1ec, 2)
-    );
-
-    const sun = new THREE.DirectionalLight(0xffffff, 2);
-
-    sun.position.set(-20, 40, 20);
-    sun.castShadow = true;
-    sun.shadow.mapSize.set(1024, 1024);
-
-    Object.assign(sun.shadow.camera, {
-      left: -70,
-      right: 70,
-      top: 70,
-      bottom: -70,
-      near: 1,
-      far: 150,
-    });
-
-    scene.add(sun);
-
-    const group = new THREE.Group();
-    scene.add(group);
-
-    const isT1 = terminal === 'T1';
-
-    const numbers = isT1
-      ? ['6', '5', '4', '3', '2', '1']
-      : ['2', '1'];
-
-    const inner = isT1 ? 19 : 37;
-    const outer = isT1 ? 28 : 46;
-
-    const spread = ((isT1 ? 55 : 34) * Math.PI) / 180;
-
-    const start = Math.PI / 2 - spread;
-    const end = Math.PI / 2 + spread;
-    const segment = (end - start) / numbers.length;
-
-    const foundation = createArcMesh(
-      inner - 1.2,
-      outer + 1.2,
-      start,
-      end,
-      0.45,
-      0xe6eef7
-    );
-
-    foundation.position.y = -0.5;
-    group.add(foundation);
-
-    const corridor = createArcMesh(
-      inner + 0.2,
-      inner + 2.0,
-      start,
-      end,
-      0.2,
-      0xffffff
-    );
-
-    group.add(corridor);
-
-    const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(140, 120),
-      new THREE.ShadowMaterial({ opacity: 0.12 })
-    );
-
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.y = -0.7;
-    ground.receiveShadow = true;
-
-    scene.add(ground);
-
-    const labels: LabelItem[] = [];
-
-    numbers.forEach((number, index) => {
-      const hall = findHall(halls, number);
-      const level = getLevel(hall);
-      const height = HEIGHTS[level];
-
-      const a0 = start + segment * index + 0.006;
-      const a1 = start + segment * (index + 1) - 0.006;
-
-      const mesh = createArcMesh(
-        inner + 2.5,
-        outer - 0.6,
-        a0,
-        a1,
-        height,
-        COLORS[level]
-      );
-
-      if (hall && selectedId === hall.id) {
-        const material =
-          mesh.material as THREE.MeshStandardMaterial;
-
-        material.emissive.setHex(0x174c99);
-        material.emissiveIntensity = 0.16;
-      }
-
-      group.add(mesh);
-
-      const angle = (a0 + a1) / 2;
-      const radius = (inner + outer) / 2;
-
-      const position = new THREE.Vector3(
-        Math.cos(angle) * radius,
-        height + 0.6,
-        -Math.sin(angle) * radius
-      );
-
-      const label = document.createElement('button');
-
-      label.type = 'button';
-      label.className =
-        `terminal3d-label is-${level.toLowerCase()}`;
-
-      if (hall && selectedId === hall.id) {
-        label.classList.add('is-selected');
-      }
-
-      const title = document.createElement('strong');
-      title.textContent = `${number}번 출국장`;
-
-      const status = document.createElement('span');
-
-      status.textContent =
-        hall?.operationStatus === 'CHECK_REQUIRED'
-          ? '운영 확인 필요'
-          : LABELS[level];
-
-      label.append(title, status);
-      label.disabled = !hall;
-
-      if (hall) {
-        label.addEventListener('click', () => {
-          onSelect(hall.id);
-        });
-      }
-
-      mount.appendChild(label);
-      labels.push({ element: label, position });
-    });
-
-    group.updateWorldMatrix(true, true);
-
-    const bounds = new THREE.Box3().setFromObject(group);
-    const center = bounds.getCenter(new THREE.Vector3());
-
-    camera.position.copy(center).add(
-      new THREE.Vector3(-17, 38, 35)
-    );
-
-    camera.lookAt(center);
-    camera.updateMatrixWorld(true);
-
-    function renderScene() {
-      // TypeScript null 오류 해결
-      if (!mount) return;
-
-      const width = mount.clientWidth;
-      const height = mount.clientHeight;
-
-      if (width <= 0 || height <= 0) return;
-
-      const aspect = width / height;
-
-      const right = new THREE.Vector3()
-        .setFromMatrixColumn(camera.matrixWorld, 0);
-
-      const up = new THREE.Vector3()
-        .setFromMatrixColumn(camera.matrixWorld, 1);
-
-      const corners = [
-        new THREE.Vector3(
-          bounds.min.x, bounds.min.y, bounds.min.z
-        ),
-        new THREE.Vector3(
-          bounds.min.x, bounds.min.y, bounds.max.z
-        ),
-        new THREE.Vector3(
-          bounds.min.x, bounds.max.y, bounds.min.z
-        ),
-        new THREE.Vector3(
-          bounds.min.x, bounds.max.y, bounds.max.z
-        ),
-        new THREE.Vector3(
-          bounds.max.x, bounds.min.y, bounds.min.z
-        ),
-        new THREE.Vector3(
-          bounds.max.x, bounds.min.y, bounds.max.z
-        ),
-        new THREE.Vector3(
-          bounds.max.x, bounds.max.y, bounds.min.z
-        ),
-        new THREE.Vector3(
-          bounds.max.x, bounds.max.y, bounds.max.z
-        ),
-      ];
-
-      let halfWidth = 0;
-      let halfHeight = 0;
-
-      for (const corner of corners) {
-        const relative = corner.clone().sub(center);
-
-        halfWidth = Math.max(
-          halfWidth,
-          Math.abs(relative.dot(right))
-        );
-
-        halfHeight = Math.max(
-          halfHeight,
-          Math.abs(relative.dot(up))
-        );
-      }
-
-      const fittedHeight = Math.max(
-        halfHeight * 1.65,
-        (halfWidth * 1.3) / aspect,
-        7
-      );
-
-      camera.left = -fittedHeight * aspect;
-      camera.right = fittedHeight * aspect;
-      camera.top = fittedHeight;
-      camera.bottom = -fittedHeight;
-
-      camera.updateProjectionMatrix();
-
-      renderer.setSize(width, height, false);
-      renderer.render(scene, camera);
-
-      const positioned = labels.map(item => {
-        const point = item.position.clone().project(camera);
-
-        return {
-          ...item,
-          x: ((point.x + 1) / 2) * width,
-          y: ((1 - point.y) / 2) * height,
-          visible:
-            Math.abs(point.x) <= 1.1 &&
-            Math.abs(point.y) <= 1.1,
-        };
-      });
-
-      const sorted = [...positioned].sort(
-        (a, b) => a.x - b.x
-      );
-
-      const gap = isT1 ? 64 : 80;
-      const padding = 30;
-
-      let previousX = padding - gap;
-
-      sorted.forEach(item => {
-        if (!item.visible) {
-          item.element.hidden = true;
-          return;
-        }
-
-        const x = Math.max(
-          item.x,
-          previousX + gap
-        );
-
-        previousX = x;
-
-        item.element.hidden = false;
-        item.element.style.left = `${x}px`;
-        item.element.style.top = `${item.y}px`;
-      });
-
-      const visible = sorted.filter(item => item.visible);
-      const last = visible[visible.length - 1];
-
-      if (last) {
-        const lastX = parseFloat(
-          last.element.style.left
-        );
-
-        const overflow = lastX - (width - padding);
-
-        if (overflow > 0) {
-          visible.forEach(item => {
-            const x = parseFloat(
-              item.element.style.left
-            );
-
-            item.element.style.left =
-              `${x - overflow}px`;
-          });
-        }
-      }
-    }
-
-    const observer = new ResizeObserver(renderScene);
-
-    observer.observe(mount);
-    renderScene();
-
-    return () => {
-      observer.disconnect();
-
-      scene.traverse(object => {
-        if (!(object instanceof THREE.Mesh)) return;
-
-        object.geometry.dispose();
-
-        const materials = Array.isArray(object.material)
-          ? object.material
-          : [object.material];
-
-        materials.forEach(material => {
-          material.dispose();
-        });
-      });
-
-      renderer.dispose();
-      renderer.domElement.remove();
-
-      labels.forEach(({ element }) => {
-        element.remove();
-      });
-    };
-  }, [terminal, halls, selectedId, onSelect]);
-
-  return (
-    <div className="terminal3d">
-      <div
-        ref={mountRef}
-        className="terminal3d-stage"
-        aria-label={`${terminal} 출국장 3D 혼잡도`}
-      />
-
-      <div className="terminal3d-footer">
-        <span>{terminal} · 3F 출발층</span>
-        <span>입체형 터미널 개략도</span>
-      </div>
-    </div>
+    const query = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update = () => setEnabled(!query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
+  return enabled;
+}
+
+function Airplane({ x, y, degree }: { x: number; y: number; degree: number }) {
+  return <path
+    className="terminal-scene__plane"
+    transform={`translate(${x} ${y}) rotate(${degree}) scale(1.35)`}
+    d="M0-24c2 0 3 2 3 5v9l15 9v4L3-1v11l5 4v3l-8-2-8 2v-3l5-4V-1L-18 5V1l15-9v-9c0-3 1-5 3-5z" />;
+}
+
+export default function TerminalMap({ terminal, halls, selectedId, onSelect }: Props) {
+  const layout = LAYOUTS[terminal];
+  const motion = usePrefersMotion();
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+
+  const placed = useMemo(() => {
+    const angles = spread(halls.length, layout.hallSpan);
+    return halls.map((hall, index) => ({ hall, degree: angles[index] }));
+  }, [halls, layout.hallSpan]);
+
+  const planes = useMemo(() => spread(layout.planes, layout.buildingSpan - 2), [layout]);
+
+  const operating = halls.filter(hall => !isMainHallChecking(hall));
+  const total = operating.reduce((sum, hall) => sum + (hall.currentCount ?? 0), 0);
+  const busiest = operating.reduce<Hall | null>(
+    (top, hall) => ((hall.currentCount ?? -1) > (top?.currentCount ?? -1) ? hall : top),
+    null,
   );
+  const focused = halls.find(hall => hall.id === (hoveredId ?? selectedId)) ?? busiest;
+  const focusedChecking = focused ? isMainHallChecking(focused) : false;
+  const focusedLevel = focused && !focusedChecking ? getHallLevel(focused) : 'unknown';
+  const inner = layout.radius - BAND;
+
+  return <div className="terminal-scene" data-terminal={terminal}>
+    <svg
+      className="terminal-scene__svg"
+      viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
+      preserveAspectRatio="xMidYMid meet"
+      role="group"
+      aria-label={`${terminal} 출국장 혼잡 개략도`}>
+      <defs>
+        <linearGradient id="scene-terminal" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#2a5d97" />
+          <stop offset="1" stopColor="#123a68" />
+        </linearGradient>
+        <filter id="scene-glow" x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="9" />
+        </filter>
+      </defs>
+
+      {/* 활주로와 유도로 */}
+      <g className="terminal-scene__runway">
+        <path d={arcPath(layout, layout.radius + 150, 62)} />
+        <path className="is-dashed" d={arcPath(layout, layout.radius + 150, 62)} />
+      </g>
+      <path className="terminal-scene__taxi" d={arcPath(layout, layout.radius + 66, 60)} />
+
+      {/* 탑승교와 주기 항공기 */}
+      {planes.map((degree, index) => {
+        const gate = polar(layout, degree, layout.radius + 8);
+        const plane = polar(layout, degree, layout.radius + 42);
+        return <g key={index}>
+          <line className="terminal-scene__bridge" x1={gate.x} y1={gate.y} x2={plane.x} y2={plane.y} />
+          <Airplane x={plane.x} y={plane.y} degree={degree} />
+        </g>;
+      })}
+
+      {/* 터미널 건물 */}
+      <path className="terminal-scene__building" d={bandPath(layout, inner, layout.radius, layout.buildingSpan)} fill="url(#scene-terminal)" />
+      <path className="terminal-scene__roofline" d={arcPath(layout, layout.radius - BAND / 2, layout.buildingSpan - 1)} />
+
+      {/* 공항 진입 도로 */}
+      <path className="terminal-scene__road" d={arcPath(layout, layout.radius - ROAD_OFFSET, 56)} />
+      <path className="terminal-scene__road-line" d={arcPath(layout, layout.radius - ROAD_OFFSET, 56)} />
+
+      {/* 출국장 */}
+      {placed.map(({ hall, degree }) => {
+        const level = getHallLevel(hall);
+        const checking = isMainHallChecking(hall);
+        const tone = checking ? 'unknown' : level;
+        const portal = polar(layout, degree, inner + 10);
+        const road = polar(layout, degree, layout.radius - ROAD_OFFSET + 8);
+        const label = polar(layout, degree, inner - 92);
+        const flowPath = `M${road.x} ${road.y}L${portal.x} ${portal.y}`;
+        const dots = checking ? 0 : FLOW_DOTS[level];
+        const seconds = FLOW_SECONDS[level];
+        const active = hall.id === (hoveredId ?? selectedId);
+
+        return <g
+          key={hall.id}
+          className={`terminal-scene__hall is-${tone}${active ? ' is-active' : ''}`}
+          role="button"
+          tabIndex={0}
+          aria-pressed={active}
+          aria-label={`${hall.name} ${checking ? '운영 확인' : `${hall.currentCount ?? 0}명 ${getLevelLabel(hall)}`}`}
+          onClick={() => onSelect(hall.id)}
+          onKeyDown={event => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              onSelect(hall.id);
+            }
+          }}
+          onMouseEnter={() => setHoveredId(hall.id)}
+          onMouseLeave={() => setHoveredId(null)}>
+          <path className="terminal-scene__lane" d={flowPath} />
+          {motion && Array.from({ length: dots }, (_, index) => (
+            <circle className="terminal-scene__person" r="5" key={index}>
+              <animateMotion
+                dur={`${seconds}s`}
+                begin={`${(index * seconds) / dots}s`}
+                repeatCount="indefinite"
+                path={flowPath} />
+            </circle>
+          ))}
+
+          <g transform={`translate(${portal.x} ${portal.y}) rotate(${degree})`}>
+            <rect className="terminal-scene__aura" x="-46" y="-36" width="92" height="72" rx="24" filter="url(#scene-glow)" />
+            <rect className="terminal-scene__gate" x="-36" y="-26" width="72" height="52" rx="12" />
+            <rect className="terminal-scene__door" x="-22" y="-14" width="18" height="28" rx="3" />
+            <rect className="terminal-scene__door" x="4" y="-14" width="18" height="28" rx="3" />
+          </g>
+
+          <g transform={`translate(${label.x} ${label.y})`}>
+            <rect className="terminal-scene__tag" x="-69" y="-46" width="138" height="92" rx="14" />
+            <text className="terminal-scene__name" y="-20" textAnchor="middle">{hall.name}</text>
+            <text className="terminal-scene__count" y="13" textAnchor="middle">
+              {checking ? '운영 확인' : `${(hall.currentCount ?? 0).toLocaleString('ko-KR')}명`}
+            </text>
+            <text className="terminal-scene__level" y="34" textAnchor="middle">{checking ? '' : getLevelLabel(hall)}</text>
+          </g>
+        </g>;
+      })}
+    </svg>
+
+    <div className="terminal-scene__title">
+      <strong>{terminal}</strong>
+      <span>3F 출발층 · 개략도</span>
+    </div>
+
+    <ul className="terminal-scene__legend" aria-hidden="true">
+      <li className="is-relaxed">여유</li>
+      <li className="is-normal">보통</li>
+      <li className="is-busy">혼잡</li>
+    </ul>
+
+    <div className="terminal-scene__hud">
+      <div>
+        <small>전체 대기</small>
+        <strong><AnimatedNumber value={total} /><em>명</em></strong>
+      </div>
+      {focused && <div className={`is-${focusedLevel}`}>
+        <small>{hoveredId || selectedId ? '선택한 출국장' : '가장 붐비는 곳'}</small>
+        <strong>{focused.name}</strong>
+        <span>{focusedChecking ? '운영 확인' : getLevelLabel(focused)}{!focusedChecking && focused.changeRate !== null ? ` · 30분 전 ${focused.changeRate > 0 ? '+' : ''}${focused.changeRate.toFixed(1)}%` : ''}</span>
+      </div>}
+    </div>
+  </div>;
 }

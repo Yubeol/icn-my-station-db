@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { useLiveUpdates } from "../../../hooks/useLiveUpdates";
+import Skeleton from "../../layout/Skeleton";
 
 import {
   getCongestion,
@@ -55,9 +56,7 @@ export default function Congestion({
         </div>
 
         {loading && !data ? (
-          <div className="congestion-panel__message">
-            출국장 혼잡도를 불러오는 중입니다.
-          </div>
+          <Skeleton label="출국장 혼잡도를 불러오는 중입니다." variant="block" />
         ) : error && !data ? (
           <div
             className="congestion-panel__message congestion-panel__error"
