@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
+import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js';
+import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js';
 import { floorLayout, gateSpots, MAP_FLOORS, PLANS } from './facilityMap';
 import type { FloorMap, MapTerminal, MapUnit, Piece } from './facilityMap';
 
@@ -39,6 +42,28 @@ const ZOOM_SHOW = 1.8;
 const CLICK_TOLERANCE = 5;
 const SELECTED_COLOR = 0xff6a4d;
 const MUTED_COLOR = 0xe6ecf2;
+
+// ── 에이프런 비주얼 조절용 상수 (색은 헤더 남색 #0b1f45, 노랑 #ffc726 톤과 맞춤) ──
+const GROUND_COLOR = 0xaebccd;        // 아스팔트 톤 바닥
+const GROUND_RADIUS = 80;             // 바닥 반지름
+const GROUND_FADE_START = .5;         // 이 비율 바깥부터 배경색으로 페이드
+const DOT_COLOR = '#2a4a7a';          // 점 격자 색
+const DOT_OPACITY = .26;              // 점 격자 진하기 (0이면 없음)
+const DOT_STEP = 6;                   // 점 간격
+const SLAB_COLOR = 0x8ea6c3;          // 층판 옆면
+const OUTLINE_COLOR = 0x14305e;       // 건물 외곽선(남색)
+const OUTLINE_WIDTH = 1.6;            // 외곽선 두께(px)
+const OUTLINE_OPACITY = .85;
+const SHADOW_COLOR = 0x0b1f45;        // 컨택트 섀도
+const SHADOW_OPACITY = .14;           // 그림자 가장 진한 곳
+const SHADOW_OFFSET = { x: 1.8, z: -1.4 };
+const SHADOW_LAYERS = [{ grow: .5, weight: 1 }, { grow: 1.8, weight: .55 }, { grow: 3.4, weight: .3 }];
+const AIRCRAFT_COLOR = 0x0b2a63;      // 지상 비행기 실루엣
+const AIRCRAFT_OPACITY = .38;
+const AIRCRAFT_SCALE = 1.6;
+const TAXI_COLOR = 0xffc726;          // 노란 유도로 선
+const TAXI_OPACITY = .95;
+const TAXI_DISTANCE = 9.5;            // 게이트에서 유도로까지 거리
 const CATEGORY_COLOR: Record<string, number> = {
   FOOD_CAFE: 0xffd2ad,
   SHOPPING: 0xb5d9fb,
@@ -96,14 +121,21 @@ function pieceMesh(piece: Piece, grow: number, height: number, material: THREE.M
   return mesh;
 }
 
+/** 지상 비행기 실루엣: 납작한 단색 도형입니다. */
 function airplane() {
   const shape = new THREE.Shape();
   [[0, 1.5], [.12, .55], [1.05, -.1], [1.05, -.3], [.12, -.1], [.09, -.9], [.38, -1.2], [.38, -1.32], [0, -1.2],
     [-.38, -1.32], [-.38, -1.2], [-.09, -.9], [-.12, -.1], [-1.05, -.3], [-1.05, -.1], [-.12, .55]]
     .forEach(([x, y], index) => (index ? shape.lineTo(x, y) : shape.moveTo(x, y)));
-  const geometry = new THREE.ExtrudeGeometry(shape, { depth: .12, bevelEnabled: false });
+  const geometry = new THREE.ShapeGeometry(shape);
   geometry.rotateX(-Math.PI / 2);
-  return new THREE.Mesh(geometry, lit(0xffffff));
+  const material = new THREE.MeshBasicMaterial({
+    color: AIRCRAFT_COLOR, transparent: true, opacity: AIRCRAFT_OPACITY, depthWrite: false, side: THREE.DoubleSide,
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.scale.setScalar(AIRCRAFT_SCALE);
+  mesh.renderOrder = 1;
+  return mesh;
 }
 
 /** 두 점 사이를 잇는 낮은 막대(복도·칸막이)입니다. */
@@ -115,17 +147,89 @@ function strip(from: { x: number; z: number }, to: { x: number; z: number }, wid
   return mesh;
 }
 
-function addGround(world: THREE.Group) {
-  const ground = new THREE.Mesh(new THREE.CircleGeometry(120, 64), lit(0xdfeaf4));
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.y = -1.05;
-  world.add(ground);
+/** 가운데는 보이고 가장자리로 갈수록 투명해지는 원형 알파 맵입니다. */
+function radialAlphaMap() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const context = canvas.getContext('2d')!;
+  const gradient = context.createRadialGradient(128, 128, 0, 128, 128, 128);
+  gradient.addColorStop(0, '#fff');
+  gradient.addColorStop(GROUND_FADE_START, '#fff');
+  gradient.addColorStop(1, '#000');
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, 256, 256);
+  return new THREE.CanvasTexture(canvas);
+}
 
-  const grid = new THREE.GridHelper(200, 80, 0xc4d6e6, 0xcfdeeb);
-  grid.position.y = -1;
-  (grid.material as THREE.Material).transparent = true;
-  (grid.material as THREE.Material).opacity = .7;
-  world.add(grid);
+function dotTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 64;
+  canvas.height = 64;
+  const context = canvas.getContext('2d')!;
+  context.fillStyle = DOT_COLOR;
+  context.beginPath();
+  context.arc(32, 32, 3.2, 0, Math.PI * 2);
+  context.fill();
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set((GROUND_RADIUS * 2) / DOT_STEP, (GROUND_RADIUS * 2) / DOT_STEP);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+/** 바닥(아스팔트 톤, 가장자리 페이드), 점 격자, 건물 컨택트 섀도, 노란 유도로 선. */
+function addGround(world: THREE.Group, terminal: MapTerminal) {
+  const alphaMap = radialAlphaMap();
+  const plane = (y: number, material: THREE.Material, order: number) => {
+    const geometry = new THREE.PlaneGeometry(GROUND_RADIUS * 2, GROUND_RADIUS * 2);
+    geometry.rotateX(-Math.PI / 2);
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.y = y;
+    mesh.renderOrder = order;
+    world.add(mesh);
+  };
+  plane(-1.05, new THREE.MeshBasicMaterial({ color: GROUND_COLOR, alphaMap, transparent: true, depthWrite: false }), -4);
+  if (DOT_OPACITY > 0) {
+    plane(-1.04, new THREE.MeshBasicMaterial({ map: dotTexture(), alphaMap, transparent: true, opacity: DOT_OPACITY, depthWrite: false }), -3);
+  }
+
+  // 컨택트 섀도: 건물 윤곽을 키운 반투명 판을 겹쳐 부드러운 가장자리를 만듭니다(실시간 shadow map 없음).
+  const plan = PLANS[terminal];
+  for (const piece of [...plan.floors, ...plan.landside]) {
+    for (const layer of SHADOW_LAYERS) {
+      const material = new THREE.MeshBasicMaterial({
+        color: SHADOW_COLOR, transparent: true, opacity: SHADOW_OPACITY * layer.weight * .6, depthWrite: false,
+      });
+      const shadow = pieceMesh(piece, layer.grow, .01, material, -1.03);
+      shadow.position.x += SHADOW_OFFSET.x;
+      shadow.position.z += SHADOW_OFFSET.z;
+      shadow.renderOrder = -2;
+      world.add(shadow);
+    }
+  }
+
+  // 노란 점선 유도로: 게이트 앞 계류장을 따라 이어지는 선입니다.
+  const spots = gateSpots(terminal, 3);
+  const runs: THREE.Vector3[][] = [];
+  spots.forEach((spot, index) => {
+    const point = new THREE.Vector3(spot.x + spot.normalX * TAXI_DISTANCE, -.98, spot.z + spot.normalZ * TAXI_DISTANCE);
+    const last = runs[runs.length - 1];
+    const before = spots[index - 1];
+    if (last && before && Math.hypot(spot.x - before.x, spot.z - before.z) < 12) last.push(point);
+    else runs.push([point]);
+  });
+  const taxiMaterial = new THREE.LineDashedMaterial({
+    color: TAXI_COLOR, dashSize: 1.2, gapSize: .9, transparent: true, opacity: TAXI_OPACITY, depthWrite: false,
+  });
+  for (const run of runs) {
+    if (run.length < 2) continue;
+    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(run), taxiMaterial);
+    line.computeLineDistances();
+    line.renderOrder = -1;
+    world.add(line);
+  }
 }
 
 /** 항공기는 지상(계류장)에 둡니다. */
@@ -202,11 +306,11 @@ function buildFloor(terminal: MapTerminal, name: string, selected: boolean): Rig
   rig.group.add(rig.detail);
 
   // 두께 있는 층판(아래층에서도 입체감을 줍니다)
-  const edgeMaterial = shell(new THREE.LineBasicMaterial({ color: 0xe6f4ff }), .7);
+  const edgeMaterial = shell(new LineMaterial({ color: OUTLINE_COLOR, linewidth: OUTLINE_WIDTH }), OUTLINE_OPACITY);
   for (const piece of shapes) {
-    const slab = pieceMesh(piece, .55, SLAB, shell(lit(0x9fb9d2, .95), .95), 0);
+    const slab = pieceMesh(piece, .55, SLAB, shell(lit(SLAB_COLOR, .95), .95), 0);
     rig.group.add(slab);
-    const edges = new THREE.LineSegments(new THREE.EdgesGeometry(slab.geometry, 30), edgeMaterial);
+    const edges = new LineSegments2(new LineSegmentsGeometry().fromEdgesGeometry(new THREE.EdgesGeometry(slab.geometry, 30)), edgeMaterial);
     edges.position.copy(slab.position);
     edges.rotation.copy(slab.rotation);
     rig.group.add(edges);
@@ -285,7 +389,12 @@ function disposeTree(root: THREE.Object3D) {
     const mesh = object as THREE.Mesh;
     mesh.geometry?.dispose();
     const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-    materials.forEach(item => item?.dispose());
+    materials.forEach(item => {
+      const textured = item as THREE.MeshBasicMaterial | undefined;
+      textured?.map?.dispose();
+      textured?.alphaMap?.dispose();
+      item?.dispose();
+    });
   });
 }
 
@@ -337,7 +446,7 @@ export default function AirportScene({ terminal, floor, map, activeZone = null, 
 
     const groundGroup = new THREE.Group();
     world.add(groundGroup);
-    addGround(groundGroup);
+    addGround(groundGroup, terminal);
     addApron(groundGroup, terminal);
     const columns = addColumns(world, terminal);
     const rigs = MAP_FLOORS.map((name, index) => buildFloor(terminal, name, index === floorIndexRef.current));
@@ -378,6 +487,10 @@ export default function AirportScene({ terminal, floor, map, activeZone = null, 
       camera.bottom = -half;
       camera.updateProjectionMatrix();
       renderer.setSize(width, height, false);
+      // 굵은 외곽선은 화면 크기를 알아야 두께가 일정하게 유지됩니다.
+      for (const rig of rigs) {
+        for (const material of rig.shellMats) if (material instanceof LineMaterial) material.resolution.set(width, height);
+      }
     };
     const observer = new ResizeObserver(resize);
     observer.observe(host);
