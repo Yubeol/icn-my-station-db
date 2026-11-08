@@ -1,6 +1,7 @@
 
 import { useLiveUpdates } from "../../../hooks/useLiveUpdates";
 import { getWeather } from "../../../api/client";
+import { OPERATION_SCORE_BASIS } from "../../../api/rules";
 import Skeleton from "../../layout/Skeleton";
 import "./WeatherConditions.css";
 
@@ -406,8 +407,8 @@ export default function WeatherConditions() {
             }
             detail={
               weather.minutesAhead === null
-                ? undefined
-                : `${weather.minutesAhead}분 후 기준`
+                ? OPERATION_SCORE_BASIS
+                : `${weather.minutesAhead}분 후 · ${OPERATION_SCORE_BASIS}`
             }
           />
         </div>

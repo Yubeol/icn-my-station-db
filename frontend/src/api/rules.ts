@@ -15,3 +15,6 @@ export function isDelayedFlight(flight: Pick<Flight, 'status' | 'delayMinutes'>)
   if (flight.status === 'CANCELLED' || flight.status === 'DIVERTED') return false;
   return flight.status === 'DELAYED' || flight.delayMinutes >= DELAY_THRESHOLD_MINUTES;
 }
+
+/** 운항 여건 점수 계산 근거 안내 문구. 백엔드 operation_score는 풍속·돌풍만 반영합니다(강수·시정 미반영). */
+export const OPERATION_SCORE_BASIS = '풍속·돌풍 기준';

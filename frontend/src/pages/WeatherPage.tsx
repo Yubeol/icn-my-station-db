@@ -6,6 +6,7 @@ import {
   Tooltip, ResponsiveContainer,
 } from 'recharts';
 import { getWeather, type Weather } from '../api/client';
+import { OPERATION_SCORE_BASIS } from '../api/rules';
 import { getWeatherHistory } from '../api/weatherHistory';
 import { useApiResource } from '../hooks/useApiResource';
 import { useLiveUpdates } from '../hooks/useLiveUpdates';
@@ -571,8 +572,8 @@ export default function WeatherPage() {
 
               <small>
                 {minutesAhead == null
-                  ? '기준 시각 정보 없음'
-                  : `${minutesAhead}분 후 기준`}
+                  ? `기준 시각 정보 없음 · ${OPERATION_SCORE_BASIS}`
+                  : `${minutesAhead}분 후 · ${OPERATION_SCORE_BASIS}`}
               </small>
             </div>
           </section>
