@@ -412,7 +412,7 @@ export default function Facilities({ terminal }: Props) {
                 {facility.isOpen === true
                   ? "운영 중"
                   : facility.isOpen === null
-                    ? "운영 미확인"
+                    ? "운영 정보 없음"
                     : ""}
               </span>
             </div>

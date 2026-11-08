@@ -6,7 +6,7 @@ import type { Flight, FlightDetail } from '../api/client';
 import type { PageKey } from '../App';
 import { useLiveUpdates } from '../hooks/useLiveUpdates';
 import { saveFlight } from '../hooks/savedFlight';
-import { isHallChecking } from '../components/main/Congestion/hallStatus';
+import { HALL_CHECK_HINT, HALL_CHECK_LABEL, isHallChecking } from '../components/main/Congestion/hallStatus';
 import { flightLeftText } from '../components/main/MyFlight/remaining';
 import Skeleton from '../components/layout/Skeleton';
 import './MyFlightPage.css';
@@ -155,7 +155,7 @@ function Detail({ detail }: { detail: FlightDetail }) {
           {halls.map(hall => isChecking(hall)
             ? <li key={hall.hallId} className="is-checking">
               <span>{hall.hallName}</span>
-              <strong>운영 확인</strong>
+              <strong title={HALL_CHECK_HINT}>{HALL_CHECK_LABEL}</strong>
               <em aria-hidden="true" />
             </li>
             : <li key={hall.hallId} className={hall.hallId === best?.hallId ? 'is-best' : ''}>

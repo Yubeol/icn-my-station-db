@@ -30,6 +30,7 @@
 .cong-hall__seam { stroke: rgba(255, 255, 255, .28); stroke-width: 1; }
 .cong-hall__no { fill: #dbe8f6; font-size: 17px; font-weight: 600; }
 .cong-hall__count { fill: #fff; font-size: 21px; font-weight: 700; font-variant-numeric: tabular-nums; text-anchor: end; }
+.cong-hall__count.is-check { fill: rgba(255, 255, 255, .62); font-size: 12px; font-weight: 600; }
 .cong-hall.is-high .cong-hall__door { animation: cong-lamp 3.6s ease-in-out infinite; }
 .cong-hall:hover .cong-hall__body, .cong-hall:focus-visible .cong-hall__body, .cong-hall.is-selected .cong-hall__body { stroke: var(--sign); stroke-width: 2.5; }
 @keyframes cong-lamp { 50% { opacity: .55; } }

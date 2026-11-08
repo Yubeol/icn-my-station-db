@@ -53,6 +53,7 @@
 .terminal-scene__tag { fill: rgba(8, 28, 54, .88); stroke: rgba(150, 195, 245, .24); stroke-width: 1.5; transition: stroke .15s; }
 .terminal-scene__name { fill: #b9d2ec; font-size: 17px; font-weight: 600; }
 .terminal-scene__count { fill: #fff; font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.terminal-scene__count.is-check { fill: rgba(255, 255, 255, .62); font-size: 15px; font-weight: 600; }
 .terminal-scene__level { fill: var(--tone); font-size: 16px; font-weight: 800; }
 .terminal-scene__hall:hover .terminal-scene__tag,
 .terminal-scene__hall:focus-visible .terminal-scene__tag,

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { HALL_CHECK_HINT, HALL_CHECK_LABEL } from './hallStatus';
 
 export type LiveHall = {
   id: number;
@@ -27,7 +28,7 @@ const PEOPLE_PER_FIGURE: Record<Terminal, number> = { T1: 25, T2: 100 };
 const MAX_FIGURES = 20;
 const PER_ROW = 5;
 const LEVEL_COLOR: Record<string, string> = { LOW: '#4fe0ae', MID: '#ffcb5c', HIGH: '#ff7566', CHECK: '#9db0c6' };
-const LEVEL_TEXT: Record<string, string> = { LOW: '여유', MID: '보통', HIGH: '혼잡', CHECK: '운영 확인' };
+const LEVEL_TEXT: Record<string, string> = { LOW: '여유', MID: '보통', HIGH: '혼잡', CHECK: '미운영 가능' };
 
 function range(count: number) {
   return Array.from({ length: count }, (_, index) => index);
@@ -70,7 +71,7 @@ function HallGate({ hall, index, total, terminal, height, selected, onSelect }: 
     className={`cong-hall${selected ? ' is-selected' : ''}${level === 'HIGH' ? ' is-high' : ''}`}
     role="button"
     tabIndex={0}
-    aria-label={`${hall.name} ${hall.checking ? '운영 확인 필요' : `${hall.count}명 ${LEVEL_TEXT[level]}`}`}
+    aria-label={`${hall.name} ${hall.checking ? `${HALL_CHECK_LABEL}. ${HALL_CHECK_HINT}` : `${hall.count}명 ${LEVEL_TEXT[level]}`}`}
     aria-pressed={selected}
     onClick={() => onSelect(hall.id)}
     onKeyDown={event => {
@@ -86,7 +87,7 @@ function HallGate({ hall, index, total, terminal, height, selected, onSelect }: 
     <line x1={gate.x} y1={top + header} x2={gate.x} y2={WALL_FLOOR} className="cong-hall__seam" />
     <rect x={gate.x - half} y={top + header - 2} width={gate.width} height="2.5" fill={color} />
     <text x={gate.x - half + 13} y={top + 28} className="cong-hall__no">{hall.id}번</text>
-    <text x={gate.x + half - 13} y={top + 28} className="cong-hall__count">{hall.checking ? '운영 확인' : `${hall.count.toLocaleString()}명`}</text>
+    <text x={gate.x + half - 13} y={top + 28} className={`cong-hall__count${hall.checking ? ' is-check' : ''}`}>{hall.checking ? <><title>{HALL_CHECK_HINT}</title>{HALL_CHECK_LABEL}</> : `${hall.count.toLocaleString()}명`}</text>
 
     {range(figures).map(order => {
       const row = Math.floor(order / PER_ROW);

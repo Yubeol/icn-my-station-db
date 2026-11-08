@@ -3,7 +3,7 @@ import AnimatedNumber from '../components/layout/AnimatedNumber';
 import CongestionClock from '../components/main/Congestion/CongestionClock';
 import CongestionLiveMap from '../components/main/Congestion/CongestionLiveMap';
 import type { LiveHall } from '../components/main/Congestion/CongestionLiveMap';
-import { isHallChecking } from '../components/main/Congestion/hallStatus';
+import { HALL_CHECK_HINT, HALL_CHECK_LABEL, isHallChecking } from '../components/main/Congestion/hallStatus';
 import { getCongestion, getCongestionHourly } from '../api/client';
 import type { Congestion, CongestionHourly, Terminal } from '../api/client';
 import { useLiveUpdates } from '../hooks/useLiveUpdates';
@@ -154,7 +154,7 @@ export default function CongestionPage() {
                 aria-pressed={hall.hallId === selectedId}
                 onClick={() => setSelectedId(hall.hallId)}>
                 <span className="cong-rank__name">{hall.hallName}{hall.hallId === quietest?.hallId && <b>추천</b>}</span>
-                <span className="cong-rank__count" style={checking ? { color: 'var(--muted)' } : undefined}>{checking ? '운영 확인' : <><AnimatedNumber value={hall.waitingCount} />명</>}</span>
+                <span className="cong-rank__count" style={checking ? { color: 'var(--muted)', fontSize: 12, fontWeight: 600, opacity: .8 } : undefined} title={checking ? HALL_CHECK_HINT : undefined}>{checking ? HALL_CHECK_LABEL : <><AnimatedNumber value={hall.waitingCount} />명</>}</span>
                 <span className="cong-rank__track"><i data-level={checking ? undefined : hall.level} style={{ width: `${checking ? 0 : Math.max(2, (hall.waitingCount / peak) * 100)}%` }} /></span>
                 <small>{checking ? '' : `${LEVEL_LABEL[hall.level] ?? hall.level} · ${changeText(hall.changeRate)}`}{hall.source === 'yolo' ? ' · YOLO' : ''}</small>
               </button>

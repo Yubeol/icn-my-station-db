@@ -1,7 +1,7 @@
 
 import type { Hall } from "../../../api/congestion";
 import AnimatedNumber from "../../layout/AnimatedNumber";
-import { isMainHallChecking } from "./hallStatus";
+import { HALL_CHECK_HINT, HALL_CHECK_LABEL, isMainHallChecking } from "./hallStatus";
 
 interface Props {
   hall: Hall;
@@ -66,10 +66,11 @@ export default function HallCard({
 
       <strong
         className="congestion-hall-card__count"
-        style={checking ? { color: "var(--muted)" } : undefined}
+        style={checking ? { color: "var(--muted)", fontSize: 12, fontWeight: 600, opacity: 0.8 } : undefined}
+        title={checking ? HALL_CHECK_HINT : undefined}
       >
         {checking
-          ? "운영 확인"
+          ? HALL_CHECK_LABEL
           : <><AnimatedNumber value={hall.currentCount ?? 0} />명</>}
       </strong>
 

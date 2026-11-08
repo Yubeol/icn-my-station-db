@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { Hall, Terminal } from '../../../api/congestion';
 import AnimatedNumber from '../../layout/AnimatedNumber';
 import { getHallLevel, getLevelLabel } from './HallCard';
-import { isMainHallChecking } from './hallStatus';
+import { HALL_CHECK_HINT, HALL_CHECK_LABEL, isMainHallChecking } from './hallStatus';
 import './TerminalScene.css';
 
 type Props = {
@@ -164,7 +164,7 @@ export default function TerminalMap({ terminal, halls, selectedId, onSelect }: P
           role="button"
           tabIndex={0}
           aria-pressed={active}
-          aria-label={`${hall.name} ${checking ? '운영 확인' : `${hall.currentCount ?? 0}명 ${getLevelLabel(hall)}`}`}
+          aria-label={`${hall.name} ${checking ? `${HALL_CHECK_LABEL}. ${HALL_CHECK_HINT}` : `${hall.currentCount ?? 0}명 ${getLevelLabel(hall)}`}`}
           onClick={() => onSelect(hall.id)}
           onKeyDown={event => {
             if (event.key === 'Enter' || event.key === ' ') {
@@ -195,8 +195,8 @@ export default function TerminalMap({ terminal, halls, selectedId, onSelect }: P
           <g transform={`translate(${label.x} ${label.y})`}>
             <rect className="terminal-scene__tag" x="-69" y="-46" width="138" height="92" rx="14" />
             <text className="terminal-scene__name" y="-20" textAnchor="middle">{hall.name}</text>
-            <text className="terminal-scene__count" y="13" textAnchor="middle">
-              {checking ? '운영 확인' : `${(hall.currentCount ?? 0).toLocaleString('ko-KR')}명`}
+            <text className={`terminal-scene__count${checking ? ' is-check' : ''}`} y="13" textAnchor="middle">
+              {checking ? <><title>{HALL_CHECK_HINT}</title>{HALL_CHECK_LABEL}</> : `${(hall.currentCount ?? 0).toLocaleString('ko-KR')}명`}
             </text>
             <text className="terminal-scene__level" y="34" textAnchor="middle">{checking ? '' : getLevelLabel(hall)}</text>
           </g>
@@ -223,7 +223,7 @@ export default function TerminalMap({ terminal, halls, selectedId, onSelect }: P
       {focused && <div className={`is-${focusedLevel}`}>
         <small>{hoveredId || selectedId ? '선택한 출국장' : '가장 붐비는 곳'}</small>
         <strong>{focused.name}</strong>
-        <span>{focusedChecking ? '운영 확인' : getLevelLabel(focused)}{!focusedChecking && focused.changeRate !== null ? ` · 30분 전 ${focused.changeRate > 0 ? '+' : ''}${focused.changeRate.toFixed(1)}%` : ''}</span>
+        <span title={focusedChecking ? HALL_CHECK_HINT : undefined}>{focusedChecking ? HALL_CHECK_LABEL : getLevelLabel(focused)}{!focusedChecking && focused.changeRate !== null ? ` · 30분 전 ${focused.changeRate > 0 ? '+' : ''}${focused.changeRate.toFixed(1)}%` : ''}</span>
       </div>}
     </div>
   </div>;
