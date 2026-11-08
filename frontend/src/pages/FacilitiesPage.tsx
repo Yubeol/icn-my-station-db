@@ -86,6 +86,7 @@ export default function FacilitiesPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [limit, setLimit] = useState(PAGE_SIZE);
   const [allFloors, setAllFloors] = useState(false);
+  const [activeZone, setActiveZone] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const word = search.trim().toLowerCase();
@@ -103,7 +104,9 @@ export default function FacilitiesPage() {
     [filtered, terminal, floor, selectedId],
   );
   const floorPlaces = useMemo(() => filtered.filter(place => normalizeFloor(place.floor) === floor), [filtered, floor]);
-  const list = allFloors ? filtered : floorPlaces;
+  const zone = floorMap.zones.find(item => item.key === activeZone) ?? null;
+  // 구역이 선택되면 목록은 그 구역의 시설만 보여줍니다.
+  const list = zone ? zone.places : allFloors ? filtered : floorPlaces;
   const selected = filtered.find(place => place.facilityId === selectedId) ?? null;
   const selectedFloor = selected ? normalizeFloor(selected.floor) : null;
   const onMap = floorMap.units.some(unit => unit.place.facilityId === selectedId);
@@ -111,8 +114,16 @@ export default function FacilitiesPage() {
     : selectedFloor && selectedFloor !== floor && FLOORS.includes(selectedFloor) ? `${selectedFloor} 지도에서 확인할 수 있어요`
     : '상세 위치 정보 없음';
 
+  // 시설을 고르면 그 시설이 속한 구역도 같이 선택합니다. 지도에 없는 시설이면 구역 선택을 풉니다.
+  const pickPlace = (id: string, zoneKey?: string) => {
+    setSelectedId(id);
+    setActiveZone(zoneKey ?? floorMap.zones.find(item => item.places.some(place => place.facilityId === id))?.key ?? null);
+  };
+  const toggleZone = (key: string) => setActiveZone(current => (current === key ? null : key));
+
   useEffect(() => {
     setSelectedId(null);
+    setActiveZone(null);
     setLimit(PAGE_SIZE);
   }, [terminal, floor, category, openOnly, search]);
 
@@ -148,6 +159,10 @@ export default function FacilitiesPage() {
         <button type="button" aria-pressed={allFloors} onClick={() => { setAllFloors(value => !value); setLimit(PAGE_SIZE); }}>{allFloors ? `${floor}만 보기` : '다른 층 포함'}</button>
       </div>
       <div className="fac-list">
+        {zone && <div className="fac-zonechip">
+          <span>{zone.label} · {zone.places.length}곳</span>
+          <button type="button" aria-label="구역 선택 해제" onClick={() => setActiveZone(null)}><X size={13} /></button>
+        </div>}
         {loading && !data && <Skeleton label="시설을 불러오는 중입니다." variant="rows" count={6} />}
         {error && !data && <p role="alert">{error}</p>}
         {data && list.length === 0 && <p>조건에 맞는 시설이 없습니다.</p>}
@@ -157,10 +172,10 @@ export default function FacilitiesPage() {
             type="button"
             key={place.facilityId}
             className={place.facilityId === selectedId ? 'is-active' : ''}
-            onClick={() => setSelectedId(place.facilityId)}>
+            onClick={() => pickPlace(place.facilityId)}>
             <i><Icon size={16} /></i>
             <span><strong>{place.name}</strong><small>{place.floor ?? '층 미확인'} · {statusText(place)}</small></span>
-            {place.crowdEstimate && <em data-level={place.crowdEstimate}>{CROWD_LABEL[place.crowdEstimate]}</em>}
+            {place.crowdEstimate && <em data-level={place.crowdEstimate} title={`${BASIS_LABEL[place.crowdBasis ?? ''] ?? '기준 미상'} · 실측값 아님`}>{CROWD_LABEL[place.crowdEstimate]}</em>}
           </button>;
         })}
         {list.length > limit && <button type="button" className="fac-list__more" onClick={() => setLimit(value => value + PAGE_SIZE)}>더 보기</button>}
@@ -172,8 +187,10 @@ export default function FacilitiesPage() {
         terminal={terminal}
         floor={floor}
         map={floorMap}
+        activeZone={activeZone}
         selectedId={selectedId}
-        onPickPlace={id => setSelectedId(id)} />
+        onPickZone={toggleZone}
+        onPickPlace={pickPlace} />
       <div className="fac-map__title"><strong>{terminal}</strong><span>{floor} 개략도 · 드래그 회전, 휠 확대</span></div>
       <div className="fac-floor" role="group" aria-label="층 선택">
         {FLOORS.map(item => (
@@ -183,7 +200,7 @@ export default function FacilitiesPage() {
       <ul className="fac-legend" aria-hidden="true">
         {LEGEND.map(item => <li key={item.key} data-category={item.key}>{item.label}</li>)}
       </ul>
-      <p className="fac-map__note">위치 문장의 게이트·출국장·출입구·동편/서편/중앙 등으로 구역만 나눈 개략 위치입니다. 작은 숫자는 구역별 시설 수이며 구역 이름은 마우스를 올리면 보입니다. 칸의 순서는 실제 위치가 아니고, 칸이 모자란 구역은 왼쪽 목록에서 이어서 찾을 수 있습니다.</p>
+      <p className="fac-map__note">작은 숫자는 구역별 시설 수이며 누르면 그 구역 시설만 목록에 보입니다. 구역 이름은 마우스를 올리면 보입니다. 위치 문장의 게이트·출국장·출입구·동편/서편/중앙 등으로 구역만 나눈 개략 위치입니다. 칸의 순서는 실제 위치가 아니고, 칸이 모자란 구역은 왼쪽 목록에서 이어서 찾을 수 있습니다.</p>
       {mapNotice && <p className="fac-map__notice" role="status">{mapNotice}</p>}
       {selected && <FacilityPass place={selected} onClose={() => setSelectedId(null)} />}
     </section>

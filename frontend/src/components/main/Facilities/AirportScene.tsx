@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { PointerEvent as ReactPointerEvent } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
@@ -680,6 +681,20 @@ export default function AirportScene({ terminal, floor, map, activeZone = null, 
   const hoveredAreaRef = useRef<string | null>(null);
   const [failed, setFailed] = useState(false);
 
+  // 숫자 핀(구역별 시설 수)에 마우스를 올리면 시설 이름 툴팁과 같은 스타일로 바로 보여줍니다.
+  const showPinTip = (event: ReactPointerEvent, text: string) => {
+    const tooltip = tooltipRef.current;
+    const host = hostRef.current;
+    if (!tooltip || !host) return;
+    const rect = host.getBoundingClientRect();
+    tooltip.textContent = text;
+    tooltip.hidden = false;
+    tooltip.style.transform = `translate(${event.clientX - rect.left + 12}px, ${event.clientY - rect.top - 34}px)`;
+  };
+  const hidePinTip = () => {
+    if (tooltipRef.current) tooltipRef.current.hidden = true;
+  };
+
   useEffect(() => { pickRef.current = onPickPlace; }, [onPickPlace]);
 
   // 선택 층이 바뀌면 애니메이션 목표만 바꿉니다. 카메라 각도는 그대로 둡니다.
@@ -971,7 +986,10 @@ export default function AirportScene({ terminal, floor, map, activeZone = null, 
         }}
         className={`airport-pin${zone.key === activeZone ? ' is-active' : ''}`}
         aria-label={`${zone.label} 시설 ${zone.places.length}곳`}
-        title={zone.label}
+        onPointerEnter={event => showPinTip(event, `${zone.label} · 시설 ${zone.places.length}곳`)}
+        onPointerMove={event => showPinTip(event, `${zone.label} · 시설 ${zone.places.length}곳`)}
+        onPointerLeave={hidePinTip}
+        onBlur={hidePinTip}
         onClick={() => onPickZone?.(zone.key)}>
         {zone.places.length}
       </button>)}
