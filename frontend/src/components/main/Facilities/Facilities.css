@@ -17,11 +17,11 @@
 }
 
 .facilities-widget__list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-auto-rows: minmax(0, 1fr);
   gap: 5px;
 
-  flex: 1 1 auto;
+  flex: 1;
   min-height: 0;
   overflow: hidden;
 }
@@ -31,9 +31,11 @@
   align-items: center;
   gap: 8px;
 
-  flex: 1 1 0;
+  width: 100%;
   min-width: 0;
   min-height: 0;
+  max-height: 88px;
+  align-self: center;
 
   padding: 5px 7px;
   box-sizing: border-box;
