@@ -21,6 +21,7 @@
 | 편명 단건 조회 | GET | /api/v1/flights/{flightNo} | 경로의 flightNo. 없는 편명이면 404 |
 | 편명 상세 | GET | /api/v1/flights/{flightNo}/detail | 경로의 flightNo. 응답은 FlightDetail. 없는 편명이면 404 |
 | 출국장 혼잡도 | GET | /api/v1/congestion | terminal=T1\|T2 |
+| 시간대별 혼잡도 | GET | /api/v1/congestion/hourly | terminal=T1\|T2. 응답은 terminal, date, hours[hour, today, yesterday, level]. 측정이 없는 시간은 null |
 | 운항 통계 | GET | /api/v1/stats/flights | direction=DEPARTURE\|ARRIVAL |
 | 스마트 알림 | GET | /api/v1/alerts | flightNo (선택), terminal=T1\|T2 (선택, 없으면 공항 전체) |
 | 날씨·운항 여건 | GET | /api/v1/weather | - |
