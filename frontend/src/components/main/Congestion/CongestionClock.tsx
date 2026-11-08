@@ -69,7 +69,7 @@ export default function CongestionClock({ data, currentHour }: Props) {
       <circle cx={hand.x} cy={hand.y} r="4" fill="#0f4c92" stroke="#fff" strokeWidth="1.5" />
     </svg>
     <div className="cong-clock__center">
-      <small>{shownHour}시{active === null ? ' · 지금' : ''}</small>
+      <small title="그 시간 동안 측정한 출국장 합산 대기 인원의 평균입니다. 현재값은 위 '전체 대기'를 보세요.">{shownHour}시 평균</small>
       <strong>{value === null ? '-' : `${value.toLocaleString()}명`}</strong>
       <em data-level={shown?.level ?? undefined}>{shown?.level ? LEVEL_LABEL[shown.level] : '측정 없음'}</em>
     </div>
