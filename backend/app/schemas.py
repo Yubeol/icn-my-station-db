@@ -150,6 +150,17 @@ class Congestion(CamelModel):
     measured_at: datetime
     halls: list[Hall]
 
+class CongestionHour(CamelModel):
+    hour: int
+    today: int | None
+    yesterday: int | None
+    level: CongestionLevel | None
+
+
+class CongestionHourly(CamelModel):
+    terminal: Terminal
+    date: str
+    hours: list[CongestionHour]
 
 # ---------- FlightStats ----------
 

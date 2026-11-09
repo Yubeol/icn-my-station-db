@@ -69,7 +69,7 @@ function normalizeHall(rawValue: unknown, index: number): Hall {
     id,
     name,
     currentCount: numeric(first(raw, [
-      "currentCount", "currentPassengers",
+      "waitingCount", "currentCount", "currentPassengers",
       "passengerCount", "peopleCount",
       "count", "current",
     ])),
@@ -130,11 +130,5 @@ export async function getCongestion(
 
   const data: unknown = await response.json();
 
-  console.log(`[혼잡도 ${terminal}] 원본 응답`, data);
-
-  const halls = extractHalls(data).map(normalizeHall);
-
-  console.table(halls);
-
-  return halls;
+  return extractHalls(data).map(normalizeHall);
 }

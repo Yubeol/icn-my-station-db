@@ -1,0 +1,42 @@
+/* 메인 내 항공편: 작은 탑승권 */
+.my-mini { position: relative; flex: none; animation: icn-rise .38s cubic-bezier(.2, .8, .2, 1) both; }
+.my-mini__open { display: grid; grid-template-columns: minmax(104px, 28%) minmax(0, 1fr); width: 100%; min-height: 76px; padding: 0; overflow: hidden; border: 1px solid #e0eaf6; border-radius: 14px; background: #fff; color: var(--ink); font: inherit; text-align: left; cursor: pointer; transition: box-shadow .2s, border-color .2s; }
+.my-mini__open:hover { border-color: #a9c6e8; box-shadow: 0 8px 20px -14px rgba(11, 43, 82, .35); }
+.my-mini__main { position: relative; display: grid; align-content: center; gap: 1px; padding: 8px 14px; background: linear-gradient(120deg, var(--night), var(--runway)); color: #fff; }
+.my-mini__main::after { content: ''; position: absolute; top: 8px; right: -1px; bottom: 8px; border-right: 2px dashed rgba(201, 217, 234, .9); }
+.my-mini__main small { color: var(--sign); font-size: 10px; font-weight: 700; letter-spacing: .12em; }
+.my-mini__main strong { font-size: 20px; font-weight: 800; line-height: 1.15; letter-spacing: .02em; }
+.my-mini__main > span { overflow: hidden; color: #c7d8ea; font-size: 12px; white-space: nowrap; text-overflow: ellipsis; }
+.my-mini__main em { margin-left: 5px; font-style: normal; }
+/* 4칸: 터미널 · 게이트 · 출발까지 · 여유 출국장. 오른쪽은 배지와 닫기 버튼 자리를 비워 둡니다. */
+.my-mini__facts { display: grid; grid-template-columns: minmax(0, .75fr) minmax(0, .75fr) minmax(max-content, 1.2fr) minmax(0, 1.3fr); align-items: center; gap: 8px; min-width: 0; padding: 2px 80px 0 12px; overflow: hidden; }
+/* 정보 영역: 라벨·값을 위로 올리고 아래에 얇은 바코드 장식을 둡니다. */
+.my-mini__info { display: flex; flex-direction: column; justify-content: center; gap: 6px; min-width: 0; padding: 4px 0 8px; }
+.my-mini__barcode { flex: none; height: 10px; margin: 0 80px 0 12px; background: repeating-linear-gradient(90deg, var(--night) 0 2px, transparent 2px 5px, var(--night) 5px 8px, transparent 8px 12px); opacity: .75; }
+.my-mini__facts > span { display: grid; justify-items: center; gap: 2px; min-width: 0; text-align: center; }
+.my-mini__facts small { color: var(--muted); font-size: 10.5px; white-space: nowrap; }
+.my-mini__facts b { display: flex; align-items: center; justify-content: center; gap: 4px; max-width: 100%; overflow: hidden; color: var(--night); font-size: 14px; font-weight: 700; white-space: nowrap; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.my-mini__facts b.my-mini__best { color: var(--low); }
+.my-mini__facts b.my-mini__left { overflow: visible; color: var(--runway); text-overflow: clip; white-space: nowrap; }
+.my-mini__status { position: absolute; top: 6px; right: 32px; padding: 2px 8px; border-radius: 999px; background: #e3f4ec; color: var(--low); font-size: 11px; font-weight: 700; }
+.my-mini__status[data-status='DELAYED'], .my-mini__status[data-status='DIVERTED'] { background: #fff1d9; color: var(--mid); }
+.my-mini__status[data-status='CANCELLED'] { background: #fde5e2; color: var(--high); }
+.my-mini__close { position: absolute; top: 6px; right: 6px; display: grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer; }
+.my-mini__close:hover { background: var(--sky); color: var(--night); }
+.my-mini__skeleton { flex: none; }
+.my-mini__skeleton .icn-skeleton__row { min-height: 76px; border-radius: 14px; }
+
+@media (min-width: 701px) {
+  .my-mini__open { max-height: 96px; }
+}
+@media (max-width: 700px) {
+  .my-mini__open { grid-template-columns: 1fr; }
+  .my-mini__main::after { top: auto; right: 10px; bottom: -1px; left: 10px; border-right: 0; border-bottom: 2px dashed rgba(201, 217, 234, .9); }
+  .my-mini__facts { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 2px 12px 0; }
+  .my-mini__barcode { margin-right: 12px; }
+  .my-mini__status { top: 10px; right: 36px; }
+  .my-mini__close { color: #c7d8ea; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .my-mini, .my-mini__open { animation: none; transition: none; }
+}

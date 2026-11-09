@@ -12,7 +12,7 @@ def get_weather() -> Weather:
     wind_speed = 8.0
     wind_direction = 320.0
     visibility = 10.0
-    score = rules.operation_score(wind_speed, visibility)
+    score = rules.operation_score(wind_speed, 12.0)
     level = rules.operation_level(score)
     return Weather(
         observed_at=observed_at,

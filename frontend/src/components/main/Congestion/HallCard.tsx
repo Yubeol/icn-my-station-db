@@ -1,5 +1,7 @@
 
 import type { Hall } from "../../../api/congestion";
+import AnimatedNumber from "../../layout/AnimatedNumber";
+import { HALL_CHECK_HINT, HALL_CHECK_LABEL, isMainHallChecking } from "./hallStatus";
 
 interface Props {
   hall: Hall;
@@ -18,7 +20,7 @@ export function getHallLevel(
   ].includes(level)) return "relaxed";
 
   if ([
-    "NORMAL", "MODERATE", "MEDIUM", "보통",
+    "MID", "NORMAL", "MODERATE", "MEDIUM", "보통",
   ].includes(level)) return "normal";
 
   if ([
@@ -44,8 +46,7 @@ export default function HallCard({
   selected = false,
   onClick,
 }: Props) {
-  const checkRequired =
-    hall.operationStatus === "CHECK_REQUIRED";
+  const checking = isMainHallChecking(hall);
 
   const level = getHallLevel(hall);
 
@@ -63,27 +64,27 @@ export default function HallCard({
         {hall.name}
       </span>
 
-      <strong className="congestion-hall-card__count">
-        {hall.currentCount === null
-          ? "인원 확인 중"
-          : `${hall.currentCount.toLocaleString()}명`}
+      <strong
+        className="congestion-hall-card__count"
+        style={checking ? { color: "var(--muted)", fontSize: 12, fontWeight: 600, opacity: 0.8 } : undefined}
+        title={checking ? HALL_CHECK_HINT : undefined}
+      >
+        {checking
+          ? HALL_CHECK_LABEL
+          : <><AnimatedNumber value={hall.currentCount ?? 0} />명</>}
       </strong>
 
-      <span
-        className={`congestion-level congestion-level--${level}`}
-      >
-        {getLevelLabel(hall)}
-      </span>
-
-      {checkRequired && (
-        <span className="congestion-hall-card__warning">
-          운영 확인 필요
+      {!checking && (
+        <span
+          className={`congestion-level congestion-level--${level}`}
+        >
+          {getLevelLabel(hall)}
         </span>
       )}
 
-      {hall.changeRate !== null && (
+      {!checking && hall.changeRate !== null && (
         <span className="congestion-hall-card__change">
-          전일 대비 {hall.changeRate > 0 ? "+" : ""}
+          30분 전 대비 {hall.changeRate > 0 ? "+" : ""}
           {hall.changeRate.toFixed(1)}%
         </span>
       )}

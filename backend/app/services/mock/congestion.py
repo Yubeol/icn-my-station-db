@@ -2,9 +2,9 @@
 
 from app.core import rules
 from app.core.timeutil import now_kst
-from app.schemas import Congestion, DataSource, Hall, Terminal
+from app.schemas import Congestion, CongestionHour, CongestionHourly, DataSource, Hall, Terminal
 
-# 터미널별 (hall_id, 대기 인원, 전일 대비 %)
+# 터미널별 (hall_id, 대기 인원, 30분 전 대비 %)
 _MOCK_HALLS: dict[Terminal, list[tuple[int, int, float | None]]] = {
     Terminal.T1: [
         (1, 120, -5.0),
@@ -35,3 +35,29 @@ def get_congestion(terminal: Terminal) -> Congestion:
         for hall_id, count, change_rate in _MOCK_HALLS[terminal]
     ]
     return Congestion(terminal=terminal, measured_at=measured_at, halls=halls)
+
+
+# 시간대별 터미널 평균 대기 인원 비율. 새벽에 낮고 오전·저녁에 높은 임의 곡선이다.
+_HOURLY_SHAPE = [
+    0.15, 0.1, 0.1, 0.15, 0.3, 0.55, 0.8, 1.0, 0.95, 0.8, 0.7, 0.65,
+    0.6, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.75, 0.6, 0.45, 0.3, 0.2,
+]
+_HOURLY_PEAK_PER_HALL = {Terminal.T1: 420, Terminal.T2: 1900}
+
+
+def get_congestion_hourly(terminal: Terminal) -> CongestionHourly:
+    now = now_kst()
+    hall_count = len(_MOCK_HALLS[terminal])
+    hours = []
+    for hour, ratio in enumerate(_HOURLY_SHAPE):
+        per_hall = round(_HOURLY_PEAK_PER_HALL[terminal] * ratio)
+        passed = hour <= now.hour
+        hours.append(
+            CongestionHour(
+                hour=hour,
+                today=per_hall * hall_count if passed else None,
+                yesterday=round(per_hall * 0.9) * hall_count,
+                level=rules.congestion_level(per_hall, terminal) if passed else None,
+            )
+        )
+    return CongestionHourly(terminal=terminal, date=now.date().isoformat(), hours=hours)

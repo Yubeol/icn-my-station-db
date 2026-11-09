@@ -16,7 +16,7 @@ from app.core.cache import ttl_cache
 from app.core.config import settings
 from app.core.db import fetch_all
 from app.core.timeutil import KST, now_kst
-from app.schemas import Congestion, DataSource, Hall, Terminal
+from app.schemas import Congestion, CongestionHour, CongestionHourly, DataSource, Hall, Terminal
 
 _ZONES_CTE = """
     zones AS (
@@ -163,3 +163,72 @@ def get_congestion(terminal: Terminal) -> Congestion:
             )
         )
     return Congestion(terminal=terminal, measured_at=measured_at.astimezone(KST), halls=halls)
+@ttl_cache(seconds=300)
+def get_congestion_hourly(terminal: Terminal) -> CongestionHourly:
+    """오늘과 어제의 시간대별 평균 대기 인원. 측정이 없는 시간은 null이다.
+
+    출국장의 모든 구역이 함께 측정된 시각만 쓰고, 출국장별 시간 평균을 더해 터미널 값으로 만든다.
+    """
+    now = now_kst()
+    today = now.date()
+    yesterday = today - timedelta(days=1)
+    rows = fetch_all(
+        f"""
+        WITH {_ZONES_CTE},
+        hall_zones AS (
+            SELECT hall_no, count(*) AS zone_count
+            FROM zones
+            WHERE hall_no IS NOT NULL
+            GROUP BY hall_no
+        ),
+        snapshots AS (
+            SELECT DISTINCT ON (s.zone_id, s.measured_at)
+                s.zone_id, s.measured_at, s.waiting_passenger_count
+            FROM congestion_snapshots s
+            JOIN zones z ON z.zone_id = s.zone_id
+            WHERE s.source = ANY(%(sources)s) AND s.measured_at >= %(since)s
+            ORDER BY s.zone_id, s.measured_at, (s.source = 'yolo') DESC
+        ),
+        totals AS (
+            SELECT z.hall_no, s.measured_at, count(*) AS reported,
+                   sum(s.waiting_passenger_count) AS waiting
+            FROM snapshots s
+            JOIN zones z ON z.zone_id = s.zone_id
+            WHERE z.hall_no IS NOT NULL
+            GROUP BY z.hall_no, s.measured_at
+        ),
+        hall_hours AS (
+            SELECT t.hall_no,
+                   (t.measured_at AT TIME ZONE 'Asia/Seoul')::date AS day,
+                   extract(hour FROM t.measured_at AT TIME ZONE 'Asia/Seoul')::int AS hour,
+                   avg(t.waiting) AS waiting
+            FROM totals t
+            JOIN hall_zones h ON h.hall_no = t.hall_no AND h.zone_count = t.reported
+            GROUP BY 1, 2, 3
+        )
+        SELECT day, hour, sum(waiting) AS total, count(*) AS halls
+        FROM hall_hours
+        GROUP BY day, hour
+        """,
+        {
+            "terminal": terminal.value,
+            "sources": settings.data_sources(),
+            "since": now.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1),
+        },
+    )
+    values = {(row["day"], row["hour"]): row for row in rows}
+    hours = []
+    for hour in range(24):
+        current = values.get((today, hour))
+        previous = values.get((yesterday, hour))
+        hours.append(
+            CongestionHour(
+                hour=hour,
+                today=round(current["total"]) if current else None,
+                yesterday=round(previous["total"]) if previous else None,
+                level=rules.congestion_level(round(current["total"] / current["halls"]), terminal)
+                if current
+                else None,
+            )
+        )
+    return CongestionHourly(terminal=terminal, date=today.isoformat(), hours=hours)

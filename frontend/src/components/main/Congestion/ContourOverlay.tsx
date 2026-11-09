@@ -26,7 +26,7 @@ const ROWS = 88;
 function getCongestionValue(hall?: Hall): number | null {
   if (!hall) return null;
 
-  if (hall.operationStatus === "CHECK_REQUIRED") {
+  if ((hall.operationStatus === "CHECK_REQUIRED" || (hall.currentCount ?? 0) === 0)) {
     return null;
   }
 

@@ -3,9 +3,10 @@ import { useEffect, useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer,
+  Tooltip, Legend, ReferenceLine, ResponsiveContainer,
 } from 'recharts';
 import { getWeather, type Weather } from '../api/client';
+import { OPERATION_SCORE_BASIS } from '../api/rules';
 import { getWeatherHistory } from '../api/weatherHistory';
 import { useApiResource } from '../hooks/useApiResource';
 import { useLiveUpdates } from '../hooks/useLiveUpdates';
@@ -14,6 +15,7 @@ import {
   formatWindDirection, getDelayRiskLabel,
 } from '../api/weather';
 import { WindCompass } from '../components/main/Weather/WeatherConditions';
+import Skeleton from '../components/layout/Skeleton';
 import '../components/main/Weather/WeatherConditions.css';
 import './WeatherPage.css';
 
@@ -74,6 +76,22 @@ function randomAt(index: number, seed: number) {
   return value - Math.floor(value);
 }
 
+const HOUR_MS = 3_600_000;
+const CHART_TICK_HOURS = 4;
+const dateTimeFormat = new Intl.DateTimeFormat('ko-KR', {
+  timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false,
+});
+
+/** 기온·풍속 그래프의 X축 범위(현재 시각 포함), 눈금, 기간 문구를 만듭니다. */
+function chartAxis(points: { ts: number }[], nowMs: number) {
+  if (points.length === 0) return null;
+  const start = points[0].ts;
+  const end = Math.max(points[points.length - 1].ts, nowMs);
+  const ticks: number[] = [];
+  for (let tick = Math.ceil(start / HOUR_MS) * HOUR_MS; tick <= end; tick += CHART_TICK_HOURS * HOUR_MS) ticks.push(tick);
+  return { start, end, ticks, period: `${dateTimeFormat.format(start)} ~ ${dateTimeFormat.format(end)}` };
+}
+
 function formatHour(value: string) {
   const date = new Date(value);
 
@@ -88,6 +106,8 @@ function formatHour(value: string) {
 }
 
 type TimePhase = 'dawn' | 'day' | 'dusk' | 'night';
+
+const TIME_PHASES: TimePhase[] = ['dawn', 'day', 'dusk', 'night'];
 
 function getKoreaTimePhase(date: Date): TimePhase {
   const hour = Number(
@@ -395,8 +415,11 @@ export default function WeatherPage() {
       .map(point => ({
         ...point,
         hour: formatHour(point.observedAt),
+        ts: new Date(point.observedAt).getTime(),
       }));
   }, [history.data]);
+
+  const axis = useMemo(() => chartAxis(chart, now.getTime()), [chart, now]);
 
   const heatmapPoints = useMemo(
     () => chart.slice(-6),
@@ -426,37 +449,37 @@ export default function WeatherPage() {
             }
           >
             <div className="icn-w-sky" aria-hidden="true">
-              {(timePhase === 'night' ||
-                timePhase === 'dawn') && (
-                <div className="icn-w-stars">
-                  {Array.from(
-                    { length: 24 },
-                    (_, index) => (
-                      <i
-                        key={index}
-                        style={{
-                          left: `${randomAt(index, 11) * 100}%`,
-                          top: `${randomAt(index, 12) * 68}%`,
-                          animationDelay:
-                            `${-randomAt(index, 13) * 4}s`,
-                        }}
-                      />
-                    )
-                  )}
-                </div>
-              )}
+              {/* 시간대별 하늘을 겹쳐 두고 현재 시간대만 서서히 드러냅니다 */}
+              {TIME_PHASES.map(phase => (
+                <div
+                  key={phase}
+                  className={`icn-w-sky-layer icn-w-sky-${phase}`}
+                  data-active={timePhase === phase}
+                />
+              ))}
 
-              {timePhase === 'night' && (
-                <div className="icn-w-moon" />
-              )}
+              <div className="icn-w-stars">
+                {Array.from(
+                  { length: 24 },
+                  (_, index) => (
+                    <i
+                      key={index}
+                      style={{
+                        left: `${randomAt(index, 11) * 100}%`,
+                        top: `${randomAt(index, 12) * 58}%`,
+                        animationDelay:
+                          `${-randomAt(index, 13) * 4}s`,
+                      }}
+                    />
+                  )
+                )}
+              </div>
 
-              {(
-                timePhase === 'day' ||
-                timePhase === 'dawn' ||
-                timePhase === 'dusk'
-              ) && (
-                <div className="icn-w-sun" />
-              )}
+              <div className="icn-w-sun" />
+              <div className="icn-w-moon" />
+
+              {/* 날씨 상태는 시간대 하늘 위에 색을 덧씌웁니다 */}
+              <div className="icn-w-tint" />
             </div>
 
             <AirportLandscape />
@@ -568,8 +591,8 @@ export default function WeatherPage() {
 
               <small>
                 {minutesAhead == null
-                  ? '기준 시각 정보 없음'
-                  : `${minutesAhead}분 후 기준`}
+                  ? `기준 시각 정보 없음 · ${OPERATION_SCORE_BASIS}`
+                  : `${minutesAhead}분 후 · ${OPERATION_SCORE_BASIS}`}
               </small>
             </div>
           </section>
@@ -695,11 +718,11 @@ export default function WeatherPage() {
                 })}
               </div>
             </div>
+          ) : history.status === 'loading' ? (
+            <Skeleton label="기상 이력을 불러오는 중입니다." variant="rows" count={3} className="icn-w-skeleton" />
           ) : (
             <p className="icn-w-placeholder">
-              {history.status === 'loading'
-                ? '기상 이력 조회 중'
-                : '기상 이력 데이터가 없습니다.'}
+              기상 이력 데이터가 없습니다.
             </p>
           )}
 
@@ -724,8 +747,9 @@ export default function WeatherPage() {
 
         <section className="icn-w-line-card">
           <h2>기온·풍속 변화</h2>
+          {axis && <p className="icn-w-chart-period">최근 24시간 · {axis.period}</p>}
 
-          {chart.length > 0 ? (
+          {chart.length > 0 && axis ? (
             <div className="icn-w-chart">
               <ResponsiveContainer
                 width="100%"
@@ -735,7 +759,7 @@ export default function WeatherPage() {
                   data={chart}
                   margin={{
                     top: 10,
-                    right: 15,
+                    right: 8,
                     left: 0,
                     bottom: 5,
                   }}
@@ -746,26 +770,55 @@ export default function WeatherPage() {
                   />
 
                   <XAxis
-                    dataKey="hour"
+                    dataKey="ts"
+                    type="number"
+                    scale="time"
+                    domain={[axis.start, axis.end]}
+                    ticks={axis.ticks}
+                    tickFormatter={(value: number) => formatHour(new Date(value).toISOString())}
                     tick={{ fontSize: 11 }}
                   />
 
                   <YAxis
-                    tick={{ fontSize: 11 }}
+                    yAxisId="temp"
+                    orientation="left"
+                    unit="°C"
+                    width={46}
+                    tick={{ fontSize: 11, fill: '#e88938' }}
+                  />
+
+                  <YAxis
+                    yAxisId="wind"
+                    orientation="right"
+                    unit="m/s"
+                    width={50}
+                    tick={{ fontSize: 11, fill: '#1471c9' }}
                   />
 
                   <Tooltip
                     shared
+                    labelFormatter={(value) => dateTimeFormat.format(Number(value))}
                     cursor={{
                       stroke: '#94a3b8',
                       strokeDasharray: '4 4',
                     }}
                   />
 
+                  <Legend verticalAlign="top" height={26} iconType="plainline" wrapperStyle={{ fontSize: 12 }} />
+
+                  <ReferenceLine
+                    x={now.getTime()}
+                    yAxisId="temp"
+                    stroke="#d9434e"
+                    strokeDasharray="4 3"
+                    label={{ value: '현재', position: 'insideTopRight', fontSize: 11, fill: '#d9434e' }}
+                  />
+
                   <Line
+                    yAxisId="temp"
                     type="monotone"
                     dataKey="temperature"
-                    name="기온 °C"
+                    name="기온 (°C, 왼쪽 축)"
                     stroke="#e88938"
                     strokeWidth={1.5}
                     dot={false}
@@ -774,9 +827,10 @@ export default function WeatherPage() {
                   />
 
                   <Line
+                    yAxisId="wind"
                     type="monotone"
                     dataKey="windSpeed"
-                    name="풍속 m/s"
+                    name="풍속 (m/s, 오른쪽 축)"
                     stroke="#1471c9"
                     strokeWidth={1.5}
                     dot={false}
@@ -786,11 +840,11 @@ export default function WeatherPage() {
                 </LineChart>
               </ResponsiveContainer>
             </div>
+          ) : history.status === 'loading' ? (
+            <Skeleton label="그래프를 불러오는 중입니다." variant="chart" className="icn-w-skeleton" />
           ) : (
             <p className="icn-w-placeholder">
-              {history.status === 'loading'
-                ? '그래프 불러오는 중'
-                : '그래프 데이터가 없습니다.'}
+              그래프 데이터가 없습니다.
             </p>
           )}
         </section>

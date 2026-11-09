@@ -8,6 +8,22 @@ export type Congestion = components['schemas']['Congestion']
 export type Weather = components['schemas']['Weather']
 export type Alert = components['schemas']['Alert']
 export type Facility = components['schemas']['Facility']
+export type CongestionHourly = {
+  terminal: Terminal
+  date: string
+  hours: { hour: number; today: number | null; yesterday: number | null; level: 'LOW' | 'MID' | 'HIGH' | null }[]
+}
+export type FlightDetail = {
+  generatedAt: string
+  flight: Flight
+  congestion: Congestion
+  alerts: Alert[]
+  weather: Weather & {
+    windGust?: number | null
+    operationScore: Weather['operationScore'] & { delayRisk?: 'LOW' | 'MID' | 'HIGH' | null }
+  }
+  facilities: Facility[]
+}
 export type Direction = components['schemas']['Direction']
 export type Terminal = components['schemas']['Terminal']
 export type LiveTopic = 'congestion' | 'flights' | 'stats' | 'alerts' | 'weather'
@@ -58,8 +74,14 @@ export function getFlights(type: Direction, signal?: AbortSignal, flightNo?: str
 export function getFlight(flightNo: string, signal?: AbortSignal): Promise<Flight> {
   return get(`/api/v1/flights/${encodeURIComponent(flightNo)}`, signal)
 }
+export function getFlightDetail(flightNo: string, signal?: AbortSignal): Promise<FlightDetail> {
+  return get(`/api/v1/flights/${encodeURIComponent(flightNo)}/detail`, signal)
+}
 export function getCongestion(terminal: Terminal, signal?: AbortSignal): Promise<Congestion> {
   return get(`/api/v1/congestion${query({ terminal })}`, signal)
+}
+export function getCongestionHourly(terminal: Terminal, signal?: AbortSignal): Promise<CongestionHourly> {
+  return get(`/api/v1/congestion/hourly${query({ terminal })}`, signal)
 }
 export function getFlightStats(direction: Direction, signal?: AbortSignal): Promise<FlightStats> {
   return get(`/api/v1/stats/flights${query({ direction })}`, signal)

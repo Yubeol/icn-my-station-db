@@ -1,0 +1,513 @@
+@import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
+
+/* 공통 화면 톤. 공항 전광판의 남색과 안내판 노랑을 기준으로 합니다. */
+:root { font-family: 'Pretendard Variable', Pretendard, 'Noto Sans KR', Arial, sans-serif; }
+body { background: var(--sky, #e8f0f9); }
+.icn-app {
+  --night: #0b2b52; --runway: #0f4c92; --sky: #e8f0f9; --sign: #ffd23f;
+  --ink: #24405f; --muted: #5d7590; --line: #d4e0ed; --border: #d4e0ed;
+  --low: #12805c; --mid: #a86300; --high: #c8362b;
+  --blue: var(--runway);
+  background: var(--sky); color: var(--ink);
+  font-family: 'Pretendard Variable', Pretendard, 'Noto Sans KR', Arial, sans-serif;
+}
+.icn-app button:focus-visible, .icn-app input:focus-visible { outline: 3px solid #5ea7f2; outline-offset: 2px; }
+
+/* 전광판 헤더 */
+.icn-banner { height: 86px; gap: clamp(14px, 2vw, 34px); padding: 0 clamp(16px, 2vw, 30px); border-radius: 14px 14px 0 0; background: var(--night); }
+.icn-brand > span { color: var(--sign); font-size: 34px; }
+.icn-brand strong { font-size: clamp(18px, 1.4vw, 22px); font-weight: 700; letter-spacing: -.01em; }
+.icn-brand small { color: #b9cce3; font-size: 12px; }
+.icn-board { display: flex; flex: 1; align-items: center; justify-content: center; gap: clamp(12px, 1.5vw, 26px); min-width: 0; color: #fff; }
+.icn-board p { margin: 0; color: #b9cce3; font-size: 14px; }
+.icn-board__item { display: grid; gap: 4px; min-width: 0; }
+.icn-board__item small { color: #93adc9; font-size: 11px; }
+.icn-board__item--city { flex: 0 1 180px; }
+.icn-board__item--city strong, .icn-board__item--status strong { display: block; overflow: hidden; color: #fff; font-size: 17px; font-weight: 650; line-height: 30px; white-space: nowrap; text-overflow: ellipsis; }
+.icn-board__item--status strong { min-width: 68px; color: var(--sign); }
+.icn-board__item--status strong[data-status='DELAYED'] { color: #ff9b8a; }
+.icn-flap { display: inline-flex; gap: 2px; perspective: 300px; }
+.icn-flap__cell { position: relative; display: inline-grid; place-items: center; width: 21px; height: 30px; overflow: hidden; border-radius: 3px; background: #14396a; color: var(--sign); font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: pre; animation: icn-flap .36s ease-out both; transform-origin: 50% 50%; }
+.icn-flap__cell::after { content: ''; position: absolute; inset: 50% 0 auto; height: 1px; background: var(--night); opacity: .55; }
+@keyframes icn-flap { from { transform: rotateX(-88deg); filter: brightness(1.6); } to { transform: rotateX(0); filter: none; } }
+.icn-clock { display: grid; flex: none; gap: 3px; justify-items: end; color: #fff; }
+.icn-clock time { font-size: clamp(21px, 1.8vw, 27px); font-weight: 700; font-variant-numeric: tabular-nums; }
+.icn-clock small { color: #b9cce3; font-size: 12px; }
+.icn-clock small.is-live { color: #7fe0b3; }
+
+/* 메뉴 */
+.icn-nav { gap: 2px; margin: 0 0 10px; padding: 0 clamp(10px, 1.4vw, 22px) 10px; border: 0; border-radius: 0 0 14px 14px; background: var(--night); }
+.icn-nav button { padding: 10px 15px; border: 0; border-radius: 8px; background: transparent; color: #d4e2f2; font-size: 14.5px; font-weight: 600; transition: background-color .15s, color .15s; }
+.icn-nav button:hover { background: #14396a; color: #fff; }
+.icn-nav button.is-active, .icn-nav button.is-active:hover { background: var(--sign); color: var(--night); font-weight: 700; }
+
+/* 메인 카드 */
+.icn-dashboard { min-height: 0; align-items: stretch; }
+.icn-section { padding: 16px 16px 14px; border: 0; border-radius: 12px; background: #fff; box-shadow: 0 1px 0 #c9d9ea; }
+.icn-section__header { min-height: 26px; margin-bottom: 8px; padding-bottom: 0; border-bottom: 0; }
+.icn-section__header h2 { color: var(--night); font-size: clamp(15px, 1.1vw, 18px); font-weight: 700; letter-spacing: -.01em; }
+.icn-more { min-height: 26px; color: var(--runway); }
+.icn-more:hover { text-decoration: underline; }
+.icn-terminal { background: var(--sky); }
+.icn-terminal button { min-height: 34px; color: var(--runway); font-weight: 650; }
+.icn-terminal button.is-active { background: var(--night); }
+
+/* 메인 위젯이 잘리지 않도록 높이 확보 */
+.congestion-panel { flex: 1; height: 100%; min-height: 0; }
+.congestion-panel__map { flex: 1 1 auto; height: auto; min-height: 300px; max-height: none; }
+.congestion-panel__bottom { flex: 0 0 auto; }
+.icn-weather { flex: 0 0 auto; }
+.icn-alerts { flex: 0 0 auto; min-height: 262px; }
+.icn-facilities { flex: 1 0 auto; min-height: 268px; }
+.smart-alerts__item { flex: 0 0 auto; min-height: 56px; }
+.smart-alerts__message { display: block; white-space: nowrap; text-overflow: ellipsis; }
+.facilities-widget { gap: 8px; }
+.facilities-widget__list { flex: 0 0 auto; overflow: visible; gap: 6px; }
+.facilities-widget__item { flex: 0 0 auto; min-height: 56px; }
+.facilities-widget__notice { display: grid; gap: 2px; padding: 0; color: var(--muted); font-size: 11.5px; line-height: 1.4; background: none; }
+.facilities-widget__notice strong { color: var(--ink); font-size: 12px; }
+.congestion-hall-card__count { font-size: clamp(16px, 1.45vw, 21px); font-variant-numeric: tabular-nums; }
+.icn-barcode i { background: repeating-linear-gradient(90deg, var(--night) 0 2px, transparent 2px 5px, var(--night) 5px 8px, transparent 8px 12px); }
+
+.icn-detail { border: 0; border-radius: 12px; box-shadow: 0 1px 0 #c9d9ea; }
+.icn-api-status { background: var(--sky); color: var(--ink); }
+
+@media (max-width: 1180px) { .icn-board__item--city, .icn-board__item--status { display: none; } }
+@media (max-width: 860px) {
+  .icn-board { display: none; }
+  .icn-banner { justify-content: space-between; }
+}
+@media (max-width: 700px) {
+  .icn-banner { height: 70px; padding: 10px 14px; }
+  .icn-brand small { display: none; }
+  .icn-nav { padding: 0 7px 7px; overflow-x: auto; flex-wrap: nowrap; }
+  .icn-nav button { flex: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .icn-flap__cell { animation: none; }
+  .icn-queue__track i { transition: none; }
+}
+
+/* 출국장 혼잡도, 편의시설, 스마트 알림 상세 화면 공통 */
+.icn-page.icn-detail { height: auto; min-height: calc(100vh - 190px); gap: 18px; overflow: visible; padding: clamp(18px, 2.2vw, 34px); }
+.icn-page__top { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
+.icn-page__top h1 { margin: 0; color: var(--night); font-size: clamp(23px, 2.1vw, 32px); line-height: 1.25; font-weight: 700; letter-spacing: -.02em; }
+.icn-page__top p { margin: 8px 0 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+
+.icn-switch { display: inline-flex; flex: none; gap: 3px; padding: 3px; border-radius: 10px; background: var(--sky); }
+.icn-switch button { min-height: 38px; padding: 0 17px; border: 0; border-radius: 8px; background: transparent; color: var(--runway); font-weight: 650; }
+.icn-switch button[aria-pressed='true'] { background: var(--night); color: #fff; }
+
+.icn-level { display: inline-flex; align-items: center; justify-content: center; min-height: 24px; padding: 0 9px; border-radius: 6px; background: #e9eef5; color: #4c5f76; font-size: 12px; font-weight: 700; white-space: nowrap; }
+[data-level='LOW'] > .icn-level, .icn-level[data-level='LOW'] { background: #dff3ea; color: var(--low); }
+[data-level='MID'] > .icn-level, .icn-level[data-level='MID'] { background: #fdf0d3; color: var(--mid); }
+[data-level='HIGH'] > .icn-level, .icn-level[data-level='HIGH'] { background: #fde5e1; color: var(--high); }
+
+/* 대기 줄 */
+.icn-queue { margin: 0; padding: 0; list-style: none; }
+.icn-queue li { display: grid; grid-template-columns: 112px minmax(120px, 1fr) 118px 62px 126px 68px; align-items: center; gap: 16px; min-height: 76px; border-top: 1px solid var(--line); }
+.icn-queue li:last-child { border-bottom: 1px solid var(--line); }
+.icn-queue__name { color: var(--night); font-size: 15px; }
+.icn-queue__track { height: 26px; border-radius: 5px; background: repeating-linear-gradient(90deg, #edf3fa 0 14px, #e1eaf5 14px 16px); overflow: hidden; }
+.icn-queue__track i { display: block; height: 100%; border-radius: 5px; background: var(--runway); transition: width .7s cubic-bezier(.2, .8, .2, 1); }
+[data-level='LOW'] .icn-queue__track i { background: var(--low); }
+[data-level='MID'] .icn-queue__track i { background: #d99a1c; }
+[data-level='HIGH'] .icn-queue__track i { background: var(--high); }
+.icn-queue__count { color: var(--night); font-size: 20px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+.icn-queue__change, .icn-queue__source { color: var(--muted); font-size: 12.5px; }
+.icn-queue .is-checking .icn-queue__count { color: var(--muted); font-size: 13px; font-weight: 600; }
+
+/* 필터 */
+.icn-filterbar { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 18px; }
+.icn-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.icn-chips button { min-height: 38px; padding: 0 13px; border: 1px solid var(--line); border-radius: 19px; background: #fff; color: var(--ink); font-size: 13.5px; font-weight: 600; }
+.icn-chips button span { color: var(--muted); font-variant-numeric: tabular-nums; }
+.icn-chips button[aria-pressed='true'] { border-color: var(--night); background: var(--night); color: #fff; }
+.icn-chips button[aria-pressed='true'] span { color: var(--sign); }
+.icn-search { display: grid; flex: 0 1 300px; gap: 5px; color: var(--muted); font-size: 12.5px; }
+.icn-search input { width: 100%; min-height: 42px; padding: 0 13px; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--ink); font: inherit; font-size: 14px; }
+.icn-check { display: inline-flex; align-items: center; gap: 7px; min-height: 38px; color: var(--ink); font-size: 13.5px; font-weight: 600; }
+.icn-check input { width: 17px; height: 17px; accent-color: var(--runway); }
+.icn-empty { margin: 0; padding: 28px 0; color: var(--muted); font-size: 15px; }
+
+/* 시설 */
+.icn-places { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0 28px; margin: 0; padding: 0; list-style: none; }
+.icn-places li { display: flex; flex-direction: column; gap: 7px; padding: 15px 0; border-top: 1px solid var(--line); min-width: 0; }
+.icn-places__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 9px; }
+.icn-places h2 { margin: 0; color: var(--night); font-size: 15.5px; font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; }
+.icn-places p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
+.icn-places footer { display: flex; justify-content: space-between; gap: 10px; margin-top: auto; color: var(--ink); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.icn-places .is-closed { color: var(--high); }
+.icn-more-list { align-self: center; min-height: 42px; padding: 0 22px; border: 1px solid var(--runway); border-radius: 9px; background: #fff; color: var(--runway); font-weight: 700; }
+
+/* 알림 */
+.icn-feed { margin: 0; padding: 0; list-style: none; }
+.icn-feed li { display: grid; grid-template-columns: 54px 12px minmax(0, 1fr) auto; gap: 16px; align-items: start; padding: 17px 0; border-top: 1px solid var(--line); }
+.icn-feed time { padding-top: 2px; color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+.icn-feed i { width: 11px; height: 11px; margin-top: 6px; border-radius: 50%; background: #8fa6c0; }
+.icn-feed [data-severity] { position: relative; }
+.icn-feed li[data-severity='WARN'] i { background: #d99a1c; }
+.icn-feed li[data-severity='CRITICAL'] i { background: var(--high); box-shadow: 0 0 0 4px #fde5e1; }
+.icn-feed h2 { margin: 0; color: var(--night); font-size: 16px; font-weight: 700; }
+.icn-feed p { margin: 5px 0 0; color: var(--ink); font-size: 14.5px; line-height: 1.5; }
+.icn-feed__tag { color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+
+@media (max-width: 900px) {
+  .icn-page__top { flex-direction: column; }
+  .icn-search { flex: none; width: 100%; }
+  .icn-queue li { grid-template-columns: 1fr auto; gap: 7px 12px; padding: 13px 0; }
+  .icn-queue__track { grid-column: 1 / -1; grid-row: 2; }
+  .icn-queue__count { grid-row: 1; grid-column: 2; }
+  .icn-queue .icn-level { justify-self: start; }
+  .icn-queue__change { text-align: right; }
+  .icn-queue__source:empty { display: none; }
+  .icn-feed li { grid-template-columns: 48px 12px minmax(0, 1fr); gap: 11px; }
+  .icn-feed__tag { grid-column: 3; }
+}
+
+/* 화면 전체 마감. theme.css 위에 덧씌우며 프로젝트 요소만 다룹니다. */
+
+/* 배경: 새벽 활주로 쪽에서 번지는 빛 */
+body { background: #e8f0f9; }
+.icn-app {
+  background:
+    radial-gradient(900px 420px at 12% -8%, #cfe1f7 0, transparent 70%),
+    radial-gradient(800px 460px at 92% 0, #dcebfb 0, transparent 70%),
+    var(--sky);
+}
+
+/* 전광판 헤더 */
+.icn-banner {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: linear-gradient(100deg, #081f3e 0%, #0b2b52 46%, #103a6d 100%);
+}
+.icn-banner::after { /* 지나가는 비행기 불빛 */
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  bottom: 0;
+  left: -30%;
+  width: 30%;
+  background: linear-gradient(90deg, transparent, rgba(126, 180, 240, .18), transparent);
+  transform: skewX(-18deg);
+  animation: icn-sweep 9s ease-in-out infinite;
+}
+@keyframes icn-sweep { 0%, 35% { left: -30%; } 100% { left: 110%; } }
+.icn-brand > span { filter: drop-shadow(0 0 10px rgba(255, 210, 63, .45)); }
+
+/* 로고 버튼: 누르면 소개 화면으로 */
+.icn-brand--button { padding: 4px 6px; margin-left: -6px; border: 0; border-radius: 10px; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; transition: background-color .15s; }
+.icn-brand--button:hover { background: rgba(255, 255, 255, .06); }
+.icn-brand--button:focus-visible { outline: 3px solid #5ea7f2; outline-offset: 2px; }
+
+/* 소개 화면을 불러오는 동안 같은 노을 배경을 먼저 보여 줍니다 */
+.intro-loading { min-height: 100dvh; background: linear-gradient(180deg, #0a2243 0%, #14335d 58%, #3f6a9c 82%, #e8ad84 100%); }
+.icn-board__item--city strong { animation: icn-rise .4s ease-out both; }
+.icn-clock small.is-live { animation: icn-breathe 2.4s ease-in-out infinite; }
+@keyframes icn-breathe { 50% { opacity: .55; } }
+
+/* 메뉴 아래 활주로 유도등 */
+.icn-nav { position: relative; padding-bottom: 14px; }
+.icn-nav::after {
+  content: '';
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 5px;
+  height: 2px;
+  background: repeating-linear-gradient(90deg, var(--sign) 0 10px, transparent 10px 34px);
+  opacity: .5;
+  animation: icn-runway 2.2s linear infinite;
+}
+@keyframes icn-runway { to { background-position-x: 34px; } }
+.icn-nav button { transition: background-color .18s, color .18s, transform .18s; }
+.icn-nav button:active { transform: translateY(1px); }
+
+/* 페이지 전환 */
+.icn-app > main { animation: icn-rise .38s cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes icn-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* 카드 */
+.icn-section {
+  border: 1px solid rgba(201, 217, 234, .7);
+  box-shadow: 0 1px 2px rgba(11, 43, 82, .04), 0 10px 26px -18px rgba(11, 43, 82, .28);
+  transition: box-shadow .22s, transform .22s;
+}
+.icn-section:hover {
+  box-shadow: 0 1px 2px rgba(11, 43, 82, .05), 0 16px 34px -18px rgba(11, 43, 82, .36);
+  transform: translateY(-1px);
+}
+.icn-section__header h2 { display: flex; align-items: center; gap: 8px; }
+.icn-section__header h2::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--sign);
+  box-shadow: 0 0 0 3px rgba(255, 210, 63, .25);
+}
+.icn-more { border-radius: 6px; padding: 0 6px; transition: background-color .15s; }
+.icn-more:hover { background: var(--sky); text-decoration: none; }
+
+/* 정상 응답은 숨기고 연결 중과 오류만 보여줍니다 */
+.icn-api-status--success { display: none; }
+
+/* 메인 위젯 잘림 정리 */
+.icn-dashboard { min-height: calc(100vh - 186px); }
+.smart-alerts__message { overflow: hidden; }
+.facilities-widget__name { font-size: 12.5px; }
+.facilities-widget__meta { font-size: 10.5px; }
+.facilities-widget__open { font-size: 10px; }
+.facilities-widget__notice span { font-size: 11.5px; }
+.facilities-widget__item, .smart-alerts__item { transition: background-color .15s, border-color .15s; }
+.facilities-widget__item:hover, .smart-alerts__item:hover { border-color: #a9c6e8; background: #f6faff; }
+
+/* 혼잡도 */
+.terminal3d, .terminal3d-stage { background: linear-gradient(180deg, #eef4fb, #f8fbfe); }
+.terminal3d-label { transition: transform .18s, box-shadow .18s; }
+.terminal3d-label:hover { box-shadow: 0 8px 18px rgba(11, 43, 82, .2); }
+.congestion-hall-card { transition: transform .18s, box-shadow .18s, border-color .18s; }
+.congestion-hall-card:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 20px -14px rgba(11, 43, 82, .5); }
+.congestion-hall-card__count { white-space: nowrap; line-height: 1.2; }
+
+/* 상세 페이지 공통 */
+.icn-detail { box-shadow: 0 10px 28px -20px rgba(11, 43, 82, .3); }
+.icn-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.icn-kpi { position: relative; display: grid; gap: 7px; padding: 16px 18px; border-radius: 12px; background: var(--night); color: #fff; }
+.icn-kpi:first-child { background: linear-gradient(120deg, #0b2b52, #0f4c92); }
+.icn-kpi:not(:first-child) { background: var(--sky); color: var(--night); }
+.icn-kpi small { color: inherit; font-size: 12.5px; opacity: .72; }
+.icn-kpi strong { font-size: clamp(20px, 1.9vw, 28px); font-weight: 700; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+.icn-kpi em { margin-left: 3px; font-size: 14px; font-style: normal; font-weight: 600; }
+.icn-live { position: absolute; top: 14px; right: 14px; color: var(--muted); font-size: 11.5px; font-weight: 600; }
+.icn-live.is-on { color: var(--low); }
+.icn-live.is-on::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 5px; border-radius: 50%; background: var(--low); animation: icn-breathe 2s ease-in-out infinite; }
+
+.icn-queue li { transition: background-color .15s; }
+.icn-queue li:hover { background: #f7fafd; }
+.icn-places { gap: 12px; }
+.icn-places li { padding: 15px 16px; border: 1px solid var(--line); border-radius: 12px; transition: transform .18s, box-shadow .18s, border-color .18s; }
+.icn-places li:hover { transform: translateY(-2px); border-color: #a9c6e8; box-shadow: 0 12px 22px -16px rgba(11, 43, 82, .4); }
+.icn-chips button { transition: background-color .15s, border-color .15s, color .15s; }
+.icn-chips button:hover { border-color: var(--runway); }
+.icn-more-list { transition: background-color .15s, color .15s; }
+.icn-more-list:hover { background: var(--runway); color: #fff; }
+.icn-feed li { animation: icn-rise .32s ease-out both; }
+.icn-empty { text-align: center; }
+
+@media (max-width: 900px) { .icn-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .icn-banner::after, .icn-nav::after, .icn-app > main, .icn-feed li,
+  .icn-board__item--city strong, .icn-clock small.is-live, .icn-live.is-on::before { animation: none; }
+  .icn-section, .icn-places li, .congestion-hall-card { transition: none; }
+  .icn-section:hover, .icn-places li:hover, .congestion-hall-card:hover:not(:disabled) { transform: none; }
+}
+
+/* 혼잡도 관제 화면을 메인 중앙에서 크게 */
+.congestion-panel__map { min-height: 440px; border: 0; background: none; }
+
+/* 넓은 화면에서는 스크롤 없이 한 화면에 맞춥니다 */
+@media (min-width: 1101px) {
+  html, body, #root { height: 100%; overflow: hidden; }
+  .icn-app { display: flex; flex-direction: column; height: 100dvh; min-height: 0; padding-bottom: 10px; overflow: hidden; }
+  .icn-banner { flex: none; height: 64px; }
+  .icn-nav { flex: none; margin-bottom: 8px; padding-bottom: 12px; }
+  .icn-nav button { padding: 7px 14px; }
+  .icn-app > main { flex: 1 1 0; height: auto; min-height: 0; overflow: hidden; }
+  .icn-page.icn-detail { min-height: 0; }
+  .icn-dashboard { grid-template-rows: minmax(0, 1fr); min-height: 0; gap: 8px; }
+  .icn-dashboard__left, .icn-dashboard__center, .icn-dashboard__right { min-height: 0; gap: 8px; }
+  .icn-section { padding: 10px 12px; overflow: hidden; }
+  .icn-section__header { margin-bottom: 4px; }
+  .icn-section__body { gap: 6px; }
+  .icn-summary, .icn-stats { flex: 1 1 0; min-height: 0; }
+  .icn-weather { flex: 0 0 auto; }
+  .icn-alerts, .icn-facilities { flex: 1 1 0; min-height: 0; }
+  .icn-barcode { display: none; }
+  .smart-alerts__summary, .facilities-widget__notice { display: none; }
+  .smart-alerts__item, .facilities-widget__item { min-height: 44px; }
+  .congestion-panel { gap: 6px; }
+  .congestion-panel__map { flex: 1 1 0; min-height: 0; }
+  .terminal-scene { min-height: 0; }
+  .congestion-panel__heading { display: none; }
+  .congestion-hall-card { padding: 6px 8px; }
+  .congestion-hall-card__change, .congestion-hall-card__warning { font-size: 10px; }
+  .icn-page.icn-detail { display: flex; flex-direction: column; gap: 12px; padding: 16px 22px; }
+  .icn-kpi { padding: 10px 16px; }
+  .icn-queue { display: grid; flex: 1; grid-auto-rows: minmax(0, 1fr); min-height: 0; }
+  .icn-queue li { min-height: 0; }
+  .facilities-widget__list { flex: 1 1 0; min-height: 0; overflow: hidden; gap: 4px; }
+  .facilities-widget__item { padding: 4px 7px; }
+  .facilities-widget__info { gap: 1px; }
+  .facilities-widget__meta span:first-child { display: none; }
+  .facilities-widget__status { flex-direction: row; align-items: center; gap: 6px; }
+  .smart-alerts { min-height: 0; overflow: hidden; }
+}
+
+/* 운행현황: 표를 스크롤하지 않고 페이지 단위로 넘깁니다 */
+@media (min-width: 1101px) {
+  .icn-page.icn-detail.icn-flights-page, .icn-detail.icn-flights-page { display: flex; flex-direction: column; gap: 8px; padding: 10px 14px; overflow: hidden; }
+  .icn-flights-page .icn-flight-terminal-grid { flex: none; gap: 8px; }
+  .icn-flights-page .icn-flight-card { padding: 10px 14px; border-radius: 12px; box-shadow: none; }
+  .icn-flights-page .icn-flight-card-head { margin-bottom: 4px; }
+  .icn-flights-page .icn-flight-card-head h2 { font-size: 15px; }
+  .icn-flights-page .icn-flight-terminal-icon { width: 22px; height: 22px; }
+  .icn-flights-page .icn-flight-pill, .icn-flights-page .icn-flight-timeline-note, .icn-flights-page .icn-flight-footer { display: none; }
+  .icn-flights-page .icn-flight-timeline { min-height: 0; }
+  .icn-flights-page .icn-flight-ticks { margin-bottom: 6px; }
+  .icn-flights-page .icn-flight-gate-list { gap: 4px; min-height: 104px; }
+  .icn-flights-page .icn-flight-gate-row { min-height: 23px; }
+  .icn-flights-page .icn-flight-track { height: 23px; }
+  .icn-flights-page .icn-flight-bar { top: 1px; height: 21px; }
+  .icn-flights-page .icn-flight-table-card { display: flex; flex: 1 1 0; flex-direction: column; min-height: 0; margin: 0; }
+  .icn-flights-page .icn-flight-table-head { flex: none; align-items: center; margin-bottom: 6px; }
+  .icn-flights-page .icn-flight-count { margin: 2px 0 0; }
+  .icn-flights-page .icn-flight-table-scroll { flex: 1 1 0; min-height: 0; overflow: hidden; }
+  .icn-flights-page .icn-flight-table-scroll th { padding: 7px 12px; }
+  .icn-flights-page .icn-flight-table-scroll td { height: 42px; padding: 0 12px; }
+  .icn-flights-page .icn-flight-status { padding-top: 3px; padding-bottom: 3px; }
+  .icn-flights-page .icn-flight-pagination { position: relative; display: flex; flex: none; align-items: center; justify-content: center; min-height: 34px; margin: 6px 0 0; padding: 0; border: 0; background: none; }
+  .icn-flights-page .icn-flight-pagination-top { position: absolute; top: 50%; right: 0; margin: 0; transform: translateY(-50%); }
+  .icn-flights-page .icn-flight-pagination-current { padding: 4px 10px; }
+  .icn-flights-page .icn-flight-pagination-controls { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; width: 100%; gap: 8px; }
+  .icn-flights-page .icn-flight-pagination-main { display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .icn-flights-page .icn-flight-pagination-side { display: flex; justify-content: flex-end; min-width: 0; }
+  .icn-flights-page .icn-flight-page-now { flex: none; height: 30px; padding: 0 12px; border: 1px solid #e0e9f5; border-radius: 9px; background: #fff; color: #1558a6; font-size: 13px; font-weight: 700; white-space: nowrap; cursor: pointer; }
+  .icn-flights-page .icn-flight-page-now:hover:not(:disabled) { background: #edf4ff; }
+  .icn-flights-page .icn-flight-page-now:disabled { opacity: .3; cursor: not-allowed; }
+  .icn-flights-page .icn-flight-page-numbers { gap: 4px; }
+  .icn-flights-page .icn-flight-page-number, .icn-flights-page .icn-flight-page-arrow, .icn-flights-page .icn-flight-page-ellipsis { width: 30px; height: 30px; }
+  .icn-flights-page .icn-flight-page-arrow { font-size: 20px; }
+}
+
+/* 노트북처럼 세로가 낮은 화면은 내용을 조금 줄여 잘리지 않게 합니다 */
+@media (min-width: 1101px) and (max-height: 830px) {
+  .icn-app > main { zoom: .84; }
+}
+
+/* 상단 편명 검색 */
+.icn-flight-search { display: flex; align-items: center; gap: 6px; width: min(300px, 100%); height: 36px; margin-left: auto; padding: 0 3px 0 11px; border: 1px solid #2c5488; border-radius: 9px; background: #14396a; color: #b9cce3; transition: border-color .18s, background-color .18s; }
+.icn-flight-search:focus-within { border-color: var(--sign); background: #0f3160; }
+.icn-flight-search svg { flex: none; }
+.icn-flight-search input { flex: 1; width: 100%; min-width: 0; height: 100%; padding: 0; border: 0; outline: 0 !important; background: transparent; color: #fff; font: inherit; font-size: 14px; }
+.icn-flight-search input::placeholder { color: #9db6d2; }
+.icn-flight-search input::-webkit-search-cancel-button { display: none; }
+.icn-nav .icn-flight-search button { flex: none; padding: 5px 11px; border-radius: 6px; background: var(--sign); color: var(--night); font-size: 13px; font-weight: 700; }
+.icn-nav .icn-flight-search button:hover { background: #ffe07a; color: var(--night); }
+
+/* 편명 자동완성: 화면 기준으로 띄워 메뉴 스크롤이나 혼잡도 패널에 가려지지 않게 합니다 */
+.icn-flight-suggest { position: fixed; z-index: 1000; max-width: calc(100vw - 16px); overflow: hidden; border: 1px solid #2c5488; border-radius: 12px; background: var(--night); box-shadow: 0 18px 36px -16px rgba(4, 18, 38, .65); animation: icn-suggest-in .16s ease-out both; }
+@keyframes icn-suggest-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.icn-flight-suggest ul { margin: 0; padding: 4px; list-style: none; }
+.icn-flight-suggest ul:empty { display: none; }
+.icn-flight-suggest li { display: grid; grid-template-columns: minmax(64px, auto) auto minmax(0, 1fr) auto 38px; align-items: center; gap: 10px; min-height: 38px; padding: 0 10px; border-radius: 8px; color: #d4e2f2; font-size: 13px; cursor: pointer; }
+.icn-flight-suggest li.is-active { background: #14396a; color: #fff; }
+.icn-flight-suggest li strong { color: #fff; font-size: 14px; font-weight: 700; letter-spacing: .02em; white-space: nowrap; }
+.icn-flight-suggest li em { padding: 1px 7px; border-radius: 999px; background: rgba(255, 255, 255, .1); color: #b9cce3; font-size: 11px; font-style: normal; font-weight: 700; white-space: nowrap; }
+.icn-flight-suggest li em[data-type='ARRIVAL'] { background: rgba(243, 201, 160, .16); color: #f3c9a0; }
+.icn-flight-suggest__city { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.icn-flight-suggest li time { color: #fff; font-weight: 600; font-variant-numeric: tabular-nums; }
+.icn-flight-suggest__gate { color: #9db6d2; font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
+.icn-flight-suggest mark { border-radius: 2px; background: transparent; color: var(--sign); }
+.icn-flight-suggest p { margin: 0; padding: 12px 14px; color: #b9cce3; font-size: 13px; }
+@media (max-width: 480px) {
+  .icn-flight-suggest li { grid-template-columns: auto auto minmax(0, 1fr) auto; gap: 8px; }
+  .icn-flight-suggest__gate { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .icn-flight-suggest { animation: none; }
+}
+
+/* 메인 운행현황: 상세 운행현황과 같은 밝은 타임라인 */
+.flight-status { gap: 6px; background: transparent; }
+.flight-status__content { min-height: 0; }
+.flight-timeline { border: 0; border-radius: 0; background: transparent; color: #172d50; }
+.flight-timeline__header { background: transparent; border-bottom: 0; }
+.flight-timeline__gate-label { color: #70829e; font-weight: 500; }
+.flight-timeline__tick-label { color: #93a2b2; }
+.flight-timeline__rows { gap: 6px; }
+.flight-timeline__row, .flight-timeline__row:nth-child(even) { border-bottom: 0; background: transparent; }
+.flight-timeline__gate { color: #70829e; font-weight: 500; background: transparent; }
+.flight-timeline__gate::before { content: 'G'; }
+.flight-timeline__track { overflow: visible; border-radius: 5px; background: #f3f7fd; }
+.flight-timeline__grid-line { width: 1px; border: 0; background: #e1e9f6; }
+.flight-timeline__now-line { width: 0; border: 0; border-left: 2px dashed #2d7bdb; background: transparent; }
+.flight-timeline__original { border-color: #b9c8d8; background: transparent; }
+.flight-bar { border: 0; border-radius: 5px; color: #fff; box-shadow: 0 3px 7px #37699a20; }
+.flight-bar--normal { background: #4f92cf; color: #fff; }
+.flight-bar--boarding { background: #36aaa7; color: #fff; }
+.flight-bar--delayed { background: #e7a54b; color: #fff; }
+.flight-bar__number, .flight-bar__delay { color: inherit; }
+.flight-status__dot--normal { background: #4f92cf; border-color: #4f92cf; }
+.flight-status__dot--boarding { background: #36aaa7; border-color: #36aaa7; }
+.flight-status__dot--delayed { background: #e7a54b; border-color: #e7a54b; }
+.flight-status__legend { color: var(--muted); }
+
+/* 현재 시각선이 편명을 가리지 않도록 막대를 위로 */
+.icn-flight-bar, .flight-bar { z-index: 6; }
+
+/* 메인 운항통계: 상세 페이지 카드와 같은 톤 */
+.flight-statistics { gap: 8px; background: transparent; }
+.flight-statistics__period { align-self: flex-start; padding: 3px 9px; border-radius: 999px; background: var(--sky); color: var(--muted); font-size: 12px; }
+.flight-statistics__body { flex: none; display: block; }
+.flight-statistics__summary { display: flex; align-items: center; gap: clamp(10px, 1vw, 16px); min-width: 0; }
+.flight-statistics__donut { box-shadow: 0 0 0 5px var(--sky); }
+.flight-statistics__center span { color: var(--muted); }
+.flight-statistics__center strong { color: var(--night); }
+.flight-statistics__details { flex: 1; gap: 4px; min-width: 0; }
+.flight-statistics__item { padding: 4px 8px; border-radius: 7px; background: #f3f7fb; }
+.flight-statistics__name { color: var(--ink); }
+.flight-statistics__count { color: var(--night); }
+.flight-statistics__percent { color: var(--muted); }
+.flight-statistics__hours { display: flex; flex: 1 1 0; flex-direction: column; gap: 4px; min-height: 50px; }
+.flight-statistics__hours-head { display: flex; flex: none; justify-content: space-between; color: var(--ink); font-size: 12px; font-weight: 600; }
+.flight-statistics__hours-head small { color: var(--muted); font-size: 11px; font-weight: 400; }
+.flight-statistics__bars { display: flex; flex: 1 1 0; align-items: flex-end; gap: 2px; min-height: 0; padding-bottom: 2px; border-bottom: 1px solid var(--line); }
+.flight-statistics__bars i { flex: 1; min-width: 0; border-radius: 2px 2px 0 0; background: #74a8ee; transform-origin: bottom; animation: icn-bar-rise .5s ease-out both; }
+.flight-statistics__axis { display: flex; flex: none; justify-content: space-between; color: var(--muted); font-size: 10.5px; }
+@keyframes icn-bar-rise { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+
+/* 페이지 전체 통일 */
+.icn-app main h1, .icn-app main .icn-detail__heading h1 { color: var(--night); font-size: 22px !important; font-weight: 700; letter-spacing: -.01em; }
+.icn-app main .my-pass__stub h1 { font-size: 30px !important; }
+.icn-app main :is(.icn-flight-card-head, .icn-w-heatmap-heading, .icn-w-line-card, .icn-w-description, .alert-feed__head, .alert-insight, .cong-card, .my-card) h2 { color: var(--night); font-size: 15px; font-weight: 700; letter-spacing: -.01em; }
+.icn-w-line-card, .icn-w-description, .alert-insight, .icn-flight-card, .cong-card, .my-card { border-radius: 14px; }
+.icn-app main :is(.cong-card, .my-card, .alert-insight, .icn-w-line-card, .icn-w-heatmap-heading, .icn-w-description) h2 { display: flex; align-items: center; gap: 8px; }
+.icn-app main :is(.cong-card, .my-card, .alert-insight, .icn-w-line-card, .icn-w-heatmap-heading, .icn-w-description) h2::before { content: ''; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--sign); box-shadow: 0 0 0 3px rgba(255, 210, 63, .25); }
+
+/* 운항통계를 다른 화면과 같은 색과 카드로 */
+.icn-flightstats .icn-flightstats__scene { background: linear-gradient(180deg, #14335d 0%, #3f6a9c 62%, #e8ad84 92%, #f7d4a8 100%); border: 0; border-radius: 14px; }
+.icn-flightstats__grid > .icn-flightstats__card { border: 1px solid #e0eaf6; border-radius: 14px; box-shadow: none; }
+.flight-statistics__bars i { background: #4f92cf; }
+
+/* 카드에 살짝 떠오르는 반응 */
+.my-card, .cong-card, .alert-insight, .icn-flight-card, .icn-w-line-card { transition: box-shadow .2s, transform .2s; }
+.my-card:hover, .cong-card:hover, .alert-insight:hover, .icn-w-line-card:hover { box-shadow: 0 8px 20px -14px rgba(11, 43, 82, .35); }
+
+@media (prefers-reduced-motion: reduce) {
+  .flight-statistics__bars i { animation: none; }
+}
+@media (max-width: 900px) {
+  .icn-flight-search { width: 100%; margin: 6px 0 0; }
+}
+.icn-flight-pagination-main { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.icn-flight-pagination-side { display: flex; justify-content: flex-end; }
+.icn-flight-page-now { flex: none; height: 36px; padding: 0 12px; border: 1px solid #e0e9f5; border-radius: 9px; background: #fff; color: #1558a6; font-size: 13px; font-weight: 700; white-space: nowrap; cursor: pointer; }
+.icn-flight-page-now:hover:not(:disabled) { background: #edf4ff; }
+.icn-flight-page-now:disabled { opacity: .3; cursor: not-allowed; }
+@media (max-width: 760px) {
+  .icn-flight-pagination-controls { flex-wrap: wrap; }
+  .icn-flight-pagination-side:last-child { display: none; }
+}
+
+.icn-flight-title-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.icn-flight-title-row h2 { margin: 0; }
+.icn-flight-view-tabs { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid #e0e9f5; border-radius: 10px; background: #f4f8fd; }
+.icn-flight-view-tabs button { min-height: 26px; padding: 0 11px; border: 0; border-radius: 7px; background: transparent; color: #1558a6; font-size: 12.5px; font-weight: 700; white-space: nowrap; cursor: pointer; transition: background-color .15s, color .15s; }
+.icn-flight-view-tabs button span { margin-left: 2px; opacity: .7; font-variant-numeric: tabular-nums; }
+.icn-flight-view-tabs button:hover:not([aria-pressed='true']) { background: #e4eefb; }
+.icn-flight-view-tabs button[aria-pressed='true'] { background: #104783; color: #fff; }

@@ -10,7 +10,7 @@
 - 404는 편명 단건 조회(GET /api/v1/flights/{flightNo})와 편명 상세(GET /api/v1/flights/{flightNo}/detail)에서 없는 편명일 때만 내려간다. 목록·요약·알림 조회에서 없는 편명을 flightNo로 보내면 404 없이 200으로 응답하며, 내 항공편 강조(isMyFlight)와 내 항공편 알림(isMine)만 적용되지 않는다.
 - 상태값은 코드로 내려가며, 화면 문구와 색은 프론트에서 정한다.
 - "null" 열이 Y인 필드는 값이 없을 때 null로 내려간다.
-- 터미널 구분: 운항 현황·편의시설·혼잡 알림만 터미널별, 운항 통계·날씨는 인천공항 공통, 탑승동은 T1. terminal을 지정하면 터미널을 모르는 데이터는 제외하고, 혼잡 알림이 아닌 공통 알림(terminal null)은 남긴다.
+- 터미널 구분: 운항 현황·편의시설·알림(혼잡·항공편)은 터미널별, 운항 통계·날씨는 인천공항 공통, 탑승동은 T1. terminal을 지정하면 터미널을 모르는 데이터는 제외하고, 터미널을 특정할 수 없는 공통 알림(terminal null)은 남긴다.
 
 ## 엔드포인트
 
@@ -21,6 +21,7 @@
 | 편명 단건 조회 | GET | /api/v1/flights/{flightNo} | 경로의 flightNo. 없는 편명이면 404 |
 | 편명 상세 | GET | /api/v1/flights/{flightNo}/detail | 경로의 flightNo. 응답은 FlightDetail. 없는 편명이면 404 |
 | 출국장 혼잡도 | GET | /api/v1/congestion | terminal=T1\|T2 |
+| 시간대별 혼잡도 | GET | /api/v1/congestion/hourly | terminal=T1\|T2. 응답은 terminal, date, hours[hour, today, yesterday, level]. 측정이 없는 시간은 null |
 | 운항 통계 | GET | /api/v1/stats/flights | direction=DEPARTURE\|ARRIVAL |
 | 스마트 알림 | GET | /api/v1/alerts | flightNo (선택), terminal=T1\|T2 (선택, 없으면 공항 전체) |
 | 날씨·운항 여건 | GET | /api/v1/weather | - |
@@ -134,7 +135,7 @@ Hourly
 | isMine | 불리언 | N | true | 내 항공편 탭 표시 여부 |
 | isImportant | 불리언 | N | true | 중요 알림 탭 표시 여부 |
 | createdAt | 시각 | N | | 발생 시각 |
-| terminal | 코드 | Y | T1 | 혼잡 알림의 터미널. 공통 알림이면 null. WebSocket 알림도 이 값으로 프론트에서 거른다 |
+| terminal | 코드 | Y | T1 | 알림과 관련된 터미널(혼잡: 구역 기준, 항공편 알림: 항공편 기준). 특정할 수 없으면 null. WebSocket 알림도 이 값으로 프론트에서 거른다 |
 
 ## Weather (날씨·운항 여건)
 

@@ -1,6 +1,7 @@
 
 import { useMemo } from "react";
 import { useLiveUpdates } from "../../../hooks/useLiveUpdates";
+import Skeleton from "../../layout/Skeleton";
 import "./Facilities.css";
 
 type Terminal = "T1" | "T2";
@@ -23,6 +24,8 @@ interface Facility {
   crowdEstimate: CrowdEstimate;
   crowdBasis: CrowdBasis;
 }
+
+const MAX_ITEMS = 3;
 
 const API_BASE_URL = String(
   import.meta.env.VITE_API_BASE_URL ?? ""
@@ -316,15 +319,13 @@ export default function Facilities({ terminal }: Props) {
 
         seen.add(key);
         return true;
-      })
-      .slice(0, 3);
+      });
   }, [facilities, terminal]);
+  const shownFacilities = recommended.slice(0, MAX_ITEMS);
 
   if (loading && !data) {
     return (
-      <div className="facilities-message">
-        편의시설 정보를 불러오는 중입니다.
-      </div>
+      <Skeleton label="편의시설 정보를 불러오는 중입니다." variant="rows" count={3} />
     );
   }
 
@@ -350,7 +351,7 @@ export default function Facilities({ terminal }: Props) {
   return (
     <section className="facilities-widget">
       <div className="facilities-widget__list">
-        {recommended.map((facility, index) => (
+        {shownFacilities.map((facility, index) => (
           <article
             className="facilities-widget__item"
             key={facility.id}
@@ -411,7 +412,7 @@ export default function Facilities({ terminal }: Props) {
                 {facility.isOpen === true
                   ? "운영 중"
                   : facility.isOpen === null
-                    ? "운영 미확인"
+                    ? "운영 정보 없음"
                     : ""}
               </span>
             </div>

@@ -107,7 +107,9 @@ export default function FlightBar({
         `flight-bar ${
           delayed
             ? "flight-bar--delayed"
-            : "flight-bar--normal"
+            : flight.status.startsWith("BOARDING")
+                  ? "flight-bar--boarding" 
+                  : "flight-bar--normal"
         }`
       }
       style={{

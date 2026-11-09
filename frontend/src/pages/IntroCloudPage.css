@@ -1,0 +1,256 @@
+/* 첫 소개 화면: 노을 무렵 구름 위 비행 */
+.intro {
+  --intro-sign: #ffd23f;
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  min-height: 100dvh;
+  padding: clamp(28px, 5vw, 80px) clamp(22px, 7vw, 128px);
+  overflow: hidden;
+  /* WebGL을 쓸 수 없을 때도 같은 색으로 보이는 바탕 */
+  background: linear-gradient(180deg, #0a2243 0%, #2b527f 46%, #e8ad84 60%, #f7d4a8 64%, #2b527f 100%);
+  color: #fff;
+  font-family: 'Pretendard Variable', Pretendard, 'Noto Sans KR', Arial, sans-serif;
+}
+
+.intro__scene,
+.intro__shade,
+.intro__flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.intro__scene { z-index: -3; }
+.intro__shade { z-index: -2; }
+.intro__flash { z-index: 2; }
+
+.intro-clouds {
+  position: absolute;
+  inset: 0;
+  animation: intro-fade 1.4s ease-out both;
+}
+
+.intro-clouds canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* 글자 뒤 어두운 그라디언트 */
+.intro__shade {
+  background:
+    linear-gradient(90deg, rgba(6, 21, 44, .82) 0%, rgba(6, 21, 44, .58) 32%, rgba(6, 21, 44, .18) 58%, transparent 74%),
+    linear-gradient(0deg, rgba(6, 21, 44, .35) 0%, transparent 30%);
+}
+
+/* 전환: 구름이 밝아지며 사라집니다 */
+.intro__flash {
+  background: radial-gradient(120% 90% at 60% 55%, #fff6ea 0%, #f7d4a8 70%);
+  opacity: 0;
+  transition: opacity .7s ease-in;
+}
+
+.intro.is-leaving .intro__flash { opacity: .92; }
+.intro.is-leaving .intro__copy { opacity: 0; transform: translateY(-8px); }
+
+/* 항공기: 오른쪽 위에서 왼쪽 아래로, 18초 주기 */
+.intro__flight {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.intro__plane {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 46px;
+  height: 18px;
+  color: rgba(10, 34, 67, .82);
+  animation: intro-flight 18s linear infinite;
+  will-change: transform, opacity;
+}
+
+.intro__plane svg {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
+
+/* 꼬리 뒤로 남는 얇은 비행운 */
+.intro__plane::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 40px;
+  width: clamp(160px, 22vw, 320px);
+  height: 1.5px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, rgba(255, 246, 234, .7), rgba(255, 246, 234, .25) 45%, transparent);
+  transform: translateY(-50%);
+}
+
+@keyframes intro-flight {
+  0% { transform: translate(104vw, 9vh) rotate(-14deg); opacity: 0; }
+  6% { opacity: 1; }
+  70% { opacity: 1; }
+  78% { transform: translate(-22vw, 38vh) rotate(-14deg); opacity: 0; }
+  100% { transform: translate(-22vw, 38vh) rotate(-14deg); opacity: 0; }
+}
+
+.intro.is-paused .intro__plane,
+.intro.is-paused .intro-clouds { animation-play-state: paused; }
+
+/* 소개 글 */
+.intro__copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 18px;
+  max-width: 600px;
+  transition: opacity .45s ease, transform .6s ease;
+}
+
+.intro__copy > * { animation: intro-rise .9s cubic-bezier(.2, .8, .2, 1) both; }
+.intro__copy > :nth-child(1) { animation-delay: .15s; }
+.intro__copy > :nth-child(2) { animation-delay: .25s; }
+.intro__copy > :nth-child(3) { animation-delay: .35s; }
+.intro__copy > :nth-child(4) { animation-delay: .45s; }
+.intro__copy > :nth-child(5) { animation-delay: .55s; }
+.intro__copy > :nth-child(6) { animation-delay: .65s; }
+
+.intro__eyebrow {
+  color: var(--intro-sign);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: .22em;
+}
+
+.intro h1 {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(36px, 4.4vw, 68px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -.03em;
+  text-shadow: 0 8px 34px rgba(4, 16, 34, .45);
+}
+
+.intro__lead {
+  margin: 0;
+  max-width: 30em;
+  color: #dbe7f4;
+  font-size: clamp(15px, 1.15vw, 18px);
+  line-height: 1.7;
+}
+
+.intro__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.intro__tags li {
+  padding: 6px 13px;
+  border: 1px solid rgba(247, 212, 168, .28);
+  border-radius: 999px;
+  background: rgba(10, 34, 67, .5);
+  color: #eef3fa;
+  font-size: 13px;
+  font-weight: 600;
+  backdrop-filter: blur(6px);
+}
+
+.intro__start {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 0 28px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--intro-sign);
+  color: #0b2b52;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 16px 32px -16px rgba(255, 210, 63, .75);
+  transition: transform .18s, box-shadow .18s, background-color .18s;
+}
+
+.intro__start span { transition: transform .18s; }
+.intro__start:hover { background: #ffe07a; transform: translateY(-1px); box-shadow: 0 20px 36px -16px rgba(255, 210, 63, .85); }
+.intro__start:hover span { transform: translateX(3px); }
+.intro__start:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.intro__start:disabled { cursor: default; }
+
+.intro__note {
+  margin: 4px 0 0;
+  color: rgba(230, 238, 248, .7);
+  font-size: 12.5px;
+}
+
+/* 넓은 화면은 polish.css가 body 스크롤을 막으므로, 낮은 화면에서는 소개 화면 안에서 스크롤합니다 */
+@media (min-width: 1101px) {
+  .intro {
+    height: 100dvh;
+    overflow-y: auto;
+  }
+}
+
+/* 좁은 화면: 가운데 정렬 */
+@media (max-width: 860px) {
+  .intro { justify-content: center; text-align: center; }
+  .intro__copy { align-items: center; max-width: 560px; }
+  .intro__tags { justify-content: center; }
+  .intro__shade {
+    background:
+      radial-gradient(120% 70% at 50% 50%, rgba(6, 21, 44, .72) 0%, rgba(6, 21, 44, .4) 55%, transparent 85%),
+      linear-gradient(0deg, rgba(6, 21, 44, .35) 0%, transparent 30%);
+  }
+  .intro__plane { width: 36px; height: 14px; }
+}
+
+/* 메인 화면 첫 표시 */
+.icn-app.is-entering { animation: intro-enter .5s ease both; }
+
+@keyframes intro-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes intro-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes intro-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 움직임 줄이기: 구름과 항공기를 정지 화면으로 */
+@media (prefers-reduced-motion: reduce) {
+  .intro-clouds,
+  .intro__copy > *,
+  .icn-app.is-entering { animation: none; }
+  .intro__plane {
+    animation: none;
+    transform: translate(62vw, 20vh) rotate(-14deg);
+  }
+  .intro__copy,
+  .intro__start,
+  .intro__start span { transition: opacity .45s ease; }
+  .intro.is-leaving .intro__copy { transform: none; }
+}

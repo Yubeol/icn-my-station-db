@@ -3,8 +3,8 @@
 from app.core.config import settings
 
 if settings.data_mode == "db":
-    from app.services.db.congestion import get_congestion
+    from app.services.db.congestion import get_congestion, get_congestion_hourly
 else:
-    from app.services.mock.congestion import get_congestion
+    from app.services.mock.congestion import get_congestion, get_congestion_hourly
 
-__all__ = ["get_congestion"]
+__all__ = ["get_congestion", "get_congestion_hourly"]

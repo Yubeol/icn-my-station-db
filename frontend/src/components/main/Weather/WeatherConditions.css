@@ -142,6 +142,9 @@
 }
 
 /* 수치 카드 */
+/* 지표가 홀수 개면 마지막 칸이 남은 줄을 채웁니다. */
+.weather-widget__metrics > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+
 .weather-metric {
   display: flex;
   flex-direction: column;

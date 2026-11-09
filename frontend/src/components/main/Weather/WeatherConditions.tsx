@@ -1,6 +1,8 @@
 
 import { useLiveUpdates } from "../../../hooks/useLiveUpdates";
 import { getWeather } from "../../../api/client";
+import { OPERATION_SCORE_BASIS } from "../../../api/rules";
+import Skeleton from "../../layout/Skeleton";
 import "./WeatherConditions.css";
 
 type Dict = Record<string, unknown>;
@@ -334,9 +336,7 @@ export default function WeatherConditions() {
 
   if (loading && !weather) {
     return (
-      <div className="weather-message">
-        기상 정보 불러오는 중...
-      </div>
+      <Skeleton label="기상 정보를 불러오는 중입니다." variant="rows" count={2} />
     );
   }
 
@@ -393,11 +393,6 @@ export default function WeatherConditions() {
           />
 
           <Metric
-            label="시정"
-            value={formatValue(weather.visibility, " km", 1)}
-          />
-
-          <Metric
             label="출발 지연 위험"
             value={risk.label}
             tone={`weather-metric--${risk.className}`}
@@ -412,8 +407,8 @@ export default function WeatherConditions() {
             }
             detail={
               weather.minutesAhead === null
-                ? undefined
-                : `${weather.minutesAhead}분 후 기준`
+                ? OPERATION_SCORE_BASIS
+                : `${weather.minutesAhead}분 후 · ${OPERATION_SCORE_BASIS}`
             }
           />
         </div>

@@ -1,0 +1,87 @@
+/* 출국장 혼잡도 야간 관제 화면 */
+.terminal-scene {
+  --relaxed: #38e0a4;
+  --normal: #ffc83d;
+  --busy: #ff5a4f;
+  --unknown: #8ea4bd;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 430px;
+  overflow: hidden;
+  border-radius: 14px;
+  background:
+    radial-gradient(70% 70% at 50% 0%, #174b86 0%, transparent 72%),
+    linear-gradient(180deg, #071a33 0%, #0a2342 55%, #081d38 100%);
+  box-shadow: inset 0 0 0 1px rgba(150, 195, 245, .14);
+}
+.terminal-scene::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(150, 195, 245, .06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(150, 195, 245, .06) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: radial-gradient(ellipse at center, #000 30%, transparent 78%);
+}
+.terminal-scene__svg { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+
+.terminal-scene__runway path { fill: none; stroke: #162f50; stroke-width: 64; }
+.terminal-scene__runway path.is-dashed { stroke: rgba(255, 255, 255, .34); stroke-width: 3; stroke-dasharray: 26 26; }
+.terminal-scene__taxi { fill: none; stroke: rgba(255, 210, 63, .32); stroke-width: 2; stroke-dasharray: 2 13; stroke-linecap: round; }
+.terminal-scene__plane { fill: #dbe9f8; opacity: .86; }
+.terminal-scene__bridge { stroke: #55779e; stroke-width: 5; }
+.terminal-scene__building { stroke: rgba(170, 212, 255, .55); stroke-width: 2; filter: drop-shadow(0 8px 16px rgba(0, 0, 0, .45)); }
+.terminal-scene__roofline { fill: none; stroke: rgba(170, 212, 255, .28); stroke-width: 2; stroke-dasharray: 16 10; }
+.terminal-scene__road { fill: none; stroke: #16304f; stroke-width: 40; stroke-linecap: round; }
+.terminal-scene__road-line { fill: none; stroke: rgba(255, 255, 255, .24); stroke-width: 2; stroke-dasharray: 16 18; }
+
+.terminal-scene__hall { cursor: pointer; outline: none; }
+.terminal-scene__hall.is-relaxed { --tone: var(--relaxed); }
+.terminal-scene__hall.is-normal { --tone: var(--normal); }
+.terminal-scene__hall.is-busy { --tone: var(--busy); }
+.terminal-scene__hall.is-unknown { --tone: var(--unknown); }
+.terminal-scene__lane { fill: none; stroke: var(--tone); stroke-width: 2; stroke-dasharray: 3 9; stroke-linecap: round; opacity: .5; }
+.terminal-scene__person { fill: var(--tone); filter: drop-shadow(0 0 5px var(--tone)); }
+.terminal-scene__aura { fill: var(--tone); opacity: .55; }
+.terminal-scene__hall.is-busy .terminal-scene__aura { animation: terminal-scene-pulse 1.6s ease-in-out infinite; }
+.terminal-scene__hall.is-unknown .terminal-scene__aura { opacity: .12; }
+@keyframes terminal-scene-pulse { 50% { opacity: .95; } }
+.terminal-scene__gate { fill: #0b2747; stroke: var(--tone); stroke-width: 3; }
+.terminal-scene__door { fill: var(--tone); opacity: .9; }
+.terminal-scene__tag { fill: rgba(8, 28, 54, .88); stroke: rgba(150, 195, 245, .24); stroke-width: 1.5; transition: stroke .15s; }
+.terminal-scene__name { fill: #b9d2ec; font-size: 17px; font-weight: 600; }
+.terminal-scene__count { fill: #fff; font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.terminal-scene__count.is-check { fill: rgba(255, 255, 255, .62); font-size: 15px; font-weight: 600; }
+.terminal-scene__level { fill: var(--tone); font-size: 16px; font-weight: 800; }
+.terminal-scene__hall:hover .terminal-scene__tag,
+.terminal-scene__hall:focus-visible .terminal-scene__tag,
+.terminal-scene__hall.is-active .terminal-scene__tag { stroke: var(--tone); stroke-width: 3; }
+
+.terminal-scene__title { position: absolute; top: 14px; left: 16px; display: flex; align-items: baseline; gap: 8px; color: #fff; }
+.terminal-scene__title strong { font-size: 24px; font-weight: 800; letter-spacing: -.01em; }
+.terminal-scene__title span { color: #9db9d8; font-size: 12px; }
+.terminal-scene__legend { position: absolute; top: 18px; right: 16px; display: flex; gap: 12px; margin: 0; padding: 0; color: #c8dbef; font-size: 12px; font-weight: 600; list-style: none; }
+.terminal-scene__legend li { display: flex; align-items: center; gap: 5px; }
+.terminal-scene__legend li::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--tone); box-shadow: 0 0 7px var(--tone); }
+.terminal-scene__legend .is-relaxed, .terminal-scene__hud .is-relaxed { --tone: var(--relaxed); }
+.terminal-scene__legend .is-normal, .terminal-scene__hud .is-normal { --tone: var(--normal); }
+.terminal-scene__legend .is-busy, .terminal-scene__hud .is-busy { --tone: var(--busy); }
+
+.terminal-scene__hud { position: absolute; left: 50%; bottom: 14px; display: flex; gap: 1px; overflow: hidden; border-radius: 14px; background: rgba(150, 195, 245, .2); box-shadow: 0 14px 30px -14px rgba(0, 0, 0, .7); transform: translateX(-50%); backdrop-filter: blur(6px); white-space: nowrap; }
+.terminal-scene__hud > div { display: grid; gap: 3px; min-width: 150px; padding: 11px 18px; background: rgba(7, 25, 48, .92); color: #fff; }
+.terminal-scene__hud small { color: #9db9d8; font-size: 11.5px; }
+.terminal-scene__hud strong { font-size: 24px; font-weight: 800; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.terminal-scene__hud em { margin-left: 2px; font-size: 13px; font-style: normal; }
+.terminal-scene__hud span { color: var(--tone, #fff); font-size: 12px; font-weight: 700; }
+
+@media (max-width: 700px) {
+  .terminal-scene { min-height: 360px; }
+  .terminal-scene__title span { display: none; }
+  .terminal-scene__hud > div { min-width: 120px; padding: 9px 12px; }
+  .terminal-scene__hud strong { font-size: 19px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .terminal-scene__hall.is-busy .terminal-scene__aura { animation: none; }
+}

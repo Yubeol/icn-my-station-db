@@ -8,6 +8,7 @@ import type {
 
 import { getFlights } from "../../../api/flights";
 import FlightTimeline from "./FlightTimeline";
+import Skeleton from "../../layout/Skeleton";
 import "./FlightStatus.css";
 
 const MAX_FLIGHTS = 5;
@@ -86,10 +87,7 @@ export default function FlightStatus({
     <section className="flight-status">
       <div className="flight-status__content">
         {loading && !data ? (
-          <div className="flight-status__message">
-            <span className="flight-status__spinner" />
-            <span>항공편 정보를 불러오는 중입니다.</span>
-          </div>
+          <Skeleton label="항공편 정보를 불러오는 중입니다." variant="rows" count={4} />
         ) : error && !data ? (
           <div
             className="flight-status__message flight-status__message--error"
@@ -114,6 +112,10 @@ export default function FlightStatus({
         <span>
           <i className="flight-status__dot flight-status__dot--normal" />
           정상
+        </span>
+        <span>
+          <i className="flight-status__dot flight-status__dot--boarding" />
+          탑승
         </span>
         <span>
           <i className="flight-status__dot flight-status__dot--delayed" />

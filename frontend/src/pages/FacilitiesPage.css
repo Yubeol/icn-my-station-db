@@ -1,0 +1,99 @@
+/* 편의시설 지도 */
+.icn-detail.fac-page { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 14px; min-height: 0; min-height: 0; padding: 12px; overflow: hidden; }
+
+.fac-explorer { display: flex; flex-direction: column; gap: 12px; min-height: 0; padding: 10px 8px 4px; }
+.fac-explorer > div:first-child small { color: var(--runway); font-size: 11px; font-weight: 700; letter-spacing: .14em; }
+.fac-explorer h1 { margin: 4px 0 0; color: var(--night); font-size: 25px; font-weight: 800; letter-spacing: -.02em; }
+.fac-search { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 13px; border-radius: 11px; background: var(--sky); color: var(--muted); }
+.fac-search input { width: 100%; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: 14px; outline: none; }
+.fac-terminal { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 3px; border-radius: 10px; background: var(--sky); }
+.fac-page .fac-terminal button { min-height: 36px; font-size: 14px; border: 0; border-radius: 8px; background: transparent; color: var(--runway); font-weight: 700; }
+.fac-page .fac-terminal button[aria-pressed='true'] { background: var(--night); color: #fff; }
+.fac-categories { display: flex; flex-wrap: wrap; gap: 6px; }
+.fac-page .fac-categories button { display: inline-flex; align-items: center; gap: 5px; min-height: 34px; padding: 0 11px; border: 1px solid var(--line); border-radius: 17px; background: #fff; color: var(--ink); font-size: 13px; font-weight: 600; transition: border-color .15s, background-color .15s; }
+.fac-page .fac-categories button:hover { border-color: var(--runway); }
+.fac-page .fac-categories button[aria-pressed='true'] { border-color: var(--night); background: var(--night); color: #fff; }
+.fac-open { display: inline-flex; align-items: center; gap: 7px; color: var(--ink); font-size: 13px; font-weight: 600; }
+.fac-open input { width: 16px; height: 16px; accent-color: var(--runway); }
+.fac-count { display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+.fac-count b { color: var(--runway); }
+.fac-count button { border: 0; background: none; color: var(--runway); font-size: 12.5px; font-weight: 700; }
+
+.fac-list { display: flex; flex: 1; flex-direction: column; gap: 4px; min-height: 0; overflow-y: auto; }
+.fac-zonechip { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 6px 6px 12px; border-radius: 10px; background: #ff6a4d; color: #fff; font-size: 12.5px; font-weight: 700; }
+.fac-zonechip span { display: block; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.fac-zonechip button { display: grid; place-items: center; flex: none; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .25); color: #fff; }
+.fac-zonechip button:hover { background: rgba(255, 255, 255, .45); }
+.fac-list p { padding: 20px 0; color: var(--muted); font-size: 14px; text-align: center; }
+.fac-list > button:not(.fac-list__more) { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 58px; padding: 7px 8px; border: 1px solid transparent; border-radius: 11px; background: transparent; color: var(--ink); text-align: left; transition: background-color .15s, border-color .15s; }
+.fac-list > button:hover { background: #f4f8fd; }
+.fac-list > button.is-active { border-color: #a9c6e8; background: #eef5fd; }
+.fac-list i { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: var(--sky); color: var(--runway); }
+.fac-list span { display: grid; gap: 2px; min-width: 0; }
+.fac-list strong { overflow: hidden; line-height: 1.3; color: var(--night); font-size: 14px; font-weight: 700; white-space: nowrap; text-overflow: ellipsis; }
+.fac-list small { color: var(--muted); font-size: 12px; line-height: 1.3; }
+.fac-list em, .fac-pass b { padding: 2px 7px; border-radius: 6px; font-size: 11.5px; font-style: normal; font-weight: 700; }
+.fac-list [data-level='LOW'], .fac-pass [data-level='LOW'] { background: #dff3ea; color: var(--low); }
+.fac-list [data-level='MID'], .fac-pass [data-level='MID'] { background: #fdf0d3; color: var(--mid); }
+.fac-list [data-level='HIGH'], .fac-pass [data-level='HIGH'] { background: #fde5e1; color: var(--high); }
+.fac-list__more { flex: none; min-height: 40px; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--runway); font-weight: 700; }
+
+.fac-map { position: relative; min-width: 0; min-height: 0; overflow: hidden; border-radius: 14px; background: #e8f0f8; box-shadow: inset 0 0 0 1px var(--line); }
+.airport-scene { position: absolute; inset: 0; }
+.airport-scene__canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; cursor: grab; }
+.airport-scene__canvas:active { cursor: grabbing; }
+.airport-scene__labels { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.airport-scene__fallback { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 24px; color: #d3e3f5; text-align: center; }
+.airport-pin { position: absolute; top: 0; left: 0; display: grid; place-items: center; min-width: 30px; height: 30px; padding: 0 8px; border: 1.5px solid #fff; border-radius: 15px; background: var(--night); box-shadow: 0 3px 9px rgba(11, 43, 82, .3); color: #fff; font-size: 13px; font-weight: 800; pointer-events: auto; transition: background-color .15s, border-color .15s, color .15s; }
+.airport-pin:hover { background: var(--runway); }
+.airport-pin.is-active { z-index: 2; border-color: #fff; background: #ff6a4d; box-shadow: 0 4px 12px rgba(255, 106, 77, .55); color: #fff; }
+
+.fac-map__title { position: absolute; top: 14px; left: 18px; display: flex; align-items: baseline; gap: 9px; color: var(--night); pointer-events: none; }
+.fac-map__title strong { font-size: 26px; font-weight: 800; }
+.fac-map__title span { color: var(--muted); font-size: 12px; }
+.fac-map__notice { position: absolute; top: 56px; left: 50%; margin: 0; padding: 3px 10px; border-radius: 8px; background: rgba(255, 255, 255, .92); box-shadow: 0 2px 6px rgba(11, 43, 82, .14); color: var(--muted); font-size: 11.5px; font-weight: 600; white-space: nowrap; transform: translateX(-50%); pointer-events: none; }
+.fac-map__note { position: absolute; left: 18px; bottom: 12px; max-width: 390px; margin: 0; color: var(--muted); font-size: 11.5px; line-height: 1.45; pointer-events: none; }
+
+.fac-pass { position: absolute; top: 14px; right: 14px; bottom: 14px; display: flex; flex-direction: column; width: 290px; overflow-y: auto; border-radius: 16px; background: #fff; box-shadow: 0 20px 40px -18px rgba(0, 0, 0, .7); animation: icn-rise .28s ease-out both; }
+.fac-pass__head { position: relative; padding: 18px 20px; background: linear-gradient(120deg, #0b2b52, #0f4c92); color: #fff; }
+.fac-pass__head small { color: #a9c6e6; font-size: 10.5px; font-weight: 700; letter-spacing: .16em; }
+.fac-pass__head button { position: absolute; top: 12px; right: 12px; display: grid; place-items: center; width: 30px; height: 30px; border: 0; border-radius: 8px; background: rgba(255, 255, 255, .1); color: #fff; }
+.fac-pass__head h2 { margin: 8px 0 10px; color: #fff; font-size: 21px; font-weight: 800; line-height: 1.3; overflow-wrap: anywhere; }
+.fac-pass__head span { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 14px; background: rgba(255, 255, 255, .12); font-size: 12px; }
+.fac-pass__route { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1.5px dashed var(--line); }
+.fac-pass__route small { display: block; color: var(--muted); font-size: 10.5px; letter-spacing: .1em; }
+.fac-pass__route strong { color: var(--night); font-size: 24px; font-weight: 800; }
+.fac-pass__route i { color: #8fb0d2; font-style: normal; }
+.fac-pass__route div:last-child { text-align: right; }
+.fac-pass__body { flex: 1; margin: 0; padding: 14px 20px; }
+.fac-pass__body dt { color: var(--muted); font-size: 11.5px; }
+.fac-pass__body dd { margin: 3px 0 12px; color: var(--night); font-size: 14px; font-weight: 600; line-height: 1.45; overflow-wrap: anywhere; }
+.fac-pass__barcode { flex: none; height: 34px; margin: 0 20px 16px; background: repeating-linear-gradient(90deg, var(--night) 0 2px, transparent 2px 5px, var(--night) 5px 8px, transparent 8px 12px); }
+
+/* 도면 표시 */
+.airport-marker { position: absolute; z-index: 3; top: 0; left: 0; padding: 5px 11px; border-radius: 9px; background: #ff6a4d; box-shadow: 0 8px 18px rgba(255, 106, 77, .45); color: #fff; font-size: 12.5px; font-weight: 800; white-space: nowrap; pointer-events: none; }
+.airport-hall { position: absolute; top: 0; left: 0; padding: 2px 7px; border-radius: 6px; background: rgba(255, 255, 255, .92); color: var(--runway); box-shadow: 0 2px 6px rgba(11, 43, 82, .14); font-size: 11px; font-weight: 700; white-space: nowrap; }
+.airport-tag { padding: 1px 5px; background: rgba(255, 255, 255, .8); box-shadow: none; color: #4f6f93; font-size: 10.5px; font-weight: 600; opacity: 0; transition: opacity .15s; }
+.airport-tag.is-shown { opacity: 1; }
+.airport-scene__tooltip { position: absolute; z-index: 3; top: 0; left: 0; max-width: 220px; padding: 5px 9px; overflow: hidden; border-radius: 7px; background: #fff; box-shadow: 0 8px 18px rgba(0, 0, 0, .35); color: var(--night); font-size: 12.5px; font-weight: 700; white-space: nowrap; text-overflow: ellipsis; pointer-events: none; }
+.fac-page .airport-pin { min-width: 28px; height: 26px; padding: 0 8px; border-width: 2px; box-shadow: 0 0 0 2px rgba(11, 31, 69, .22), 0 4px 10px rgba(11, 31, 69, .35); font-size: 12.5px; }
+.fac-floor { position: absolute; top: 14px; left: 50%; display: flex; gap: 3px; padding: 3px; border-radius: 10px; background: #fff; box-shadow: 0 4px 12px rgba(11, 43, 82, .14); transform: translateX(-50%); }
+.fac-page .fac-floor button { min-height: 32px; padding: 0 15px; border: 0; border-radius: 8px; background: transparent; color: var(--runway); font-size: 13px; font-weight: 700; }
+.fac-page .fac-floor button[aria-pressed='true'] { background: var(--night); color: #fff; }
+.fac-legend { position: absolute; right: 18px; bottom: 12px; display: flex; gap: 11px; margin: 0; padding: 0; color: var(--ink); font-size: 12px; font-weight: 600; list-style: none; }
+.fac-legend li { display: flex; align-items: center; gap: 5px; }
+.fac-legend li::before { content: ''; width: 10px; height: 10px; border-radius: 3px; background: var(--unit); }
+.fac-legend [data-category='FOOD_CAFE'] { --unit: #ffd2ad; }
+.fac-legend [data-category='SHOPPING'] { --unit: #b5d9fb; }
+.fac-legend [data-category='LOUNGE'] { --unit: #d9cdfb; }
+.fac-legend [data-category='PHARMACY'] { --unit: #b4ebd5; }
+.fac-legend [data-category='ETC'] { --unit: #d8e0e8; }
+
+@media (max-width: 960px) {
+  .icn-detail.fac-page { grid-template-columns: 1fr; height: auto; overflow: visible; }
+  .fac-map { order: -1; height: 420px; }
+  .fac-list { max-height: 420px; }
+  .fac-pass { top: auto; left: 10px; right: 10px; bottom: 10px; width: auto; max-height: 72%; }
+  .fac-map__note { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .fac-pass { animation: none; } }

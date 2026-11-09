@@ -1,6 +1,7 @@
 
 import { useMemo } from "react";
 import { useLiveUpdates } from "../../../hooks/useLiveUpdates";
+import Skeleton from "../../layout/Skeleton";
 import "./SmartAlerts.css";
 
 type Terminal = "T1" | "T2";
@@ -20,6 +21,8 @@ interface AlertItem {
   severity: string | null;
   isImportant: boolean;
 }
+
+const MAX_ITEMS = 3;
 
 const API_BASE_URL = String(
   import.meta.env.VITE_API_BASE_URL ?? ""
@@ -261,15 +264,13 @@ export default function SmartAlerts({ terminal }: Props) {
 
         seen.add(key);
         return true;
-      })
-      .slice(0, 3);
+      });
   }, [alerts, terminal]);
+  const shownAlerts = visibleAlerts.slice(0, MAX_ITEMS);
 
   if (loading && !data) {
     return (
-      <div className="smart-alerts__state">
-        알림 정보를 불러오는 중입니다.
-      </div>
+      <Skeleton label="알림 정보를 불러오는 중입니다." variant="rows" count={3} />
     );
   }
 
@@ -295,11 +296,11 @@ export default function SmartAlerts({ terminal }: Props) {
   return (
     <section className="smart-alerts">
       <div className="smart-alerts__summary">
-        {terminal} 기준 · 최신 알림 최대 3건
+        {terminal} 기준 · 최신 알림 최대 {MAX_ITEMS}건
       </div>
 
       <div className="smart-alerts__list">
-        {visibleAlerts.map((alert) => {
+        {shownAlerts.map((alert) => {
           const tone = getTone(alert);
           const time = formatTime(alert.occurredAt);
 

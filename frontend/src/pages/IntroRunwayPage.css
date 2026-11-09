@@ -1,0 +1,201 @@
+/* 첫 소개 화면: 해 질 무렵 활주로 */
+.intro-runway {
+  --sign: #ffd23f;
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  height: 100dvh;
+  padding: clamp(24px, 5vh, 64px) clamp(22px, 6vw, 110px);
+  overflow: hidden;
+  /* WebGL을 쓸 수 없을 때 보이는 같은 색의 하늘과 지면 */
+  background:
+    linear-gradient(180deg, #0a2243 0%, #2b527f 34%, #e8ad84 50%, #0a1930 50.5%, #06142a 100%);
+  color: #fff;
+  font-family: 'Pretendard Variable', Pretendard, 'Noto Sans KR', Arial, sans-serif;
+}
+
+.intro-runway__scene,
+.intro-runway__shade,
+.intro-runway__flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.intro-runway__scene { z-index: -3; }
+.intro-runway__shade { z-index: -2; }
+.intro-runway__flash { z-index: 3; }
+
+.intro-runway__canvas {
+  position: absolute;
+  inset: 0;
+  animation: runway-fade 1.2s ease-out both;
+}
+
+.intro-runway__canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* WebGL이 없을 때: 활주로 원근을 CSS로 흉내 냅니다 */
+.intro-runway.is-flat .intro-runway__scene {
+  background: linear-gradient(180deg, #2a3a58 50.5%, #13223a 70%, #13223a 100%);
+  clip-path: polygon(59.4% 50.5%, 60.6% 50.5%, 95% 100%, 25% 100%);
+}
+
+/* 글자 뒤 어두운 그라디언트 */
+.intro-runway__shade {
+  background:
+    linear-gradient(90deg, rgba(5, 18, 38, .84) 0%, rgba(5, 18, 38, .6) 30%, rgba(5, 18, 38, .16) 52%, transparent 66%),
+    linear-gradient(0deg, rgba(5, 18, 38, .4) 0%, transparent 28%);
+  transition: opacity .6s ease;
+}
+
+/* 이륙 마지막에 하늘이 밝아지며 메인 배경색으로 이어집니다 */
+.intro-runway__flash {
+  background: #e8f0f9;
+  opacity: 0;
+  transition: opacity .35s ease-in 1.05s;
+}
+
+.intro-runway.is-taking-off .intro-runway__flash { opacity: 1; }
+.intro-runway.is-taking-off .intro-runway__shade { opacity: 0; }
+.intro-runway.is-taking-off .intro-runway__copy { opacity: 0; transform: translateX(-24px); }
+
+/* 소개 글 */
+.intro-runway__copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: clamp(12px, 2.2vh, 20px);
+  max-width: 560px;
+  transition: opacity .45s ease, transform .6s ease;
+}
+
+.intro-runway__copy > * { animation: runway-rise .9s cubic-bezier(.2, .8, .2, 1) both; }
+.intro-runway__copy > :nth-child(1) { animation-delay: .3s; }
+.intro-runway__copy > :nth-child(2) { animation-delay: .4s; }
+.intro-runway__copy > :nth-child(3) { animation-delay: .5s; }
+.intro-runway__copy > :nth-child(4) { animation-delay: .6s; }
+.intro-runway__copy > :nth-child(5) { animation-delay: .7s; }
+
+.intro-runway__eyebrow {
+  color: var(--sign);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: .22em;
+}
+
+.intro-runway h1 {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(32px, min(4.4vw, 7vh), 66px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -.03em;
+  text-shadow: 0 8px 34px rgba(4, 16, 34, .45);
+}
+
+.intro-runway__lead {
+  margin: 0;
+  max-width: 30em;
+  color: #dbe7f4;
+  font-size: clamp(14.5px, min(1.15vw, 2.2vh), 18px);
+  line-height: 1.7;
+  word-break: keep-all;
+}
+
+.intro-runway__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 2px 0 6px;
+  padding: 0;
+  list-style: none;
+}
+
+.intro-runway__tags li {
+  padding: 6px 13px;
+  border: 1px solid rgba(232, 173, 132, .3);
+  border-radius: 999px;
+  background: rgba(10, 34, 67, .5);
+  color: #eef3fa;
+  font-size: 13px;
+  font-weight: 600;
+  backdrop-filter: blur(6px);
+}
+
+.intro-runway__start {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 0 28px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--sign);
+  color: #0b2b52;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 16px 32px -16px rgba(255, 210, 63, .7);
+  transition: transform .18s, background-color .18s;
+}
+
+.intro-runway__start span { transition: transform .18s; }
+.intro-runway__start:hover { background: #ffe07a; transform: translateY(-1px); }
+.intro-runway__start:hover span { transform: translateX(3px); }
+.intro-runway__start:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.intro-runway__start:disabled { cursor: default; }
+
+/* 메인 화면 첫 표시 */
+.icn-app.is-entering { animation: runway-enter .5s ease both; }
+
+@keyframes runway-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes runway-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes runway-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* 좁은 화면: 활주로를 위에 두고 글은 아래쪽 가운데 */
+@media (max-width: 860px) {
+  .intro-runway {
+    align-items: flex-end;
+    justify-content: center;
+    text-align: center;
+  }
+  .intro-runway__copy { align-items: center; max-width: 560px; }
+  .intro-runway__tags { justify-content: center; }
+  .intro-runway__shade {
+    background: linear-gradient(0deg, rgba(5, 18, 38, .9) 0%, rgba(5, 18, 38, .62) 42%, transparent 70%);
+  }
+  .intro-runway.is-taking-off .intro-runway__copy { transform: translateY(24px); }
+  .intro-runway.is-flat .intro-runway__scene { clip-path: polygon(49.4% 50.5%, 50.6% 50.5%, 100% 100%, 0 100%); }
+}
+
+@media (max-height: 560px) {
+  .intro-runway__tags { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro-runway__canvas,
+  .intro-runway__copy > *,
+  .icn-app.is-entering { animation: none; }
+  .intro-runway__copy,
+  .intro-runway__shade,
+  .intro-runway__flash { transition: none; }
+}

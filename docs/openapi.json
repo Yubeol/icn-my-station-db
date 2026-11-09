@@ -272,6 +272,47 @@
         }
       }
     },
+    "/api/v1/congestion/hourly": {
+      "get": {
+        "tags": [
+          "congestion"
+        ],
+        "summary": "Get Congestion Hourly",
+        "operationId": "get_congestion_hourly_api_v1_congestion_hourly_get",
+        "parameters": [
+          {
+            "name": "terminal",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Terminal"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CongestionHourly"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/stats/flights": {
       "get": {
         "tags": [
@@ -657,6 +698,79 @@
           "halls"
         ],
         "title": "Congestion"
+      },
+      "CongestionHour": {
+        "properties": {
+          "hour": {
+            "type": "integer",
+            "title": "Hour"
+          },
+          "today": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Today"
+          },
+          "yesterday": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Yesterday"
+          },
+          "level": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CongestionLevel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "hour",
+          "today",
+          "yesterday",
+          "level"
+        ],
+        "title": "CongestionHour"
+      },
+      "CongestionHourly": {
+        "properties": {
+          "terminal": {
+            "$ref": "#/components/schemas/Terminal"
+          },
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "hours": {
+            "items": {
+              "$ref": "#/components/schemas/CongestionHour"
+            },
+            "type": "array",
+            "title": "Hours"
+          }
+        },
+        "type": "object",
+        "required": [
+          "terminal",
+          "date",
+          "hours"
+        ],
+        "title": "CongestionHourly"
       },
       "CongestionLevel": {
         "type": "string",

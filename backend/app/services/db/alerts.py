@@ -1,6 +1,7 @@
 """스마트 알림 DB 조회.
 
 - 저장된 알림: smart_alerts의 최근 ALERT_LIST_HOURS시간(혼잡·지연·게이트 변경).
+- 알림의 terminal: 혼잡은 구역의 터미널, 항공편 알림(지연·게이트 변경·탑승)은 flight_operations의 터미널. 모르면 null.
 - 계산 알림(저장하지 않음): 탑승 시작, 기상 주의. 조회할 때마다 현재 데이터로 만든다.
 - DB 표기를 계약(docs/api-contract.md) 코드로 바꾼다. important → WARN.
 """
@@ -42,11 +43,13 @@ def _stored_rows() -> list[dict[str, Any]]:
     return fetch_all(
         """
         SELECT a.alert_id, a.alert_type, a.severity, a.title, a.message, a.created_at,
-               f.flight_number, f.master_flight_number, t.terminal_code
+               f.flight_number, f.master_flight_number,
+               t.terminal_code, ft.terminal_code AS flight_terminal_code
         FROM smart_alerts a
         LEFT JOIN airport_zones z ON z.zone_id = a.zone_id
         LEFT JOIN terminals t ON t.terminal_id = z.terminal_id
         LEFT JOIN flight_operations f ON f.flight_uid = a.flight_uid AND f.source = a.source
+        LEFT JOIN terminals ft ON ft.terminal_id = f.terminal_id
         WHERE a.source = ANY(%(sources)s)
           AND a.alert_type = ANY(%(types)s)
           AND a.created_at >= %(since)s
@@ -77,10 +80,10 @@ def _stored(mine: set[str]) -> list[Alert]:
                 title=row["title"],
                 message=row["message"],
                 flight_no=row["flight_number"],
-                # 혼잡 알림만 출국장의 터미널(탑승동은 T1). 나머지는 공통.
-                terminal=rules.to_terminal(row["terminal_code"])
-                if row["alert_type"] == "congestion"
-                else None,
+                # 혼잡은 구역의 터미널, 지연·게이트 변경은 항공편의 터미널(탑승동은 T1). 모르면 공통(null).
+                terminal=rules.alert_terminal(
+                    row["alert_type"], row.get("terminal_code"), row.get("flight_terminal_code")
+                ),
                 is_mine=bool(numbers & mine),
                 is_important=severity != AlertSeverity.INFO,
                 created_at=row["created_at"].astimezone(KST),
@@ -115,7 +118,7 @@ def _boarding(mine: set[str]) -> list[Alert]:
                 if gate
                 else "탑승이 시작되었습니다.",
                 flight_no=number,
-                terminal=None,
+                terminal=rules.alert_terminal("boarding", None, row.get("terminal_code")),
                 is_mine=number.strip().upper() in mine,
                 is_important=False,
                 created_at=row["last_collected_at"].astimezone(KST),
