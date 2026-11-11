@@ -158,12 +158,16 @@ class YoloHub:
         self.live_subscribers.discard(queue)
 
     def publish_live(self, topic: LiveTopic, scope: str | None, data: BaseModel) -> None:
-        message = LiveMessage(
-            topic=topic,
-            scope=scope,
-            data=data.model_dump(mode="json", by_alias=True),
-            sent_at=now_kst(),
+        self.publish_live_message(
+            LiveMessage(
+                topic=topic,
+                scope=scope,
+                data=data.model_dump(mode="json", by_alias=True),
+                sent_at=now_kst(),
+            )
         )
+
+    def publish_live_message(self, message: LiveMessage) -> None:
         for queue in self.live_subscribers:
             if queue.full():  # 느린 구독자는 가장 오래된 메시지부터 버린다
                 queue.get_nowait()

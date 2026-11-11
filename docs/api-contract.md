@@ -207,6 +207,8 @@ Hourly
 
 congestion 메시지는 터미널별로, flights·stats 메시지는 방향별로 따로 오며 scope로 구분한다.
 
+yolo_* topic은 docs/yolo-demo-contract.md 5장 참고
+
 ## 코드값
 
 | 구분 | 코드 |

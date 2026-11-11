@@ -12,6 +12,7 @@ from app.core.log_filter import install_token_mask
 from app.routers import alerts, congestion, dashboard, facilities, flights, stats, weather
 from app.services import yolo_results
 from app.services.alert_worker import start_alert_worker
+from app.services.yolo_tick import start_yolo_tick
 
 API_PREFIX = "/api/v1"
 
@@ -20,8 +21,10 @@ API_PREFIX = "/api/v1"
 async def lifespan(_: FastAPI):
     yolo_results.install()  # 워커 result 처리(30초 집계·제스처 이벤트)를 허브에 연결한다
     install_token_mask()  # 접속 로그의 token= 값을 가린다
+    yolo_tick = start_yolo_tick()  # DATA_MODE와 무관하게 돈다
     worker = start_alert_worker()  # db 모드에서만 알림 감지를 돌린다
     yield
+    yolo_tick.cancel()
     if worker is not None:
         worker.cancel()
     close_pool()  # db 모드에서 열린 연결 풀을 정리한다. mock 모드면 아무 일도 하지 않는다.
