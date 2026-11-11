@@ -15,3 +15,12 @@ export type CongestionFocus = {
   /** 선택할 출국장 번호 */
   hallId: number
 }
+
+export type FacilitiesFocus = {
+  nonce: number
+  terminal: Terminal
+  /** 보여 줄 층(예: '4F') */
+  floor: string
+  /** 선택할 구역 키(편의시설 지도 구역 키, 예: 'G:37:1') */
+  zoneKey: string
+}

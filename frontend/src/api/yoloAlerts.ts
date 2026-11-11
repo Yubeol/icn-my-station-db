@@ -28,11 +28,22 @@ export function yoloAlertId(eventId: number): string {
 }
 
 /** 카메라가 비추는 출국장(DEMO 고정 매핑). 모르는 카메라면 null입니다. */
-export function yoloPlace(cameraId: number): { terminal: string; hallId: number | null; label: string } | null {
+export type YoloPlace = {
+  terminal: string
+  /** 출국장 카메라만 있습니다(출국장 혼잡도로 이동). */
+  hallId: number | null
+  label: string
+  /** 편의시설 카메라만 있습니다(편의시설 지도로 이동). */
+  facility?: { floor: string; zoneKey: string }
+}
+
+export function yoloPlace(cameraId: number): YoloPlace | null {
   const hall = YOLO_CAMERA_HALLS.find(item => item.cameraId === cameraId)
   if (hall) return { terminal: hall.terminal, hallId: hall.hallId, label: `${hall.terminal} ${hall.hallId}번 출국장` }
   const facility = YOLO_FACILITY_CAMERAS.find(item => item.cameraId === cameraId)
-  return facility ? { terminal: facility.terminal, hallId: null, label: facility.label } : null
+  return facility
+    ? { terminal: facility.terminal, hallId: null, label: facility.label, facility: { floor: facility.floor, zoneKey: facility.zoneKey } }
+    : null
 }
 
 /**

@@ -11,8 +11,10 @@ type Props = {
   alert: FeedAlert
   /** [CCTV로 현장 확인]. 판정 모드 CCTV 뷰어를 엽니다. */
   onCctv: () => void
-  /** 출국장 혼잡도 화면으로 이동. 넘기지 않으면 링크를 숨깁니다. */
+  /** 출국장 혼잡도 화면으로 이동(출국장 카메라 사건). 넘기지 않으면 링크를 숨깁니다. */
   onOpenHall?: (terminal: string, hallId: number) => void
+  /** 편의시설 지도로 이동(편의시설 카메라 사건). 그 층의 그 구역이 선택된 채 열립니다. */
+  onOpenFacility?: (terminal: string, floor: string, zoneKey: string) => void
 }
 
 /**
@@ -20,7 +22,7 @@ type Props = {
  * 판정은 여기서 하지 않고, 영상을 확인할 수 있는 판정 모드 CCTV 뷰어에서 합니다.
  * 높이는 기존 알림 카드(약 255px)보다 크지 않게 맞춰, 아래 '수신 알림 분포'가 기존보다 더 잘리지 않도록 했습니다.
  */
-export default function YoloAlertDetail({ alert, onCctv, onOpenHall }: Props) {
+export default function YoloAlertDetail({ alert, onCctv, onOpenHall, onOpenFacility }: Props) {
   const event = alert.yolo
   if (!event) return null
   const place = yoloPlace(event.cameraId)
@@ -49,6 +51,7 @@ export default function YoloAlertDetail({ alert, onCctv, onOpenHall }: Props) {
       {pending
         ? <button type="button" className="yolo-detail__cctv" onClick={onCctv}>CCTV로 현장 확인</button>
         : <span className="yolo-detail__result" data-status={event.reviewStatus}>{event.reviewStatus === 'CONFIRMED' ? '실제 상황으로 확인되었습니다' : '오탐으로 판정되었습니다'}</span>}
+      {place?.facility && onOpenFacility && <button type="button" className="yolo-detail__hall" onClick={() => place.facility && onOpenFacility(place.terminal, place.facility.floor, place.facility.zoneKey)}>편의시설에서 보기 ›</button>}
       {place && hallId !== null && onOpenHall && <button type="button" className="yolo-detail__hall" onClick={() => onOpenHall(place.terminal, hallId)}>출국장 혼잡도에서 보기 ›</button>}
     </div>
   </section>

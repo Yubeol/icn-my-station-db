@@ -116,9 +116,11 @@ type Props = {
   focus?: AlertsFocus;
   /** YOLO 사건 상세에서 출국장 혼잡도 화면으로 이동. 넘기지 않으면 링크를 숨깁니다. */
   onOpenCongestion?: (terminal: string, hallId: number) => void;
+  /** 편의시설 카메라 사건 상세에서 편의시설 지도로 이동. 넘기지 않으면 링크를 숨깁니다. */
+  onOpenFacilities?: (terminal: string, floor: string, zoneKey: string) => void;
 };
 
-export default function AlertsPage({ focus, onOpenCongestion }: Props = {}) {
+export default function AlertsPage({ focus, onOpenCongestion, onOpenFacilities }: Props = {}) {
   const { data, loading, error, connected, updatedAt } = useLiveUpdates<FeedAlert[]>({
     topic: 'alerts',
     fetcher: getAlerts,
@@ -204,13 +206,13 @@ export default function AlertsPage({ focus, onOpenCongestion }: Props = {}) {
   const maxHour = Math.max(1, ...hourBuckets.map(item => item.count));
   const count = (key: string) => scoped.filter(alert => alert.severity === key).length;
 
-  // 필터가 바뀌면 선택과 페이지를 처음으로 되돌립니다. 이동으로 넘어온 첫 화면의 선택은 지우지 않습니다.
-  const firstRun = useRef(true);
+  // 필터가 실제로 바뀌었을 때만 선택과 페이지를 처음으로 되돌립니다. 이동으로 넘어온 첫 화면의 선택은 지우지 않습니다.
+  // (개발 모드 StrictMode는 효과를 두 번 실행하므로 '첫 실행 건너뛰기' 대신 이전 값과 비교합니다.)
+  const lastFilters = useRef({ severity, terminal, type, search });
   useEffect(() => {
-    if (firstRun.current) {
-      firstRun.current = false;
-      return;
-    }
+    const last = lastFilters.current;
+    if (last.severity === severity && last.terminal === terminal && last.type === type && last.search === search) return;
+    lastFilters.current = { severity, terminal, type, search };
     setSelectedId(null);
     setPage(1);
   }, [severity, terminal, type, search]);
@@ -310,7 +312,8 @@ export default function AlertsPage({ focus, onOpenCongestion }: Props = {}) {
         {selected?.yolo && <YoloAlertDetail
           alert={selected}
           onCctv={() => selected.yolo && openReview(selected.yolo)}
-          onOpenHall={onOpenCongestion} />}
+          onOpenHall={onOpenCongestion}
+          onOpenFacility={onOpenFacilities} />}
         {selected && !selected.yolo && <section className={`alert-pass ${selected.flightNo ? '' : 'is-common'}`} data-severity={selected.severity} aria-label="선택한 알림 상세">
           <div className="alert-pass__head">
             <small>OPERATION ALERT</small>

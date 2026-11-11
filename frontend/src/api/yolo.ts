@@ -86,7 +86,7 @@ export const YOLO_FACILITY_CAMERAS: readonly {
   /** 구역 위치를 잡는 대표 게이트 번호 */
   gate: number
   label: string
-}[] = [{ cameraId: 2, terminal: 'T1', floor: '4F', zoneKey: 'G:37:1', gate: 42, label: 'T1 스카이허브 라운지 구역' }]
+}[] = [{ cameraId: 2, terminal: 'T1', floor: '4F', zoneKey: 'G:37:1', gate: 42, label: 'T1 스카이허브 라운지(4F)' }]
 
 export function cameraIdForHall(terminal: Terminal, hallId: number): number | null {
   return YOLO_CAMERA_HALLS.find(item => item.terminal === terminal && item.hallId === hallId)?.cameraId ?? null
