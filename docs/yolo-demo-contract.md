@@ -1,4 +1,7 @@
-# YOLO DEMO 계약 (v0.2, 2026-11-11)
+# YOLO DEMO 계약 (v0.3, 2026-11-11)
+
+변경 이력
+- v0.3: cameraId를 demo_yolo_cameras.camera_id(정수)로 변경, 8장을 database/schema.sql DDL에 맞춤
 
 실제 공항 CCTV가 아닌 DEMO 카메라용 계약이다. 필드는 추가만 하고 기존 필드의 이름·의미는 바꾸지 않는다.
 
@@ -18,7 +21,7 @@
 ## 1. 공통 규칙
 
 ### 1.1 식별자
-- cameraId: 문자열. 1차 카메라 = `cam-t1-hall3` (T1 3번 출국장)
+- cameraId: 정수. demo_yolo_cameras.camera_id 값. 1차 카메라는 T1 3번 출국장 1대이며, 실제 값은 박수암이 등록 후 공유한다
 - frameId: 카메라가 매기는 정수. 연결마다 1부터 1씩 증가 (uint32)
 - 시간: JSON 안의 시각은 ISO 8601 + 오프셋 (예: `2026-11-12T14:03:05.120+09:00`), 바이너리 헤더의 capturedAt은 epoch 밀리초
 
@@ -32,7 +35,7 @@
 
 헤더 JSON:
 ```json
-{"cameraId": "cam-t1-hall3", "frameId": 1523, "capturedAt": 1762923785120, "width": 640, "height": 360}
+{"cameraId": 1, "frameId": 1523, "capturedAt": 1762923785120, "width": 640, "height": 360}
 ```
 
 - JPEG: 640×360, 품질 0.65 권장
@@ -51,11 +54,11 @@
 
 ## 2. /ws/yolo/camera (휴대폰 앱 → 백엔드)
 
-`wss://<host>/ws/yolo/camera?cameraId=cam-t1-hall3&token=...` (HTTP 배포면 `ws://`)
+`wss://<host>/ws/yolo/camera?cameraId=1&token=...` (HTTP 배포면 `ws://`)
 
 1. 연결되면 백엔드가 보낸다:
    ```json
-   {"type": "hello", "cameraId": "cam-t1-hall3", "maxFps": 10}
+   {"type": "hello", "cameraId": 1, "maxFps": 10}
    ```
 2. 앱은 1.2 형식의 바이너리 프레임을 최대 `maxFps`로 보낸다.
 3. 같은 cameraId로 새 연결이 오면 기존 연결은 4409로 닫힌다.
@@ -76,7 +79,7 @@
    ```json
    {
      "type": "result",
-     "cameraId": "cam-t1-hall3",
+     "cameraId": 1,
      "frameId": 1523,
      "capturedAt": 1762923785120,
      "inferMs": 42.5,
@@ -109,11 +112,11 @@
 
 ## 4. /ws/yolo/view (백엔드 → 대시보드)
 
-`wss://<host>/ws/yolo/view?cameraId=cam-t1-hall3`
+`wss://<host>/ws/yolo/view?cameraId=1`
 
 1. 연결 직후와 상태가 바뀔 때:
    ```json
-   {"type": "status", "cameraId": "cam-t1-hall3", "camera": "ONLINE", "worker": "ONLINE"}
+   {"type": "status", "cameraId": 1, "camera": "ONLINE", "worker": "ONLINE"}
    ```
    값: `ONLINE`, `OFFLINE`
 2. 바이너리 프레임(1.2 형식)을 최대 10fps로 보낸다.
@@ -121,7 +124,7 @@
    ```json
    {
      "type": "result",
-     "cameraId": "cam-t1-hall3",
+     "cameraId": 1,
      "frameId": 1523,
      "personCount": 4,
      "crowdLevel": "LOW",
@@ -150,15 +153,15 @@
 
 예시:
 ```json
-{"topic": "yolo_count", "scope": "T1", "data": {"cameraId": "cam-t1-hall3", "zoneId": 0, "personCount": 4, "crowdLevel": "LOW", "measuredAt": "2026-11-12T14:03:05+09:00"}, "sentAt": "2026-11-12T14:03:05+09:00"}
-{"topic": "yolo_alert", "scope": null, "data": {"eventId": 12, "cameraId": "cam-t1-hall3", "zoneId": 0, "eventType": "HELP_GESTURE", "confidence": 0.83, "detectedAt": "2026-11-12T14:03:05.120+09:00", "reviewStatus": "PENDING"}, "sentAt": "2026-11-12T14:03:05+09:00"}
+{"topic": "yolo_count", "scope": "T1", "data": {"cameraId": 1, "zoneId": 0, "personCount": 4, "crowdLevel": "LOW", "measuredAt": "2026-11-12T14:03:05+09:00"}, "sentAt": "2026-11-12T14:03:05+09:00"}
+{"topic": "yolo_alert", "scope": null, "data": {"eventId": 12, "cameraId": 1, "zoneId": 0, "eventType": "HELP_GESTURE", "confidence": 0.83, "detectedAt": "2026-11-12T14:03:05.120+09:00", "reviewStatus": "PENDING"}, "sentAt": "2026-11-12T14:03:05+09:00"}
 ```
 
 ## 6. REST API
 
 ### GET /api/v1/yolo/cameras
 ```json
-[{"cameraId": "cam-t1-hall3", "zoneId": 0, "name": "T1 3번 출국장 DEMO", "isActive": true, "camera": "ONLINE", "worker": "ONLINE"}]
+[{"cameraId": 1, "zoneId": 0, "name": "T1 3번 출국장 DEMO", "isActive": true, "camera": "ONLINE", "worker": "ONLINE"}]
 ```
 
 ### GET /api/v1/yolo/events?cameraId=&reviewStatus=&limit=50
@@ -184,43 +187,56 @@
 | COUNT_BUCKET_SEC | 30 | |
 | EVENT_DEDUPE_SEC | 10 | dedupe_key = `{cameraId}:{eventType}:{trackId}:{detectedAt를 10초로 내림}` |
 
-## 8. DB (DDL은 database/, 작성 박수암)
+## 8. DB (DDL은 database/schema.sql, 작성 박수암)
+
+기준: origin/main의 database/schema.sql (YOLO extension, 2026-11-11). created_at 컬럼은 없다.
 
 ### demo_yolo_cameras
-| 컬럼 | 타입 | 비고 |
+| 컬럼 | 타입 | 제약 |
 | --- | --- | --- |
-| camera_id | VARCHAR(50) PK | |
-| zone_id | airport_zones.zone_id와 같은 타입, FK | |
-| name | VARCHAR(100) | |
-| is_active | BOOLEAN DEFAULT true | |
-| created_at | TIMESTAMPTZ DEFAULT now() | |
+| camera_id | bigint GENERATED ALWAYS AS IDENTITY | PK |
+| zone_id | bigint NOT NULL | FK → airport_zones(zone_id) |
+| name | text NOT NULL | UNIQUE, CHECK (btrim(name) <> '') |
+| is_active | boolean NOT NULL DEFAULT true | |
+| created_at | timestamptz NOT NULL DEFAULT now() | |
+
+인덱스: demo_yolo_cameras_zone_idx
 
 ### demo_yolo_counts
-| 컬럼 | 타입 | 비고 |
+| 컬럼 | 타입 | 제약 |
 | --- | --- | --- |
-| id | BIGSERIAL PK | |
-| camera_id | VARCHAR(50) FK | |
-| bucket_start | TIMESTAMPTZ | 30초 구간 시작 |
-| person_avg | NUMERIC(5,2) | |
-| person_max | INTEGER | |
-| sample_count | INTEGER | 구간 안 결과 수 |
-| crowd_level | VARCHAR(10) | LOW / MID / HIGH |
-| model_version | VARCHAR(50) | |
-| created_at | TIMESTAMPTZ DEFAULT now() | |
-| | UNIQUE(camera_id, bucket_start) | |
+| id | bigint GENERATED ALWAYS AS IDENTITY | PK |
+| camera_id | bigint NOT NULL | FK → demo_yolo_cameras(camera_id) |
+| bucket_start | timestamptz NOT NULL | 30초 구간 시작 |
+| person_avg | numeric(10,2) NOT NULL | CHECK (person_avg >= 0) |
+| person_max | integer NOT NULL | CHECK (person_max >= 0) |
+| sample_count | integer NOT NULL | CHECK (sample_count > 0) |
+| crowd_level | text NULL | CHECK IN ('LOW','MID','HIGH') |
+| model_version | text NOT NULL | CHECK (btrim(model_version) <> '') |
+| | | CHECK (person_avg <= person_max) |
+| | | UNIQUE (camera_id, bucket_start) |
+
+인덱스: demo_yolo_counts_bucket_idx
 
 ### demo_yolo_events
-| 컬럼 | 타입 | 비고 |
+| 컬럼 | 타입 | 제약 |
 | --- | --- | --- |
-| id | BIGSERIAL PK | eventId |
-| camera_id | VARCHAR(50) FK | |
-| event_type | VARCHAR(30) | CHECK IN ('HELP_GESTURE') |
-| confidence | NUMERIC(4,3) | |
-| detected_at | TIMESTAMPTZ | |
-| model_version | VARCHAR(50) | |
-| review_status | VARCHAR(20) DEFAULT 'PENDING' | CHECK IN ('PENDING','CONFIRMED','FALSE_POSITIVE') |
-| reviewed_at | TIMESTAMPTZ NULL | |
-| dedupe_key | VARCHAR(200) UNIQUE | |
-| created_at | TIMESTAMPTZ DEFAULT now() | |
+| id | bigint GENERATED ALWAYS AS IDENTITY | PK (eventId) |
+| camera_id | bigint NOT NULL | FK → demo_yolo_cameras(camera_id) |
+| event_type | text NOT NULL | CHECK (btrim(event_type) <> '') |
+| confidence | numeric(5,4) NOT NULL | CHECK (confidence BETWEEN 0 AND 1) |
+| detected_at | timestamptz NOT NULL | |
+| model_version | text NOT NULL | CHECK (btrim(model_version) <> '') |
+| review_status | text NOT NULL DEFAULT 'PENDING' | CHECK IN ('PENDING','CONFIRMED','FALSE_POSITIVE') |
+| reviewed_at | timestamptz NULL | |
+| dedupe_key | text NOT NULL | UNIQUE, CHECK (btrim(dedupe_key) <> '') |
+| | | CHECK ((review_status = 'PENDING' AND reviewed_at IS NULL) OR (review_status <> 'PENDING' AND reviewed_at IS NOT NULL)) |
+
+인덱스: demo_yolo_events_camera_detected_idx, demo_yolo_events_review_detected_idx
+
+### 백엔드 규칙
+- event_type은 DDL이 값을 제한하지 않으므로 백엔드가 HELP_GESTURE만 저장한다.
+- 판정 UPDATE는 review_status와 reviewed_at을 항상 함께 바꾼다 (DDL CHECK).
+- crowd_level은 NULL 허용이지만 백엔드는 항상 값을 채운다.
 
 이미지, 박스 좌표, trackId는 저장하지 않는다.
