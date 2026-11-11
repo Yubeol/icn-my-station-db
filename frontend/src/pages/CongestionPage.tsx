@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import AnimatedNumber from '../components/layout/AnimatedNumber';
 import CongestionClock from '../components/main/Congestion/CongestionClock';
 import CongestionLiveMap from '../components/main/Congestion/CongestionLiveMap';
@@ -7,6 +7,10 @@ import { HALL_CHECK_HINT, HALL_CHECK_LABEL, isHallChecking } from '../components
 import { getCongestion, getCongestionHourly } from '../api/client';
 import type { Congestion, CongestionHourly, Terminal } from '../api/client';
 import { useLiveUpdates } from '../hooks/useLiveUpdates';
+import { useYolo } from '../hooks/useYoloLive';
+import { cameraIdForHall } from '../api/yolo';
+import YoloHallBadge from '../components/yolo/YoloHallBadge';
+import { describeYolo } from '../components/yolo/yoloStatus';
 import Skeleton from '../components/layout/Skeleton';
 import './CongestionPage.css';
 
@@ -44,6 +48,13 @@ export default function CongestionPage() {
     intervalMs: HOURLY_REFRESH_MS,
   });
 
+  const yolo = useYolo();
+  // 이 출국장을 비추는 DEMO 카메라가 있으면 그 인원 상태를 돌려줍니다. (3번 출국장만 해당)
+  const yoloOf = useCallback((hallId: number) => {
+    const cameraId = cameraIdForHall(terminal, hallId);
+    return cameraId === null ? undefined : describeYolo(yolo, cameraId);
+  }, [terminal, yolo]);
+
   const halls: HallRow[] = useMemo(() => data?.halls ?? [], [data]);
   const liveHalls: LiveHall[] = useMemo(() => halls.map(hall => ({
     id: hall.hallId,
@@ -51,7 +62,8 @@ export default function CongestionPage() {
     count: hall.waitingCount,
     level: hall.level,
     checking: isHallChecking(hall),
-  })), [halls]);
+    yolo: yoloOf(hall.hallId),
+  })), [halls, yoloOf]);
   const active = halls.filter(hall => !isHallChecking(hall));
   const total = active.reduce((sum, hall) => sum + hall.waitingCount, 0);
   const peak = Math.max(1, ...active.map(hall => hall.waitingCount));
@@ -141,6 +153,7 @@ export default function CongestionPage() {
         <ol className="cong-rank">
           {ranked.map(hall => {
             const checking = isHallChecking(hall);
+            const yoloInfo = yoloOf(hall.hallId);
             return <li key={hall.hallId}>
               <button
                 type="button"
@@ -151,6 +164,7 @@ export default function CongestionPage() {
                 <span className="cong-rank__count" style={checking ? { color: 'var(--muted)', fontSize: 12, fontWeight: 600, opacity: .8 } : undefined} title={checking ? HALL_CHECK_HINT : undefined}>{checking ? HALL_CHECK_LABEL : <><AnimatedNumber value={hall.waitingCount} />명</>}</span>
                 <span className="cong-rank__track"><i data-level={checking ? undefined : hall.level} style={{ width: `${checking ? 0 : Math.max(2, (hall.waitingCount / peak) * 100)}%` }} /></span>
                 <small>{checking ? '' : `${LEVEL_LABEL[hall.level] ?? hall.level} · ${changeText(hall.changeRate)}`}{hall.source === 'yolo' ? ' · YOLO' : ''}</small>
+                {yoloInfo && <YoloHallBadge tone={yoloInfo.tone} text={yoloInfo.text} />}
               </button>
             </li>;
           })}

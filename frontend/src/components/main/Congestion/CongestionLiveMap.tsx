@@ -7,6 +7,8 @@ export type LiveHall = {
   count: number;
   level: string;
   checking: boolean;
+  /** 이 출국장을 비추는 DEMO 카메라의 인원 상태. 카메라가 없는 출국장은 비워 둡니다. */
+  yolo?: { tone: 'LOW' | 'MID' | 'HIGH' | 'OFF'; text: string };
 };
 
 type Terminal = 'T1' | 'T2';
@@ -71,7 +73,7 @@ function HallGate({ hall, index, total, terminal, height, selected, onSelect }: 
     className={`cong-hall${selected ? ' is-selected' : ''}${level === 'HIGH' ? ' is-high' : ''}`}
     role="button"
     tabIndex={0}
-    aria-label={`${hall.name} ${hall.checking ? `${HALL_CHECK_LABEL}. ${HALL_CHECK_HINT}` : `${hall.count}명 ${LEVEL_TEXT[level]}`}`}
+    aria-label={`${hall.name} ${hall.checking ? `${HALL_CHECK_LABEL}. ${HALL_CHECK_HINT}` : `${hall.count}명 ${LEVEL_TEXT[level]}`}${hall.yolo ? `. DEMO 카메라 ${hall.yolo.text}` : ''}`}
     aria-pressed={selected}
     onClick={() => onSelect(hall.id)}
     onKeyDown={event => {
@@ -88,6 +90,13 @@ function HallGate({ hall, index, total, terminal, height, selected, onSelect }: 
     <rect x={gate.x - half} y={top + header - 2} width={gate.width} height="2.5" fill={color} />
     <text x={gate.x - half + 13} y={top + 28} className="cong-hall__no">{hall.id}번</text>
     <text x={gate.x + half - 13} y={top + 28} className={`cong-hall__count${hall.checking ? ' is-check' : ''}`}>{hall.checking ? <><title>{HALL_CHECK_HINT}</title>{HALL_CHECK_LABEL}</> : `${hall.count.toLocaleString()}명`}</text>
+
+    {hall.yolo && <g className="cong-hall__yolo" data-tone={hall.yolo.tone}>
+      <title>{`DEMO 카메라 실측: ${hall.yolo.text}`}</title>
+      <rect x={gate.x - half + 10} y={WALL_FLOOR - 34} width={gate.width - 20} height="22" rx="11" />
+      <circle cx={gate.x - half + 23} cy={WALL_FLOOR - 23} r="4" />
+      <text x={gate.x - half + 33} y={WALL_FLOOR - 19}>{hall.yolo.text}</text>
+    </g>}
 
     {range(figures).map(order => {
       const row = Math.floor(order / PER_ROW);

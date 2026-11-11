@@ -1,0 +1,28 @@
+/* YOLO DEMO 표시. 색은 polish.css의 혼잡 색(--low, --mid, --high, --muted)을 따릅니다. */
+
+.yolo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.yolo-badge > i { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.yolo-badge[data-tone='LOW'] > i { background: var(--low); }
+.yolo-badge[data-tone='MID'] > i { background: var(--mid); }
+.yolo-badge[data-tone='HIGH'] > i { background: var(--high); }
+.yolo-badge[data-tone='OFF'] { color: var(--muted); font-weight: 500; }
+.yolo-badge > b {
+  flex: none;
+  padding: 0 5px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  opacity: .75;
+}
+.yolo-badge > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
