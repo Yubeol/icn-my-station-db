@@ -105,7 +105,10 @@ class YoloHub:
         self.on_camera_closed: CameraHook | None = None
 
     def reset(self) -> None:
+        """연결·상태를 비운다(테스트용). 결과 처리 연결(on_result 등)은 유지한다."""
+        hooks = (self.on_result, self.on_camera_closed)
         self.__init__()
+        self.on_result, self.on_camera_closed = hooks
 
     # ----- 상태 조회 -----
 
@@ -189,12 +192,13 @@ class YoloHub:
         if state.camera_ws is not ws:  # 이미 새 연결로 대체됨
             return
         state.camera_ws = None
+        self.notify_status(state)
         if self.on_camera_closed is not None:
+            # 서버 종료 등으로 이 태스크가 취소돼도 진행 중인 30초 구간 저장은 끝까지 하도록 shield로 감싼다.
             try:
-                await self.on_camera_closed(state)
+                await asyncio.shield(self.on_camera_closed(state))
             except Exception:
                 logger.exception("카메라 종료 처리 실패")
-        self.notify_status(state)
 
     def on_frame(self, state: CameraState, data: bytes) -> bool:
         """카메라가 보낸 프레임을 최신 1장으로 보관하고 뷰어 슬롯에 넣는다. 버렸으면 False."""
