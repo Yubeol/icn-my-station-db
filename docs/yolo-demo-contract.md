@@ -166,6 +166,7 @@
 
 ### GET /api/v1/yolo/events?cameraId=&reviewStatus=&limit=50
 - 최신순. limit 최대 200
+- eventId는 식별용이며 연속 번호가 아니다 (ON CONFLICT로 무시된 시도도 번호를 소비)
 
 ### PATCH /api/v1/yolo/events/{eventId}
 요청:
@@ -175,6 +176,7 @@
 - reviewStatus: `CONFIRMED`, `FALSE_POSITIVE`
 - PENDING인 이벤트만 바꿀 수 있다. 이미 판정된 이벤트는 409
 - 성공하면 바뀐 이벤트를 반환하고 /ws/live로 `yolo_alert_reviewed`를 보낸다
+- YOLO_WRITE_ENABLED가 꺼진 db 모드에서는 503
 
 ## 7. 백엔드 상수
 
