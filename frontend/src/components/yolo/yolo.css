@@ -37,29 +37,48 @@
   padding: 16px;
   background: rgba(5, 16, 32, .62);
 }
+/* 대화상자는 App 바깥(.icn-app 밖)에 그려지므로 .icn-app에 정의된 색 변수(--high 등)를 읽을 수 없습니다.
+   그래서 이 파일의 대화상자 색은 여기서 --yolo-* 로 직접 정의합니다. 전역 h2·#root 스타일도 이 안에서 덮어씁니다. */
 .yolo-dialog {
+  --yolo-night: #0b2b52;
+  --yolo-ink: #24405f;
+  --yolo-muted: #5d7590;
+  --yolo-line: #d4e0ed;
+  --yolo-high: #c8362b;
+  --yolo-high-dark: #a52a20;
+  --yolo-sign: #ffd23f;
   width: min(100%, 560px);
   max-height: calc(100dvh - 32px);
   overflow: auto;
   border-radius: 14px;
   background: #fff;
-  color: var(--ink);
+  color: var(--yolo-ink);
   box-shadow: 0 24px 60px rgba(0, 8, 24, .45);
   outline: none;
+  font-family: 'Pretendard Variable', Pretendard, 'Noto Sans KR', Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: normal;
+  text-align: left;
 }
+/* :where()로 우선순위를 0으로 만들어, 아래 개별 규칙(.yolo-alert__lead 등)이 항상 이기게 합니다. */
+.yolo-dialog :where(h2) { margin: 0; color: var(--yolo-night); font-family: inherit; font-weight: 700; letter-spacing: -.01em; }
+.yolo-dialog :where(p, dl, dd) { margin: 0; }
+.yolo-dialog :where(button) { font: inherit; cursor: pointer; }
+.yolo-dialog :where(button):focus-visible { outline: 3px solid #5ea7f2; outline-offset: 2px; }
 
 /* ---------- CCTV 뷰어 ---------- */
 .yolo-cctv { width: min(100%, 860px); padding: 16px 18px 18px; }
 .yolo-cctv__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
-.yolo-cctv__head h2 { margin: 0; color: var(--night); font-size: 18px; }
-.yolo-cctv__head p { margin: 3px 0 0; color: var(--muted); font-size: 12.5px; }
+.yolo-cctv__head h2 { font-size: 18px; line-height: 1.3; }
+.yolo-cctv__head p { margin: 3px 0 0; color: var(--yolo-muted); font-size: 12.5px; }
 .yolo-cctv__close {
   flex: none;
   padding: 6px 14px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--yolo-line);
   border-radius: 8px;
   background: #f3f7fd;
-  color: var(--night);
+  color: var(--yolo-night);
   font-size: 13px;
   font-weight: 600;
 }
@@ -104,28 +123,29 @@
 .yolo-cctv__status.is-off { color: #c3cfdd; }
 .yolo-cctv__info { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 12px 0 0; }
 .yolo-cctv__info div { display: flex; align-items: baseline; gap: 8px; }
-.yolo-cctv__info dt { color: var(--muted); font-size: 12.5px; }
+.yolo-cctv__info dt { color: var(--yolo-muted); font-size: 12.5px; }
 .yolo-cctv__info dd { margin: 0; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
 
 /* ---------- 긴급 알림 ---------- */
 .yolo-dialog__backdrop.is-urgent { z-index: 3100; background: rgba(40, 6, 4, .66); }
-.yolo-alert { width: min(100%, 480px); padding: 20px 22px 22px; border-top: 6px solid var(--high); }
-.yolo-alert__top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-.yolo-alert__top strong { padding: 2px 9px; border-radius: 999px; background: var(--high); color: #fff; font-size: 12px; letter-spacing: .06em; }
-.yolo-alert__demo { padding: 1px 7px; border: 1px solid #c9a100; border-radius: 5px; background: #fff6cc; color: #6b5200; font-size: 11px; font-weight: 800; letter-spacing: .08em; }
-.yolo-alert__more { margin-left: auto; color: var(--muted); font-size: 12.5px; font-weight: 600; }
-.yolo-alert h2 { margin: 0 0 8px; color: var(--night); font-size: 20px; }
-.yolo-alert__lead { margin: 0 0 14px; color: var(--ink); font-size: 14px; line-height: 1.5; }
-.yolo-alert__facts { display: grid; gap: 6px; margin: 0 0 14px; padding: 10px 12px; border-radius: 9px; background: #f3f7fd; }
+.yolo-alert { width: min(100%, 480px); padding: 18px 22px 22px; border-top: 6px solid var(--yolo-high); }
+.yolo-alert__top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.yolo-alert__badge { padding: 2px 10px; border-radius: 999px; background: var(--yolo-high); color: #fff; font-size: 12px; font-weight: 700; letter-spacing: .06em; }
+.yolo-alert__more { color: var(--yolo-muted); font-size: 12.5px; font-weight: 600; }
+.yolo-alert__title { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.yolo-alert__demo { flex: none; padding: 1px 7px; border: 1px solid #c9a100; border-radius: 5px; background: #fff6cc; color: #6b5200; font-size: 11px; font-weight: 800; letter-spacing: .08em; }
+.yolo-alert__title h2 { font-size: 19px; line-height: 1.3; }
+.yolo-alert__lead { margin-bottom: 14px; color: var(--yolo-ink); font-size: 14px; line-height: 1.5; }
+.yolo-alert__facts { display: grid; gap: 6px; margin-bottom: 14px; padding: 10px 12px; border-radius: 9px; background: #f3f7fd; }
 .yolo-alert__facts div { display: flex; gap: 10px; }
-.yolo-alert__facts dt { flex: none; width: 76px; color: var(--muted); font-size: 13px; }
-.yolo-alert__facts dd { margin: 0; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.yolo-alert__facts small { color: var(--muted); font-weight: 500; }
-.yolo-alert__error { margin: 0 0 12px; color: var(--high); font-size: 13px; font-weight: 600; }
+.yolo-alert__facts dt { flex: none; width: 76px; color: var(--yolo-muted); font-size: 13px; }
+.yolo-alert__facts dd { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.yolo-alert__facts small { color: var(--yolo-muted); font-weight: 500; }
+.yolo-alert__error { margin-bottom: 12px; color: var(--yolo-high); font-size: 13px; font-weight: 600; }
 .yolo-alert__actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.yolo-alert__actions button { padding: 11px 8px; border: 1px solid transparent; border-radius: 9px; font-size: 14.5px; font-weight: 700; }
+.yolo-alert__actions button { min-height: 44px; padding: 10px 8px; border: 1px solid transparent; border-radius: 9px; font-size: 14.5px; font-weight: 700; }
 .yolo-alert__actions button:disabled { opacity: .55; cursor: progress; }
-.yolo-alert__actions .is-confirm { background: var(--high); color: #fff; }
-.yolo-alert__actions .is-confirm:hover:not(:disabled) { background: #b02e24; }
-.yolo-alert__actions .is-false { border-color: #b9c8d8; background: #fff; color: var(--night); }
+.yolo-alert__actions .is-confirm { border-color: var(--yolo-high); background: var(--yolo-high); color: #fff; }
+.yolo-alert__actions .is-confirm:hover:not(:disabled) { border-color: var(--yolo-high-dark); background: var(--yolo-high-dark); }
+.yolo-alert__actions .is-false { border-color: #b9c8d8; background: #fff; color: var(--yolo-night); }
 .yolo-alert__actions .is-false:hover:not(:disabled) { background: #eef3fa; }

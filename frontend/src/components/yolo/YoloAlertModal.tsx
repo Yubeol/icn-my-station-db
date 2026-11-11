@@ -49,11 +49,13 @@ export default function YoloAlertModal() {
 
   return <YoloDialog label="도움 요청 제스처 감지, 확인 필요" urgent className="yolo-alert">
     <div className="yolo-alert__top">
-      <strong>긴급</strong>
-      <span className="yolo-alert__demo">DEMO</span>
+      <span className="yolo-alert__badge">긴급</span>
       {others > 0 && <span className="yolo-alert__more">외 {others}건 확인 대기</span>}
     </div>
-    <h2>도움 요청 제스처 감지 · 확인 필요</h2>
+    <div className="yolo-alert__title">
+      <span className="yolo-alert__demo">DEMO</span>
+      <h2>도움 요청 제스처 감지 · 확인 필요</h2>
+    </div>
     <p className="yolo-alert__lead">DEMO 카메라 영상에서 도움을 요청하는 손짓으로 보이는 동작이 감지되었습니다. 자동 감지 후보이므로 실제 상황인지 직원이 확인해 주세요.</p>
     <dl className="yolo-alert__facts">
       <div><dt>위치</dt><dd>{placeName(event.cameraId)} · DEMO 카메라</dd></div>
