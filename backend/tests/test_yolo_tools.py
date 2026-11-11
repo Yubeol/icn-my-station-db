@@ -77,3 +77,133 @@ def test_tools_dependencies_stay_out_of_backend():
     pyproject = (Path(__file__).resolve().parents[1] / "pyproject.toml").read_text(encoding="utf-8")
     for forbidden in ("opencv", "ultralytics", "torch"):
         assert forbidden not in pyproject
+
+
+# ----- 웹캠 열기 (opencv 없이 가짜 cv2로 확인) -----
+
+
+class _FakeCapture:
+    def __init__(self, opened: bool, log: list, key):
+        self.opened, self.log, self.key = opened, log, key
+        self.released = False
+
+    def isOpened(self):
+        return self.opened
+
+    def release(self):
+        self.released = True
+        self.log.append(("release", self.key))
+
+    def get(self, prop):
+        return {3: 640, 4: 480}[prop]
+
+
+def _fake_cv2(monkeypatch, opens: dict, log: list):
+    """opens: {(index, api): 열림 여부}. api는 DSHOW면 700, 기본이면 None."""
+    import types
+
+    def video_capture(index, api=None):
+        log.append(("open", index, api))
+        return _FakeCapture(opens.get((index, api), False), log, (index, api))
+
+    module = types.SimpleNamespace(VideoCapture=video_capture, CAP_DSHOW=700)
+    monkeypatch.setitem(sys.modules, "cv2", module)
+
+
+def test_open_webcam_tries_dshow_first_on_windows(monkeypatch):
+    log: list = []
+    _fake_cv2(monkeypatch, {(0, 700): True}, log)
+    monkeypatch.setattr(sys, "platform", "win32")
+    capture, method = fake_camera.open_webcam(0)
+    assert capture is not None and method == "DSHOW"
+    assert log == [("open", 0, 700)]
+
+
+def test_open_webcam_falls_back_to_default_when_dshow_fails(monkeypatch):
+    log: list = []
+    _fake_cv2(monkeypatch, {(1, None): True}, log)
+    monkeypatch.setattr(sys, "platform", "win32")
+    capture, method = fake_camera.open_webcam(1)
+    assert capture is not None and method == "기본"
+    assert log[:3] == [("open", 1, 700), ("release", (1, 700)), ("open", 1, None)]
+
+
+def test_open_webcam_uses_only_default_outside_windows(monkeypatch):
+    log: list = []
+    _fake_cv2(monkeypatch, {(0, None): True}, log)
+    monkeypatch.setattr(sys, "platform", "linux")
+    _, method = fake_camera.open_webcam(0)
+    assert method == "기본"
+    assert log == [("open", 0, None)]
+
+
+def test_open_webcam_returns_none_when_nothing_opens(monkeypatch):
+    log: list = []
+    _fake_cv2(monkeypatch, {}, log)
+    monkeypatch.setattr(sys, "platform", "win32")
+    assert fake_camera.open_webcam(2) == (None, None)
+    assert ("release", (2, 700)) in log and (
+        "release",
+        (2, None),
+    ) in log  # 열리지 않은 핸들도 해제한다
+
+
+def test_list_cameras_reports_openable_indexes(monkeypatch):
+    log: list = []
+    _fake_cv2(monkeypatch, {(1, 700): True, (3, None): True}, log)
+    monkeypatch.setattr(sys, "platform", "win32")
+    lines: list[str] = []
+    assert fake_camera.list_cameras(lines.append) == [1, 3]
+    assert [index for kind, index, *_ in (e for e in log if e[0] == "open")][:2] == [
+        0,
+        0,
+    ]  # 0번은 두 방식 모두 시도
+    assert any("1번: 열림 (DSHOW, 640x480)" in line for line in lines)
+    assert any("3번: 열림 (기본, 640x480)" in line for line in lines)
+    assert any("0번: 열리지 않음" in line for line in lines)
+    assert not any("6번" in line for line in lines)  # 0~5번만 확인한다
+    assert "--source 1" in lines[-1]
+
+
+def test_list_cameras_when_none_open(monkeypatch):
+    _fake_cv2(monkeypatch, {}, [])
+    lines: list[str] = []
+    assert fake_camera.list_cameras(lines.append) == []
+    assert "열리는 웹캠이 없습니다" in lines[-1]
+
+
+# ----- fake_worker --event-type (계약 v0.4) -----
+
+
+@pytest.mark.parametrize(
+    ("event_type", "box_cls"), [("HELP_GESTURE", "help_gesture"), ("FINGER_GUN", "finger_gun")]
+)
+def test_fake_worker_gesture_event_type_and_box_class_match(event_type, box_cls):
+    header = {"cameraId": 1, "frameId": 1}
+    result = fake_worker.make_result(header, random.Random(1), True, event_type=event_type)
+    (event,) = result["events"]
+    assert event["eventType"] == event_type
+    gesture = [d for d in result["detections"] if d["cls"] in ("help_gesture", "finger_gun")]
+    assert [d["cls"] for d in gesture] == [box_cls]  # 박스 cls는 이벤트 종류와 맞는 것 하나만
+    assert gesture[0]["trackId"] == event["trackId"]
+
+
+def test_fake_worker_default_event_type_is_help_gesture():
+    result = fake_worker.make_result({"cameraId": 1, "frameId": 1}, random.Random(2), True)
+    assert result["events"][0]["eventType"] == "HELP_GESTURE"
+    assert any(d["cls"] == "help_gesture" for d in result["detections"])
+
+
+def test_fake_worker_no_gesture_has_no_event_or_gesture_box():
+    result = fake_worker.make_result(
+        {"cameraId": 1, "frameId": 1}, random.Random(3), False, event_type="FINGER_GUN"
+    )
+    assert result["events"] == []
+    assert not any(d["cls"] in ("help_gesture", "finger_gun") for d in result["detections"])
+
+
+def test_fake_worker_event_type_option():
+    assert fake_worker.parse_args([]).event_type == "HELP_GESTURE"
+    assert fake_worker.parse_args(["--event-type", "FINGER_GUN"]).event_type == "FINGER_GUN"
+    with pytest.raises(SystemExit):
+        fake_worker.parse_args(["--event-type", "FIRE"])

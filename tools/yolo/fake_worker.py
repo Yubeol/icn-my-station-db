@@ -5,8 +5,10 @@
 예)
     python tools/yolo/fake_worker.py --url ws://localhost:8000
     python tools/yolo/fake_worker.py --url ws://localhost:8000 --gesture --gesture-interval 20
+    python tools/yolo/fake_worker.py --url ws://localhost:8000 --gesture --event-type FINGER_GUN
 
---gesture를 주면 일정 간격으로 result의 events에 HELP_GESTURE를 넣는다.
+--gesture를 주면 일정 간격으로 result의 events에 제스처 이벤트를 넣는다.
+종류는 --event-type으로 고른다: HELP_GESTURE(기본, 박스 cls help_gesture), FINGER_GUN(박스 cls finger_gun).
 토큰은 --token 또는 환경변수 YOLO_WORKER_TOKEN으로 준다. 토큰과 프레임은 출력하지 않는다.
 받은 프레임은 헤더만 읽고 버린다. 디스크·로그에 남기지 않는다.
 """
@@ -24,6 +26,8 @@ from urllib.parse import urlencode
 KST = timezone(timedelta(hours=9))
 MAX_RECONNECT_DELAY = 4.0
 NO_RETRY_CODES = {4401}
+# 이벤트 종류 → 같은 제스처를 나타내는 박스 클래스 (계약 v0.4)
+GESTURE_CLASSES = {"HELP_GESTURE": "help_gesture", "FINGER_GUN": "finger_gun"}
 MAX_PERSON_COUNT = 14  # 0~14명 (LOW·MID·HIGH가 모두 나오도록)
 
 
@@ -48,9 +52,16 @@ def _box(rng: random.Random) -> list[float]:
 
 
 def make_result(
-    header: dict, rng: random.Random, gesture: bool = False, now: datetime | None = None
+    header: dict,
+    rng: random.Random,
+    gesture: bool = False,
+    now: datetime | None = None,
+    event_type: str = "HELP_GESTURE",
 ) -> dict:
-    """프레임 헤더에 대한 가짜 result (계약 3장). 박스 1~2개, personCount는 랜덤."""
+    """프레임 헤더에 대한 가짜 result (계약 3장). 박스 1~2개, personCount는 랜덤.
+
+    gesture면 제스처 박스와 event_type 이벤트를 하나 더 넣는다. 박스 cls는 이벤트 종류와 맞춘다.
+    """
     now = now or datetime.now(KST)
     detections = []
     for track_id in range(1, rng.randint(1, 2) + 1):
@@ -68,11 +79,16 @@ def make_result(
         track_id = detections[0]["trackId"]
         confidence = round(rng.uniform(0.7, 0.95), 2)
         detections.append(
-            {"cls": "help_gesture", "conf": confidence, "box": _box(rng), "trackId": track_id}
+            {
+                "cls": GESTURE_CLASSES[event_type],
+                "conf": confidence,
+                "box": _box(rng),
+                "trackId": track_id,
+            }
         )
         events.append(
             {
-                "eventType": "HELP_GESTURE",
+                "eventType": event_type,
                 "trackId": track_id,
                 "confidence": confidence,
                 "detectedAt": now.isoformat(timespec="milliseconds"),
@@ -101,7 +117,9 @@ async def serve(ws, args, rng: random.Random) -> None:
                 "type": "hello",
                 "workerId": args.worker_id,
                 "modelVersion": args.model_version,
-                "classes": ["person", "head", "help_gesture"],
+                "classes": ["person", "finger_gun"]
+                if args.event_type == "FINGER_GUN"
+                else ["person", "head", "help_gesture"],
             }
         )
     )
@@ -123,7 +141,7 @@ async def serve(ws, args, rng: random.Random) -> None:
             last_gesture = time.monotonic()
         if args.delay_ms:
             await asyncio.sleep(args.delay_ms / 1000)
-        await ws.send(json.dumps(make_result(header, rng, gesture=due)))
+        await ws.send(json.dumps(make_result(header, rng, gesture=due, event_type=args.event_type)))
 
 
 async def run(args) -> None:
@@ -154,8 +172,12 @@ def parse_args(argv=None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description="가짜 워커: 프레임마다 가짜 result를 돌려준다")
     p.add_argument("--url", default="ws://localhost:8000", help="서버 주소 (ws:// 또는 wss://)")
     p.add_argument("--token", default=None, help="기본값: 환경변수 YOLO_WORKER_TOKEN")
+    p.add_argument("--gesture", action="store_true", help="일정 간격으로 제스처 이벤트를 넣는다")
     p.add_argument(
-        "--gesture", action="store_true", help="일정 간격으로 HELP_GESTURE 이벤트를 넣는다"
+        "--event-type",
+        choices=sorted(GESTURE_CLASSES),
+        default="HELP_GESTURE",
+        help="--gesture로 넣는 이벤트 종류. FINGER_GUN이면 박스 cls도 finger_gun (기본 HELP_GESTURE)",
     )
     p.add_argument("--gesture-interval", type=float, default=15.0, help="제스처 이벤트 간격(초)")
     p.add_argument("--delay-ms", type=int, default=0, help="추론 시간 흉내(밀리초)")

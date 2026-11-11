@@ -5,7 +5,10 @@ type ConnectionHandler = (connected: boolean) => void;
 
 const messageHandlers = new Set<MessageHandler>();
 const connectionHandlers = new Set<ConnectionHandler>();
-const topics = new Set<LiveTopic>(['congestion', 'flights', 'stats', 'alerts', 'weather']);
+const topics = new Set<LiveTopic>([
+  'congestion', 'flights', 'stats', 'alerts', 'weather',
+  'yolo_camera', 'yolo_count', 'yolo_alert', 'yolo_alert_reviewed',
+]);
 
 let socket: WebSocket | null = null;
 let retryTimer: ReturnType<typeof setTimeout> | null = null;

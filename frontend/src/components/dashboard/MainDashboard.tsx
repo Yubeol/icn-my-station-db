@@ -13,10 +13,15 @@ import SmartAlerts from "../main/SmartAlerts/SmartAlerts";
 import Facilities from "../main/Facilities/Facilities";
 import MyFlightCard from "../main/MyFlight/MyFlightCard";
 
-type Props = { navigate: (page: PageKey) => void; onOpenFlight: (flightNo: string) => void };
+type Props = {
+  navigate: (page: PageKey) => void;
+  onOpenFlight: (flightNo: string) => void;
+  /** 스마트 알림 위젯의 YOLO 사건을 눌렀을 때. 스마트 알림 화면에서 그 사건을 선택합니다. */
+  onOpenAlert?: (alertId: string) => void;
+};
 
 /** 메인 화면은 각 상세 페이지의 데이터를 배치할 자리만 담당합니다. */
-export default function MainDashboard({ navigate, onOpenFlight }: Props) {
+export default function MainDashboard({ navigate, onOpenFlight, onOpenAlert }: Props) {
   const [terminal, setTerminal] = useState<'T1' | 'T2'>('T1');
   const summary = useApiResource(getDashboardSummary);
   // summary.data는 모든 영역에 전달 가능한 API 응답입니다.
@@ -72,7 +77,7 @@ export default function MainDashboard({ navigate, onOpenFlight }: Props) {
         title="스마트 알림"
         className="icn-alerts"
         onNavigate={() => navigate("alerts")}>
-        <SmartAlerts terminal={terminal} />
+        <SmartAlerts terminal={terminal} onOpenAlert={onOpenAlert} />
       </SectionBox>
       <SectionBox
         title="편의시설"

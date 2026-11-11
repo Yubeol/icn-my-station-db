@@ -31,6 +31,18 @@
 .cong-hall__no { fill: #dbe8f6; font-size: 17px; font-weight: 600; }
 .cong-hall__count { fill: #fff; font-size: 21px; font-weight: 700; font-variant-numeric: tabular-nums; text-anchor: end; }
 .cong-hall__count.is-check { fill: rgba(255, 255, 255, .62); font-size: 12px; font-weight: 600; }
+.cong-hall__yolo { pointer-events: none; }
+.cong-hall__cctv { cursor: pointer; outline: none; }
+.cong-hall__cctv rect { fill: rgba(6, 22, 44, .78); stroke: rgba(255, 255, 255, .4); }
+.cong-hall__cctv text { fill: #fff; font-size: 12px; font-weight: 700; letter-spacing: .04em; }
+.cong-hall__cctv:hover rect, .cong-hall__cctv:focus-visible rect { stroke: var(--sign); stroke-width: 2; }
+.cong-hall__yolo rect { fill: rgba(6, 22, 44, .72); stroke: rgba(255, 255, 255, .22); }
+.cong-hall__yolo circle { fill: #9db0c6; }
+.cong-hall__yolo[data-tone='LOW'] circle { fill: #4fe0ae; }
+.cong-hall__yolo[data-tone='MID'] circle { fill: #ffcb5c; }
+.cong-hall__yolo[data-tone='HIGH'] circle { fill: #ff7566; }
+.cong-hall__yolo text { fill: #eaf3fc; font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.cong-hall__yolo[data-tone='OFF'] text { fill: rgba(255, 255, 255, .7); font-weight: 500; }
 .cong-hall.is-high .cong-hall__door { animation: cong-lamp 3.6s ease-in-out infinite; }
 .cong-hall:hover .cong-hall__body, .cong-hall:focus-visible .cong-hall__body, .cong-hall.is-selected .cong-hall__body { stroke: var(--sign); stroke-width: 2.5; }
 @keyframes cong-lamp { 50% { opacity: .55; } }
@@ -109,6 +121,19 @@
 .cong-rank__track { grid-column: 1 / -1; height: 5px; overflow: hidden; border-radius: 3px; background: #dee8f2; }
 .cong-rank__track i { display: block; height: 100%; border-radius: 3px; transition: width .4s; }
 .cong-rank small { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+.cong-rank .yolo-badge { grid-column: 1 / -1; }
+.cong-rank li { position: relative; }
+/* DEMO 카메라가 있는 행. 위 .cong-rank button 규칙(width·height 100%, 배경, 패딩)이 CCTV 버튼에도 적용되므로
+   CCTV 버튼은 .cong-rank .cong-rank__cctv로 우선순위를 높여 그 값을 모두 되돌립니다. */
+.cong-rank li.has-yolo > button:first-child { align-content: end; padding-bottom: 10px; }
+.cong-rank li.has-yolo .yolo-badge { max-width: calc(100% - 64px); }
+.cong-rank .cong-rank__cctv {
+  position: absolute; right: 10px; bottom: 8px;
+  display: inline-flex; align-items: center; width: auto; height: auto; min-height: 0;
+  padding: 1px 10px; border: 1px solid #b9c8d8; border-radius: 999px; background: #fff;
+  color: var(--night); font-size: 11.5px; font-weight: 700; line-height: 1.5;
+}
+.cong-rank .cong-rank__cctv:hover, .cong-rank .cong-rank__cctv:focus-visible { border-color: #2d7bdb; background: #e7f0fc; }
 
 @media (max-width: 1100px) {
   .cong-page__top { flex-wrap: wrap; }

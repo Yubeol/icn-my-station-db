@@ -7,6 +7,8 @@ export type LiveHall = {
   count: number;
   level: string;
   checking: boolean;
+  /** 이 출국장을 비추는 DEMO 카메라의 인원 상태. 카메라가 없는 출국장은 비워 둡니다. */
+  yolo?: { tone: 'LOW' | 'MID' | 'HIGH' | 'OFF'; text: string; onCctv?: () => void };
 };
 
 type Terminal = 'T1' | 'T2';
@@ -67,11 +69,12 @@ function HallGate({ hall, index, total, terminal, height, selected, onSelect }: 
   const lanePath = `M${left} ${WALL_FLOOR} L${right} ${WALL_FLOOR} L${toFloorX(right, height)} ${height} L${toFloorX(left, height)} ${height} Z`;
   const figures = hall.checking ? 0 : Math.min(MAX_FIGURES, Math.ceil(hall.count / PEOPLE_PER_FIGURE[terminal]));
 
-  return <g
+  return <>
+  <g
     className={`cong-hall${selected ? ' is-selected' : ''}${level === 'HIGH' ? ' is-high' : ''}`}
     role="button"
     tabIndex={0}
-    aria-label={`${hall.name} ${hall.checking ? `${HALL_CHECK_LABEL}. ${HALL_CHECK_HINT}` : `${hall.count}명 ${LEVEL_TEXT[level]}`}`}
+    aria-label={`${hall.name} ${hall.checking ? `${HALL_CHECK_LABEL}. ${HALL_CHECK_HINT}` : `${hall.count}명 ${LEVEL_TEXT[level]}`}${hall.yolo ? `. DEMO 카메라 ${hall.yolo.text}` : ''}`}
     aria-pressed={selected}
     onClick={() => onSelect(hall.id)}
     onKeyDown={event => {
@@ -89,6 +92,13 @@ function HallGate({ hall, index, total, terminal, height, selected, onSelect }: 
     <text x={gate.x - half + 13} y={top + 28} className="cong-hall__no">{hall.id}번</text>
     <text x={gate.x + half - 13} y={top + 28} className={`cong-hall__count${hall.checking ? ' is-check' : ''}`}>{hall.checking ? <><title>{HALL_CHECK_HINT}</title>{HALL_CHECK_LABEL}</> : `${hall.count.toLocaleString()}명`}</text>
 
+    {hall.yolo && <g className="cong-hall__yolo" data-tone={hall.yolo.tone}>
+      <title>{`DEMO 카메라 실측: ${hall.yolo.text}`}</title>
+      <rect x={gate.x - half + 10} y={WALL_FLOOR - 34} width={gate.width - 20} height="22" rx="11" />
+      <circle cx={gate.x - half + 23} cy={WALL_FLOOR - 23} r="4" />
+      <text x={gate.x - half + 33} y={WALL_FLOOR - 19}>{hall.yolo.text}</text>
+    </g>}
+
     {range(figures).map(order => {
       const row = Math.floor(order / PER_ROW);
       const slot = row % 2 === 0 ? order % PER_ROW : PER_ROW - 1 - (order % PER_ROW);
@@ -101,7 +111,23 @@ function HallGate({ hall, index, total, terminal, height, selected, onSelect }: 
         <circle cy="-27.5" r="3.9" fill="#eef5fc" />
       </g>;
     })}
-  </g>;
+  </g>
+  {hall.yolo?.onCctv && <g
+    className="cong-hall__cctv"
+    role="button"
+    tabIndex={0}
+    aria-label={`${hall.name} CCTV 보기 (DEMO 카메라)`}
+    onClick={hall.yolo.onCctv}
+    onKeyDown={event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        hall.yolo?.onCctv?.();
+      }
+    }}>
+    <rect x={gate.x - 30} y={top - 30} width="60" height="22" rx="11" />
+    <text x={gate.x} y={top - 15} textAnchor="middle">CCTV</text>
+  </g>}
+  </>;
 }
 
 /** 해 질 무렵 출국장 입구 앞 대기 공간을 실내에서 바라본 장면입니다. */
