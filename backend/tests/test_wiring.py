@@ -15,7 +15,7 @@ import pytest
 APP_DIR = Path(__file__).resolve().parents[1] / "app"
 
 # mock/·db/ 구현을 직접 import해도 되는 곳은 services 바로 아래 입구 파일뿐이다.
-FACADES = {"flights.py", "congestion.py", "stats.py", "weather.py", "facilities.py", "alerts.py"}
+FACADES = {"flights.py", "congestion.py", "stats.py", "weather.py", "facilities.py", "alerts.py", "yolo_store.py"}
 # db 모드 전용 작업이라 db 구현을 직접 쓰는 파일
 DB_ONLY = {"alert_worker.py"}
 
@@ -24,6 +24,7 @@ CHECK_FILES = [
     *sorted(p for p in (APP_DIR / "services").glob("*.py") if p.name not in FACADES | DB_ONLY),
     APP_DIR / "main.py",
     APP_DIR / "ws.py",
+    APP_DIR / "ws_yolo.py",
 ]
 
 
