@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { getFlights } from '../../api/client';
 import type { Flight } from '../../api/client';
 import { useLiveUpdates } from '../../hooks/useLiveUpdates';
+import YoloHeaderCount from '../yolo/YoloHeaderCount';
 
 const ROTATE_MS = 6000;
 const CLOCK_MS = 1000;
@@ -37,9 +38,9 @@ function Flap({ text }: { text: string }) {
   </span>;
 }
 
-type Props = { onBrandClick?: () => void };
+type Props = { onBrandClick?: () => void; onUrgentClick?: () => void };
 
-export default function Header({ onBrandClick }: Props = {}) {
+export default function Header({ onBrandClick, onUrgentClick }: Props = {}) {
   const { data, connected } = useLiveUpdates<Flight[]>({
     topic: 'flights',
     scope: 'DEPARTURE',
@@ -85,9 +86,12 @@ export default function Header({ onBrandClick }: Props = {}) {
       </> : <p>다음 출발 항공편을 확인하는 중입니다</p>}
     </div>
 
-    <div className="icn-clock">
-      <time dateTime={now.toISOString()}>{clockFormat.format(now)}</time>
-      <small className={connected ? 'is-live' : ''}>{connected ? '● 실시간 연결' : '○ 연결 대기'}</small>
+    <div className="icn-header-end">
+      {onUrgentClick && <YoloHeaderCount onClick={onUrgentClick} />}
+      <div className="icn-clock">
+        <time dateTime={now.toISOString()}>{clockFormat.format(now)}</time>
+        <small className={connected ? 'is-live' : ''}>{connected ? '● 실시간 연결' : '○ 연결 대기'}</small>
+      </div>
     </div>
   </header>;
 }

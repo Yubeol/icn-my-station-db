@@ -24,6 +24,13 @@ class Settings(BaseSettings):
     # DB 담당과 docs/db-write-contract.md를 확인한 뒤에만 True로 바꾼다.
     alert_write_enabled: bool = False
 
+    # YOLO DEMO. 카메라·워커 연결 토큰(쿼리 token=). 비어 있으면 모든 연결을 4401로 거부한다.
+    yolo_camera_token: SecretStr | None = None
+    yolo_worker_token: SecretStr | None = None
+    # YOLO 인원 집계·제스처 이벤트를 공유 DB(demo_yolo_counts, demo_yolo_events)에 실제로 쓸지.
+    # 기본값은 False. ALERT_WRITE_ENABLED와 별개로 켠다. 서버 한 곳에서만 True로 둔다.
+    yolo_write_enabled: bool = False
+
     # DB 접속 정보는 .env에서 읽는다 (DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD, DB_SSLMODE)
     db_host: str | None = None
     db_port: int = 5432

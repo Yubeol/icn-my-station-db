@@ -408,8 +408,8 @@ ALERT_MAX_DATA_AGE_MINUTES = 15
 ALERT_FLIGHT_PAST_HOURS = 3
 ALERT_FLIGHT_FUTURE_HOURS = 12
 # 알림 목록: 최근 N시간, 최대 M건
-ALERT_LIST_HOURS = 6
-ALERT_LIST_LIMIT = 30
+ALERT_LIST_HOURS = 24
+ALERT_LIST_LIMIT = 500
 # 탑승 시작 알림(저장하지 않고 계산): 예정 시각이 지금부터 N분 안인 탑승중 편
 BOARDING_ALERT_WITHIN_MINUTES = 60
 
@@ -579,3 +579,37 @@ def facility_crowd(
     else:
         level = terminal_crowd_level(hall_levels.values())
     return (level, location.basis) if level is not None else (None, None)
+
+
+# ---------- YOLO DEMO (docs/yolo-demo-contract.md 7장) ----------
+
+# 인원 등급은 DEMO용 기준이다. 출국장 대기 인원 기준(congestion_level)과 다르므로 따로 둔다.
+YOLO_CROWD_MID_FROM = 6
+YOLO_CROWD_HIGH_FROM = 11
+
+YOLO_VIEW_MAX_FPS = 10
+YOLO_WORKER_MAX_FPS = 3
+YOLO_WORKER_TIMEOUT_SEC = 2.0
+YOLO_CAMERA_MAX_FPS = 10  # hello 메시지의 maxFps
+YOLO_COUNT_BUCKET_SEC = 30
+YOLO_EVENT_DEDUPE_SEC = 10
+# JPEG 프레임(헤더 포함) 크기 상한. 넘으면 버린다.
+YOLO_FRAME_MAX_BYTES = 1_000_000
+# DDL이 값을 제한하지 않으므로 백엔드가 아래 값만 저장한다. (계약 v0.4: HELP_GESTURE에 FINGER_GUN 추가)
+YOLO_EVENT_TYPE = "HELP_GESTURE"  # 기본 제스처 이벤트. 기존 코드·테스트가 쓰는 이름이라 남겨 둔다.
+YOLO_EVENT_TYPES = ("HELP_GESTURE", "FINGER_GUN")
+
+# 종료 코드 (계약 1.4)
+YOLO_CLOSE_BAD_TOKEN = 4401
+YOLO_CLOSE_UNKNOWN_CAMERA = 4404
+YOLO_CLOSE_REPLACED = 4409
+
+
+def yolo_crowd_level(person_count: float) -> CongestionLevel:
+    """DEMO 인원 등급. LOW 0~5명, MID 6~10명, HIGH 11명 이상. 평균처럼 소수면 반올림해서 센다."""
+    count = round(person_count)
+    if count >= YOLO_CROWD_HIGH_FROM:
+        return CongestionLevel.HIGH
+    if count >= YOLO_CROWD_MID_FROM:
+        return CongestionLevel.MID
+    return CongestionLevel.LOW

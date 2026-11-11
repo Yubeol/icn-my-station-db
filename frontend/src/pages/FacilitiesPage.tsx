@@ -1,15 +1,19 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Armchair, Coffee, MoreHorizontal, Pill, Search, ShoppingBag, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { getFacilities } from '../api/client';
 import AirportScene from '../components/main/Facilities/AirportScene';
-import { buildFloorMap, MAP_FLOORS, normalizeFloor } from '../components/main/Facilities/facilityMap';
+import { buildFloorMap, gateZoneAnchor, MAP_FLOORS, normalizeFloor } from '../components/main/Facilities/facilityMap';
+import CctvViewer from '../components/yolo/CctvViewer';
+import { YOLO_FACILITY_CAMERAS } from '../api/yolo';
+import type { FacilitiesFocus } from '../navigation';
 import type { MapTerminal, Place } from '../components/main/Facilities/facilityMap';
 import { useLiveUpdates } from '../hooks/useLiveUpdates';
 import Skeleton from '../components/layout/Skeleton';
 import './FacilitiesPage.css';
 
 const PAGE_SIZE = 40;
+const CCTV_PIN_OFFSET = { x: 10, z: 0.5 }; // 구역 핀·시설 칸을 가리지 않도록 핀에서 화면 오른쪽으로 띄운 도면 거리
 const TERMINALS: MapTerminal[] = ['T1', 'T2'];
 const FLOORS = MAP_FLOORS;
 const LEGEND = [
@@ -72,22 +76,39 @@ function FacilityPass({ place, onClose }: { place: Place; onClose: () => void })
   </aside>;
 }
 
-export default function FacilitiesPage() {
+// 스마트 알림 등에서 넘어오면 그 터미널·층을 열고 구역을 선택한 채로 시작합니다.
+export default function FacilitiesPage({ focus }: { focus?: FacilitiesFocus } = {}) {
   const { data, loading, error } = useLiveUpdates<Place[]>({
     topic: null,
     fetcher: getFacilities,
     intervalMs: 60_000,
   });
-  const [terminal, setTerminal] = useState<MapTerminal>('T1');
+  const [terminal, setTerminal] = useState<MapTerminal>(focus?.terminal ?? 'T1');
   const [category, setCategory] = useState('ALL');
   const [search, setSearch] = useState('');
   const [openOnly, setOpenOnly] = useState(false);
-  const [floor, setFloor] = useState('3F');
+  const [floor, setFloor] = useState(focus?.floor ?? '3F');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [limit, setLimit] = useState(PAGE_SIZE);
   const [allFloors, setAllFloors] = useState(false);
-  const [activeZone, setActiveZone] = useState<string | null>(null);
-  const [zoneFilter, setZoneFilter] = useState(false); // 핀을 직접 눌렀을 때만 목록을 구역으로 거릅니다
+  const [activeZone, setActiveZone] = useState<string | null>(focus?.zoneKey ?? null);
+  // 핀을 직접 눌렀거나 다른 화면에서 구역을 골라 넘어왔을 때만 목록을 구역으로 거릅니다
+  const [zoneFilter, setZoneFilter] = useState(Boolean(focus?.zoneKey));
+  const [cctv, setCctv] = useState<{ cameraId: number; title: string } | null>(null);
+
+  // DEMO 카메라가 있는 구역(T1 4F 스카이허브 라운지 구역)에만 CCTV 알약을 둡니다. 위치는 그 구역의 핀 자리에서 조금 비켜 둡니다.
+  const cctvCameras = useMemo(() => YOLO_FACILITY_CAMERAS.filter(camera => camera.terminal === terminal), [terminal]);
+  const cctvSpots = useMemo(() => cctvCameras.filter(camera => camera.floor === floor).flatMap(camera => {
+    const anchor = gateZoneAnchor(terminal, camera.gate);
+    if (!anchor) return [];
+    return [{
+      key: String(camera.cameraId),
+      label: camera.label,
+      x: anchor.pin.x + CCTV_PIN_OFFSET.x,
+      z: anchor.pin.z + CCTV_PIN_OFFSET.z,
+      onOpen: () => setCctv({ cameraId: camera.cameraId, title: camera.label }),
+    }];
+  }), [cctvCameras, terminal, floor]);
 
   const filtered = useMemo(() => {
     const word = search.trim().toLowerCase();
@@ -133,7 +154,13 @@ export default function FacilitiesPage() {
     }
   };
 
+  // 터미널·층·분류 등이 실제로 바뀌었을 때만 선택을 풉니다. 이동으로 넘어온 첫 화면의 구역 선택은 풀지 않습니다.
+  // (개발 모드 StrictMode는 효과를 두 번 실행하므로 '첫 실행 건너뛰기' 대신 이전 값과 비교합니다.)
+  const lastFilters = useRef({ terminal, floor, category, openOnly, search });
   useEffect(() => {
+    const last = lastFilters.current;
+    if (last.terminal === terminal && last.floor === floor && last.category === category && last.openOnly === openOnly && last.search === search) return;
+    lastFilters.current = { terminal, floor, category, openOnly, search };
     setSelectedId(null);
     setActiveZone(null);
     setZoneFilter(false);
@@ -172,6 +199,13 @@ export default function FacilitiesPage() {
         <button type="button" aria-pressed={allFloors} onClick={() => { setAllFloors(value => !value); setLimit(PAGE_SIZE); }}>{allFloors ? `${floor}만 보기` : '다른 층 포함'}</button>
       </div>
       <div className="fac-list">
+        {cctvCameras.map(camera => <div className="fac-cctv" key={camera.cameraId}>
+          <span><b>DEMO</b>{camera.label}</span>
+          <button type="button" onClick={() => {
+            setFloor(camera.floor); // 닫은 뒤 지도에서 알약이 보이도록 카메라가 있는 층으로 바꿉니다
+            setCctv({ cameraId: camera.cameraId, title: camera.label });
+          }}>CCTV</button>
+        </div>)}
         {filterZone && <div className="fac-zonechip">
           <span>{filterZone.label} · {filterZone.places.length}곳</span>
           <button type="button" aria-label="구역 선택 해제" onClick={() => { setActiveZone(null); setZoneFilter(false); }}><X size={13} /></button>
@@ -203,7 +237,8 @@ export default function FacilitiesPage() {
         activeZone={activeZone}
         selectedId={selectedId}
         onPickZone={toggleZone}
-        onPickPlace={pickPlace} />
+        onPickPlace={pickPlace}
+        cctvSpots={cctvSpots} />
       <div className="fac-map__title"><strong>{terminal}</strong><span>{floor} 개략도 · 드래그 회전, 휠 확대</span></div>
       <div className="fac-floor" role="group" aria-label="층 선택">
         {FLOORS.map(item => (
@@ -217,5 +252,6 @@ export default function FacilitiesPage() {
       {mapNotice && <p className="fac-map__notice" role="status">{mapNotice}</p>}
       {selected && <FacilityPass place={selected} onClose={() => setSelectedId(null)} />}
     </section>
+    {cctv && <CctvViewer cameraId={cctv.cameraId} title={cctv.title} onClose={() => setCctv(null)} />}
   </main>;
 }

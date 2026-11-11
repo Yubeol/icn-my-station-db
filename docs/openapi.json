@@ -545,6 +545,170 @@
           }
         }
       }
+    },
+    "/api/v1/yolo/cameras": {
+      "get": {
+        "tags": [
+          "yolo"
+        ],
+        "summary": "Get Cameras",
+        "operationId": "get_cameras_api_v1_yolo_cameras_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/YoloCamera"
+                  },
+                  "type": "array",
+                  "title": "Response Get Cameras Api V1 Yolo Cameras Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/yolo/events": {
+      "get": {
+        "tags": [
+          "yolo"
+        ],
+        "summary": "Get Events",
+        "operationId": "get_events_api_v1_yolo_events_get",
+        "parameters": [
+          {
+            "name": "cameraId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cameraid"
+            }
+          },
+          {
+            "name": "reviewStatus",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/YoloReviewStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Reviewstatus"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/YoloEvent"
+                  },
+                  "title": "Response Get Events Api V1 Yolo Events Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/yolo/events/{eventId}": {
+      "patch": {
+        "tags": [
+          "yolo"
+        ],
+        "summary": "Review Event",
+        "operationId": "review_event_api_v1_yolo_events__eventId__patch",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Eventid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/YoloReviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YoloEvent"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "이벤트 없음"
+          },
+          "409": {
+            "description": "이미 판정됨"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1748,6 +1912,131 @@
           "phenomenon"
         ],
         "title": "WeatherHistoryPoint"
+      },
+      "YoloCamera": {
+        "properties": {
+          "cameraId": {
+            "type": "integer",
+            "title": "Cameraid"
+          },
+          "zoneId": {
+            "type": "integer",
+            "title": "Zoneid"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "isActive": {
+            "type": "boolean",
+            "title": "Isactive"
+          },
+          "camera": {
+            "$ref": "#/components/schemas/YoloConnState"
+          },
+          "worker": {
+            "$ref": "#/components/schemas/YoloConnState"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cameraId",
+          "zoneId",
+          "name",
+          "isActive",
+          "camera",
+          "worker"
+        ],
+        "title": "YoloCamera"
+      },
+      "YoloConnState": {
+        "type": "string",
+        "enum": [
+          "ONLINE",
+          "OFFLINE"
+        ],
+        "title": "YoloConnState"
+      },
+      "YoloEvent": {
+        "properties": {
+          "eventId": {
+            "type": "integer",
+            "title": "Eventid"
+          },
+          "cameraId": {
+            "type": "integer",
+            "title": "Cameraid"
+          },
+          "zoneId": {
+            "type": "integer",
+            "title": "Zoneid"
+          },
+          "eventType": {
+            "type": "string",
+            "title": "Eventtype"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          },
+          "detectedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Detectedat"
+          },
+          "reviewStatus": {
+            "$ref": "#/components/schemas/YoloReviewStatus"
+          },
+          "reviewedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "eventId",
+          "cameraId",
+          "zoneId",
+          "eventType",
+          "confidence",
+          "detectedAt",
+          "reviewStatus"
+        ],
+        "title": "YoloEvent"
+      },
+      "YoloReviewRequest": {
+        "properties": {
+          "reviewStatus": {
+            "type": "string",
+            "enum": [
+              "CONFIRMED",
+              "FALSE_POSITIVE"
+            ],
+            "title": "Reviewstatus"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reviewStatus"
+        ],
+        "title": "YoloReviewRequest"
+      },
+      "YoloReviewStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "CONFIRMED",
+          "FALSE_POSITIVE"
+        ],
+        "title": "YoloReviewStatus"
       }
     }
   }

@@ -1,0 +1,263 @@
+/* YOLO DEMO 표시. 색은 polish.css의 혼잡 색(--low, --mid, --high, --muted)을 따릅니다. */
+
+.yolo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.yolo-badge > i { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.yolo-badge[data-tone='LOW'] > i { background: var(--low); }
+.yolo-badge[data-tone='MID'] > i { background: var(--mid); }
+.yolo-badge[data-tone='HIGH'] > i { background: var(--high); }
+.yolo-badge[data-tone='OFF'] { color: var(--muted); font-weight: 500; }
+.yolo-badge > b {
+  flex: none;
+  padding: 0 5px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  opacity: .75;
+}
+.yolo-badge > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- 공용 대화상자 ---------- */
+.yolo-dialog__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(5, 16, 32, .62);
+}
+/* 대화상자는 App 바깥(.icn-app 밖)에 그려지므로 .icn-app에 정의된 색 변수(--high 등)를 읽을 수 없습니다.
+   그래서 이 파일의 대화상자 색은 여기서 --yolo-* 로 직접 정의합니다. 전역 h2·#root 스타일도 이 안에서 덮어씁니다. */
+.yolo-dialog {
+  --yolo-night: #0b2b52;
+  --yolo-ink: #24405f;
+  --yolo-muted: #5d7590;
+  --yolo-line: #d4e0ed;
+  --yolo-high: #c8362b;
+  --yolo-high-dark: #a52a20;
+  --yolo-sign: #ffd23f;
+  width: min(100%, 560px);
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  border-radius: 14px;
+  background: #fff;
+  color: var(--yolo-ink);
+  box-shadow: 0 24px 60px rgba(0, 8, 24, .45);
+  outline: none;
+  font-family: 'Pretendard Variable', Pretendard, 'Noto Sans KR', Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: normal;
+  text-align: left;
+}
+/* :where()로 우선순위를 0으로 만들어, 아래 개별 규칙(.yolo-alert__lead 등)이 항상 이기게 합니다. */
+.yolo-dialog :where(h2) { margin: 0; color: var(--yolo-night); font-family: inherit; font-weight: 700; letter-spacing: -.01em; }
+.yolo-dialog :where(p, dl, dd) { margin: 0; }
+.yolo-dialog :where(button) { font: inherit; cursor: pointer; }
+.yolo-dialog :where(button):focus-visible { outline: 3px solid #5ea7f2; outline-offset: 2px; }
+
+/* ---------- CCTV 뷰어 ---------- */
+.yolo-cctv { width: min(100%, 860px); padding: 16px 18px 18px; }
+.yolo-cctv__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.yolo-cctv__head h2 { font-size: 18px; line-height: 1.3; }
+.yolo-cctv__head p { margin: 3px 0 0; color: var(--yolo-muted); font-size: 12.5px; }
+.yolo-cctv__close {
+  flex: none;
+  padding: 6px 14px;
+  border: 1px solid var(--yolo-line);
+  border-radius: 8px;
+  background: #f3f7fd;
+  color: var(--yolo-night);
+  font-size: 13px;
+  font-weight: 600;
+}
+.yolo-cctv__close:hover { background: #e8f0f9; }
+.yolo-cctv__stage {
+  position: relative;
+  width: 100%;
+  max-height: calc(100dvh - 230px);
+  overflow: hidden;
+  border-radius: 10px;
+  background: #06162c;
+}
+.yolo-cctv__stage img, .yolo-cctv__stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.yolo-cctv__stage img { object-fit: contain; user-select: none; }
+.yolo-cctv__stage canvas { pointer-events: none; }
+.yolo-cctv__empty { position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; color: rgba(255, 255, 255, .78); font-size: 15px; font-weight: 600; text-align: center; }
+.yolo-cctv__demo {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 2px 8px;
+  border-radius: 5px;
+  background: rgba(255, 210, 63, .95);
+  color: #3a2a00;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+.yolo-cctv__status {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(6, 22, 44, .75);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+.yolo-cctv__status.is-ok { color: #4fe0ae; }
+.yolo-cctv__status.is-warn { color: #ffcb5c; }
+.yolo-cctv__status.is-off { color: #c3cfdd; }
+.yolo-cctv__info { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 12px 0 0; }
+.yolo-cctv__info div { display: flex; align-items: baseline; gap: 8px; }
+.yolo-cctv__info dt { color: var(--yolo-muted); font-size: 12.5px; }
+.yolo-cctv__info dd { margin: 0; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* ---------- 판정 버튼·안내 (판정 모드 CCTV 뷰어가 사용) ---------- */
+.yolo-dialog__backdrop.is-urgent { z-index: 3100; background: rgba(40, 6, 4, .66); }
+.yolo-alert__error { margin-top: 12px; color: var(--yolo-high); font-size: 13px; font-weight: 600; }
+.yolo-alert__actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+.yolo-alert__actions button { min-height: 44px; padding: 10px 8px; border: 1px solid transparent; border-radius: 9px; font-size: 14.5px; font-weight: 700; }
+.yolo-alert__actions button:disabled { opacity: .55; cursor: progress; }
+.yolo-alert__actions .is-confirm { border-color: var(--yolo-high); background: var(--yolo-high); color: #fff; }
+.yolo-alert__actions .is-confirm:hover:not(:disabled) { border-color: var(--yolo-high-dark); background: var(--yolo-high-dark); }
+.yolo-alert__actions .is-false { border-color: #b9c8d8; background: #fff; color: var(--yolo-night); }
+.yolo-alert__actions .is-false:hover:not(:disabled) { background: #eef3fa; }
+
+/* ---------- CCTV 판정 모드 (긴급 알림에서 영상을 확인한 뒤 판정) ---------- */
+.yolo-cctv__band {
+  margin: -16px -18px 12px;
+  padding: 10px 18px;
+  border-radius: 14px 14px 0 0;
+  background: var(--yolo-high);
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.yolo-cctv__band.is-done { background: var(--yolo-muted); }
+.yolo-cctv.is-review .yolo-cctv__stage { max-height: calc(100dvh - 380px); }
+
+/* ---------- 긴급 토스트 (헤더 아래 가운데) ---------- */
+.yolo-toast {
+  --yolo-high: #c8362b;
+  --yolo-ink: #24405f;
+  position: fixed;
+  top: 108px;
+  left: 50%;
+  z-index: 2500;
+  max-width: calc(100vw - 24px);
+  transform: translateX(-50%);
+  font-family: 'Pretendard Variable', Pretendard, 'Noto Sans KR', Arial, sans-serif;
+  animation: yolo-toast-in .22s cubic-bezier(.2, .8, .2, 1) both;
+}
+.yolo-toast > button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  max-width: 100%;
+  padding: 9px 14px 9px 12px;
+  border: 1px solid rgba(200, 54, 43, .35);
+  border-left: 5px solid var(--yolo-high);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--yolo-ink);
+  box-shadow: 0 10px 28px rgba(8, 24, 48, .32);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color .15s, box-shadow .15s, transform .15s;
+}
+.yolo-toast > button:hover, .yolo-toast > button:focus-visible { background: #fff4f2; box-shadow: 0 12px 32px rgba(8, 24, 48, .4); transform: translateY(-1px); outline: none; }
+.yolo-toast__urgent { flex: none; padding: 1px 9px; border-radius: 999px; background: var(--yolo-high); color: #fff; font-size: 12px; font-weight: 700; letter-spacing: .06em; }
+.yolo-toast__text { min-width: 0; overflow: hidden; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.yolo-toast__more { flex: none; color: var(--yolo-high); font-size: 12.5px; font-weight: 700; }
+.yolo-toast__demo { flex: none; padding: 0 6px; border: 1px solid #c9a100; border-radius: 4px; background: #fff6cc; color: #6b5200; font-size: 10.5px; font-weight: 800; letter-spacing: .08em; }
+.yolo-toast__go { flex: none; color: var(--yolo-high); font-size: 12.5px; font-weight: 700; }
+.yolo-toast > button:hover .yolo-toast__go { text-decoration: underline; }
+@keyframes yolo-toast-in { from { opacity: 0; transform: translate(-50%, -8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@media (prefers-reduced-motion: reduce) { .yolo-toast { animation: none; } }
+
+/* ---------- 헤더 긴급 N 알약 ---------- */
+.icn-header-end { display: flex; flex: none; align-items: center; gap: 12px; }
+.yolo-urgent-pill {
+  flex: none;
+  padding: 4px 12px;
+  border: 1px solid #ff8a7d;
+  border-radius: 999px;
+  background: #c8362b;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color .15s;
+}
+.yolo-urgent-pill:hover { background: #a52a20; }
+
+/* ---------- 스마트 알림: YOLO 사건 행·상세 ---------- */
+/* .icn-app button { font: inherit } 규칙이 더 우선하므로, 상세 패널 안의 버튼은 .alert-pass를 붙여 글꼴 크기를 지정합니다. */
+.alert-yolo-status { margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: #fde5e2; color: #c8362b; font-size: 11px; font-style: normal; font-weight: 700; text-decoration: none; vertical-align: 1px; }
+.alert-yolo-status[data-status='CONFIRMED'] { background: #24405f; color: #fff; }
+.alert-yolo-status[data-status='FALSE_POSITIVE'] { background: #e4ebf3; color: #5d7590; }
+.alert-pass.is-yolo dl { flex-wrap: wrap; gap: 2px 10px; }
+.alert-pass__badges .yolo-detail__status { background: #fde5e2; color: #c8362b; font-weight: 700; }
+.alert-pass__badges .yolo-detail__status[data-status='CONFIRMED'] { background: #24405f; color: #fff; }
+.alert-pass__badges .yolo-detail__status[data-status='FALSE_POSITIVE'] { background: #e4ebf3; color: #5d7590; }
+.alert-pass__badges .yolo-detail__demo { background: #fff6cc; color: #6b5200; font-weight: 800; letter-spacing: .04em; }
+.yolo-detail__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin: 2px 18px 12px; }
+.alert-pass .yolo-detail__cctv { padding: 7px 16px; border: 1px solid #c8362b; border-radius: 9px; background: #c8362b; color: #fff; font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; transition: background-color .15s; }
+.alert-pass .yolo-detail__cctv:hover { border-color: #a52a20; background: #a52a20; }
+.yolo-detail__result { color: #24405f; font-size: 13px; font-weight: 700; }
+.alert-pass .yolo-detail__hall { padding: 0; border: 0; background: none; color: #0f4c92; font: inherit; font-size: 13px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.alert-pass .yolo-detail__hall:hover { color: #0b2b52; }
+
+/* ---------- 편의시설 지도·목록의 CCTV (DEMO 카메라) ---------- */
+/* .icn-app button { font: inherit }, .fac-list span { display: grid } 규칙이 더 우선하므로 선택자를 올려 글꼴·배치를 지정합니다. */
+.icn-app .airport-cctv {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px 3px 8px;
+  border: 1.5px solid #fff;
+  border-radius: 999px;
+  background: #c8362b;
+  box-shadow: 0 3px 10px rgba(11, 31, 69, .4);
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .03em;
+  line-height: 1.4;
+  white-space: nowrap;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.icn-app .airport-cctv:hover, .icn-app .airport-cctv:focus-visible { background: #a52a20; outline: none; }
+.icn-app .airport-cctv > i { width: 7px; height: 7px; border-radius: 50%; background: #fff; }
+.icn-app .airport-cctv > b { padding: 0 4px; border-radius: 3px; background: #ffd23f; color: #3a2a00; font-size: 9.5px; letter-spacing: .06em; }
+.fac-cctv { display: flex; flex: none; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; border: 1px dashed #e5a29c; border-radius: 9px; background: #fff7f6; }
+.fac-list .fac-cctv > span { display: block; min-width: 0; overflow: hidden; color: #24405f; font-size: 12.5px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.fac-list .fac-cctv > span > b { display: inline-block; margin-right: 6px; padding: 0 5px; border-radius: 3px; background: #ffd23f; color: #3a2a00; font-size: 9.5px; letter-spacing: .06em; }
+.icn-app .fac-cctv > button { flex: none; padding: 2px 11px; border: 1px solid #c8362b; border-radius: 999px; background: #c8362b; color: #fff; font: inherit; font-size: 11.5px; font-weight: 800; cursor: pointer; }
+.icn-app .fac-cctv > button:hover { background: #a52a20; border-color: #a52a20; }

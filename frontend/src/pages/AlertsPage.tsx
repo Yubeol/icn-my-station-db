@@ -1,13 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeftRight, Ban, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Clock3, CloudSun, Plane, Search, Users } from 'lucide-react';
+import { ArrowLeftRight, Ban, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Clock3, CloudSun, Plane, Search, Siren, TriangleAlert, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { getAlerts } from '../api/client';
-import type { Alert } from '../api/client';
+import { yoloEventName } from '../api/yolo';
+import { YOLO_ALERT_TYPE, YOLO_ALERT_TYPES, YOLO_STATUS_LABEL } from '../api/yoloAlerts';
+import type { FeedAlert } from '../api/yoloAlerts';
 import { useLiveUpdates } from '../hooks/useLiveUpdates';
+import { useYolo } from '../hooks/useYoloLive';
+import { useYoloAlertFeed } from '../hooks/useYoloAlertFeed';
+import YoloAlertDetail from '../components/yolo/YoloAlertDetail';
 import Skeleton from '../components/layout/Skeleton';
+import type { AlertsFocus } from '../navigation';
 import './AlertsPage.css';
 
-type FeedAlert = Alert & { terminal?: string | null };
 type Severity = 'ALL' | 'CRITICAL' | 'WARN' | 'INFO';
 
 const SEVERITIES: { key: Severity; label: string }[] = [
@@ -16,13 +21,18 @@ const SEVERITIES: { key: Severity; label: string }[] = [
   { key: 'WARN', label: '주의' },
   { key: 'INFO', label: '정보' },
 ];
-const TYPES: Record<string, { label: string; icon: LucideIcon }> = {
+// label은 목록·분포 막대에, filterLabel은 유형 선택 목록에 보입니다. noFilter는 선택 목록에서 뺍니다.
+const TYPES: Record<string, { label: string; icon: LucideIcon; filterLabel?: string; noFilter?: boolean }> = {
   DELAY: { label: '지연', icon: Clock3 },
   CANCELLED: { label: '결항', icon: Ban },
   GATE_CHANGE: { label: '게이트 변경', icon: ArrowLeftRight },
   CONGESTION: { label: '출국장 혼잡', icon: Users },
   WEATHER: { label: '기상 주의', icon: CloudSun },
   BOARDING: { label: '탑승', icon: Plane },
+  [YOLO_ALERT_TYPES.HELP_GESTURE]: { label: '도움 요청', filterLabel: '도움 요청 제스처', icon: Siren },
+  // 손가락 총(FINGER_GUN)은 화면에서 '흉기 위협 의심'으로 부르고 경고 아이콘을 씁니다.
+  [YOLO_ALERT_TYPES.FINGER_GUN]: { label: yoloEventName('FINGER_GUN').short, filterLabel: yoloEventName('FINGER_GUN').filter, icon: TriangleAlert },
+  [YOLO_ALERT_TYPE]: { label: '제스처', icon: Siren, noFilter: true },
 };
 const SEVERITY_COLOR: Record<string, string> = { CRITICAL: '#d9434e', WARN: '#c98a1b', INFO: '#1d6fd1' };
 const SEVERITY_LABEL: Record<string, string> = { CRITICAL: '긴급', WARN: '주의', INFO: '정보' };
@@ -102,17 +112,26 @@ function Donut({ alerts }: { alerts: FeedAlert[] }) {
   </div>;
 }
 
-export default function AlertsPage() {
+type Props = {
+  focus?: AlertsFocus;
+  /** YOLO 사건 상세에서 출국장 혼잡도 화면으로 이동. 넘기지 않으면 링크를 숨깁니다. */
+  onOpenCongestion?: (terminal: string, hallId: number) => void;
+  /** 편의시설 카메라 사건 상세에서 편의시설 지도로 이동. 넘기지 않으면 링크를 숨깁니다. */
+  onOpenFacilities?: (terminal: string, floor: string, zoneKey: string) => void;
+};
+
+export default function AlertsPage({ focus, onOpenCongestion, onOpenFacilities }: Props = {}) {
   const { data, loading, error, connected, updatedAt } = useLiveUpdates<FeedAlert[]>({
     topic: 'alerts',
     fetcher: getAlerts,
     intervalMs: 60_000,
   });
-  const [severity, setSeverity] = useState<Severity>('ALL');
+  // 헤더의 긴급 알약이나 토스트에서 넘어왔다면 그 값으로 시작합니다.
+  const [severity, setSeverity] = useState<Severity>(focus?.severity ?? 'ALL');
   const [terminal, setTerminal] = useState('ALL');
   const [type, setType] = useState('ALL');
   const [search, setSearch] = useState('');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(focus?.alertId ?? null);
   const [page, setPage] = useState(1);
   const { listRef, size } = usePageSize();
   const [clock, setClock] = useState(() => Date.now());
@@ -122,9 +141,12 @@ export default function AlertsPage() {
     return () => window.clearInterval(timer);
   }, []);
 
+  // 기존 알림에 YOLO 사건(제스처)을 시간순으로 합칩니다. 이후 필터·요약·분포는 합쳐진 목록을 그대로 씁니다.
+  const yoloAlerts = useYoloAlertFeed();
+  const { openReview } = useYolo();
   const alerts = useMemo(
-    () => [...(data ?? [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
-    [data],
+    () => [...(data ?? []), ...yoloAlerts].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    [data, yoloAlerts],
   );
 
   const scoped = useMemo(() => {
@@ -142,6 +164,16 @@ export default function AlertsPage() {
   const currentPage = Math.min(page, totalPages);
   const paged = visible.slice((currentPage - 1) * size, currentPage * size);
   const selected = visible.find(alert => alert.alertId === selectedId) ?? visible[0] ?? null;
+  // 이동으로 넘어온 알림이 둘째 페이지 이후에 있으면 그 페이지를 보여 줍니다. YOLO 목록은 늦게 도착할 수 있어 찾을 때까지 기다립니다.
+  const focusPending = useRef<string | null>(focus?.alertId ?? null);
+  useEffect(() => {
+    const id = focusPending.current;
+    if (!id) return;
+    const index = visible.findIndex(alert => alert.alertId === id);
+    if (index < 0) return;
+    focusPending.current = null;
+    setPage(Math.floor(index / size) + 1);
+  }, [visible, size]);
   const typeCounts = useMemo(() => {
     const counts = new Map<string, { key: string; label: string; count: number }>();
     scoped.forEach(alert => {
@@ -174,7 +206,13 @@ export default function AlertsPage() {
   const maxHour = Math.max(1, ...hourBuckets.map(item => item.count));
   const count = (key: string) => scoped.filter(alert => alert.severity === key).length;
 
+  // 필터가 실제로 바뀌었을 때만 선택과 페이지를 처음으로 되돌립니다. 이동으로 넘어온 첫 화면의 선택은 지우지 않습니다.
+  // (개발 모드 StrictMode는 효과를 두 번 실행하므로 '첫 실행 건너뛰기' 대신 이전 값과 비교합니다.)
+  const lastFilters = useRef({ severity, terminal, type, search });
   useEffect(() => {
+    const last = lastFilters.current;
+    if (last.severity === severity && last.terminal === terminal && last.type === type && last.search === search) return;
+    lastFilters.current = { severity, terminal, type, search };
     setSelectedId(null);
     setPage(1);
   }, [severity, terminal, type, search]);
@@ -216,7 +254,7 @@ export default function AlertsPage() {
           </select>
           <select value={type} aria-label="알림 유형" onChange={event => setType(event.target.value)}>
             <option value="ALL">모든 유형</option>
-            {Object.entries(TYPES).map(([key, value]) => <option key={key} value={key}>{value.label}</option>)}
+            {Object.entries(TYPES).filter(([, value]) => !value.noFilter).map(([key, value]) => <option key={key} value={key}>{value.filterLabel ?? value.label}</option>)}
           </select>
         </div>
         <div className="alert-chips" role="group" aria-label="중요도">
@@ -241,8 +279,10 @@ export default function AlertsPage() {
               <time dateTime={alert.createdAt}>{timeFormat.format(new Date(alert.createdAt))}</time>
               <i><Icon size={17} /></i>
               <span>
-                <strong>{alert.title}</strong>
-                <small>{[alert.terminal, typeOf(alert).label].filter(Boolean).join(' · ')} · {alert.message}</small>
+                <strong>{alert.title}{alert.yolo && <u className="alert-yolo-status" data-status={alert.yolo.reviewStatus}>{YOLO_STATUS_LABEL[alert.yolo.reviewStatus]}</u>}</strong>
+                {alert.yolo
+                  ? <small>{[alert.terminal, typeOf(alert).label, 'DEMO · CCTV'].filter(Boolean).join(' · ')} · 신뢰도 {Math.round(alert.yolo.confidence * 100)}%</small>
+                  : <small>{[alert.terminal, typeOf(alert).label].filter(Boolean).join(' · ')} · {alert.message}</small>}
               </span>
               <em>{SEVERITY_LABEL[alert.severity] ?? alert.severity}</em>
             </button>;
@@ -269,7 +309,12 @@ export default function AlertsPage() {
       </section>
 
       <aside className="alert-side">
-        {selected && <section className={`alert-pass ${selected.flightNo ? '' : 'is-common'}`} data-severity={selected.severity} aria-label="선택한 알림 상세">
+        {selected?.yolo && <YoloAlertDetail
+          alert={selected}
+          onCctv={() => selected.yolo && openReview(selected.yolo)}
+          onOpenHall={onOpenCongestion}
+          onOpenFacility={onOpenFacilities} />}
+        {selected && !selected.yolo && <section className={`alert-pass ${selected.flightNo ? '' : 'is-common'}`} data-severity={selected.severity} aria-label="선택한 알림 상세">
           <div className="alert-pass__head">
             <small>OPERATION ALERT</small>
             <h2>{selected.title}</h2>

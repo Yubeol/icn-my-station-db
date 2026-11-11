@@ -259,6 +259,29 @@ function slotted(places: Place[], capacity: number, selectedId: string | null) {
   return slots;
 }
 
+/**
+ * 게이트 번호가 속한 구역의 키·이름·핀 위치를 도면에서 구합니다. buildFloorMap의 게이트 구역 계산과 같은 규칙이고,
+ * 시설이 없어도 구할 수 있어 지도 위에 CCTV 알약을 고정으로 놓을 때 씁니다. 도면에 없는 게이트면 null입니다.
+ */
+export function gateZoneAnchor(terminal: MapTerminal, gateNumber: number): { key: string; label: string; pin: Point; normal: Point } | null {
+  const plan = PLANS[terminal];
+  const gate = terminal === 'T2' && gateNumber >= 201 && gateNumber < 225 ? 225 : gateNumber;
+  const section = plan.sections.find(item => gate >= item.first && gate <= item.last);
+  if (!section) return null;
+  const bucket = Math.floor((gate - section.first) / section.bucket);
+  const start = section.first + bucket * section.bucket;
+  const end = Math.min(section.last, start + section.bucket - 1);
+  const span = along(section.points, ((start + end) / 2 - section.first + .5) / (section.last - section.first + 1));
+  const side = section.side * 1.65;
+  const reach = side + (section.rows > 1 ? 3.4 : 2.6);
+  return {
+    key: `G:${section.first}:${bucket}`,
+    label: `${section.name} ${start}~${end}번 게이트`,
+    pin: { x: span.x + span.normalX * reach, z: span.z + span.normalZ * reach },
+    normal: { x: span.normalX, z: span.normalZ },
+  };
+}
+
 /** 위치 문장에서 구역을 찾은 시설만 도면에 넣습니다. 나머지는 목록에만 남습니다. */
 export function buildFloorMap(
   places: Place[],

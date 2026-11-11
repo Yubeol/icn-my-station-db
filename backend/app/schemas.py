@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
@@ -110,6 +110,10 @@ class LiveTopic(StrEnum):
     STATS = "stats"
     ALERTS = "alerts"
     WEATHER = "weather"
+    YOLO_CAMERA = "yolo_camera"
+    YOLO_COUNT = "yolo_count"
+    YOLO_ALERT = "yolo_alert"
+    YOLO_ALERT_REVIEWED = "yolo_alert_reviewed"
 
 
 # ---------- Flight ----------
@@ -312,7 +316,80 @@ class FlightDetail(CamelModel):
 
 class LiveMessage(CamelModel):
     topic: LiveTopic
-    # flights·stats는 DEPARTURE/ARRIVAL, congestion은 T1/T2, alerts·weather는 null
+    # flights·stats는 DEPARTURE/ARRIVAL, congestion·yolo_camera·yolo_count는 T1/T2, 나머지는 null
     scope: str | None
     data: Any
     sent_at: datetime
+
+
+# ---------- YOLO DEMO (docs/yolo-demo-contract.md) ----------
+
+
+class YoloConnState(StrEnum):
+    ONLINE = "ONLINE"
+    OFFLINE = "OFFLINE"
+
+
+class YoloReviewStatus(StrEnum):
+    PENDING = "PENDING"
+    CONFIRMED = "CONFIRMED"
+    FALSE_POSITIVE = "FALSE_POSITIVE"
+
+
+class YoloCamera(CamelModel):
+    camera_id: int
+    zone_id: int
+    name: str
+    is_active: bool
+    camera: YoloConnState
+    worker: YoloConnState
+
+
+class YoloEvent(CamelModel):
+    event_id: int
+    camera_id: int
+    zone_id: int
+    event_type: str
+    confidence: float
+    detected_at: datetime
+    review_status: YoloReviewStatus
+    reviewed_at: datetime | None = None
+
+
+class YoloReviewRequest(CamelModel):
+    # PENDING으로 되돌리는 요청은 받지 않는다.
+    review_status: Literal[YoloReviewStatus.CONFIRMED, YoloReviewStatus.FALSE_POSITIVE]
+
+
+# /ws/live yolo_* 메시지의 data
+
+
+class YoloCameraLive(CamelModel):
+    camera_id: int
+    zone_id: int
+    camera: YoloConnState
+    worker: YoloConnState
+
+
+class YoloCountLive(CamelModel):
+    camera_id: int
+    zone_id: int
+    person_count: int
+    crowd_level: CongestionLevel
+    measured_at: datetime
+
+
+class YoloAlertLive(CamelModel):
+    event_id: int
+    camera_id: int
+    zone_id: int
+    event_type: str
+    confidence: float
+    detected_at: datetime
+    review_status: YoloReviewStatus = YoloReviewStatus.PENDING
+
+
+class YoloAlertReviewedLive(CamelModel):
+    event_id: int
+    review_status: YoloReviewStatus
+    reviewed_at: datetime

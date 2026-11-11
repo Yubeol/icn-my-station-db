@@ -1,0 +1,3 @@
+# tools/yolo 전용 의존성. backend 의존성(pyproject, uv.lock)과 분리한다.
+opencv-python>=4.9
+websockets>=13

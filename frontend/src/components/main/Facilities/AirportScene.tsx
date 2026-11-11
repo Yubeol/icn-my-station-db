@@ -15,6 +15,8 @@ type Props = {
   activeZone?: string | null;
   selectedId: string | null;
   onPickZone?: (key: string) => void;
+  /** 지도 위에 띄우는 CCTV 알약. x·z는 도면(PLANS) 좌표이고, 호출하는 쪽에서 useMemo로 고정해 넘깁니다. */
+  cctvSpots?: { key: string; label: string; x: number; z: number; onOpen: () => void }[];
   onPickPlace: (id: string, zoneKey: string) => void;
 };
 type Overlay = { key: string; point: THREE.Vector3; area?: string };
@@ -669,7 +671,9 @@ function disposeTree(root: THREE.Object3D) {
   });
 }
 
-export default function AirportScene({ terminal, floor, map, activeZone = null, selectedId, onPickZone, onPickPlace }: Props) {
+const NO_SPOTS: NonNullable<Props['cctvSpots']> = [];
+
+export default function AirportScene({ terminal, floor, map, activeZone = null, selectedId, onPickZone, onPickPlace, cctvSpots = NO_SPOTS }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const unitGroupRef = useRef<THREE.Group | null>(null);
   const overlayRefs = useRef(new Map<string, HTMLElement>());
@@ -960,8 +964,12 @@ export default function AirportScene({ terminal, floor, map, activeZone = null, 
     const marker = picked
       ? [{ key: 'marker', point: new THREE.Vector3(picked.x, UNIT_BASE + UNIT_HEIGHT * 3.4 + 2.2, picked.z + shiftZ) }]
       : [];
-    overlaysRef.current = [...zones, ...labels, ...marker];
-  }, [map, activeZone, selectedId, terminal, layout]);
+    const spots = cctvSpots.map(spot => ({
+      key: `cctv:${spot.key}`,
+      point: new THREE.Vector3(spot.x, UNIT_BASE + .3, spot.z + shiftZ),
+    }));
+    overlaysRef.current = [...zones, ...labels, ...spots, ...marker];
+  }, [map, activeZone, selectedId, terminal, layout, cctvSpots]);
 
   const picked = map.units.find(unit => unit.place.facilityId === selectedId);
 
@@ -992,6 +1000,19 @@ export default function AirportScene({ terminal, floor, map, activeZone = null, 
         onBlur={hidePinTip}
         onClick={() => onPickZone?.(zone.key)}>
         {zone.places.length}
+      </button>)}
+      {cctvSpots.map(spot => <button
+        type="button"
+        key={spot.key}
+        ref={element => {
+          if (element) overlayRefs.current.set(`cctv:${spot.key}`, element);
+          else overlayRefs.current.delete(`cctv:${spot.key}`);
+        }}
+        className="airport-cctv"
+        aria-label={`${spot.label} CCTV 보기 (DEMO 카메라)`}
+        title={`${spot.label} CCTV (DEMO 카메라)`}
+        onClick={spot.onOpen}>
+        <i aria-hidden="true" />CCTV<b>DEMO</b>
       </button>)}
       {picked && <span
         className="airport-marker"

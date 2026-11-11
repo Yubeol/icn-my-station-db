@@ -1,18 +1,5 @@
--- ICN My Station | PostgreSQL 14+ schema aligned to API and RDS design (2026-11-03).
--- Based on the user-provided consolidated schema and API alignment migration 002.
--- Confirmed RDS column types/nullability (2026-11-03):
--- airport_zones: hall_number integer NULL, gate_id text NULL, parent_zone_id bigint NULL
--- airport_facilities: facility_type text NULL, terminal_id bigint NULL,
---                     source_facility_key text NULL.
--- This is a reference bootstrap, not an exhaustive RDS pg_dump comparison.
--- NEW EMPTY DATABASE ONLY. Do not execute this file on the existing shared RDS.
--- For an existing database, create and review a separate ALTER migration.
--- Use this file alone, NOT together with migrations/001_initial_schema.sql.
--- Connect to an empty airport_dashboard database as its owner.
--- Historical README/ERD may still show data_origin/visibility_m; this file uses final names.
--- No API credentials or fabricated operational seed data.
--- Business uniqueness is scoped by source so api, yolo and demo can coexist.
--- Source fields/units and mapping assumptions are documented in README.md.
+
+
 BEGIN;
 SET LOCAL search_path TO public;
 SET TIME ZONE 'Asia/Seoul';
@@ -439,5 +426,62 @@ COMMENT ON COLUMN public.airport_facilities.products_description IS 'Source desc
 COMMENT ON COLUMN public.airport_facilities.arrival_departure_area IS 'Source label for arrival/departure area. Preserve original text until mapping is agreed.';
 COMMENT ON COLUMN public.airport_facilities.phone_number IS 'Phone number as text, preserving leading zeros, country code and separators.';
 COMMENT ON COLUMN public.weather_observations.weather_phenomena IS 'Source weather phenomenon code/text. Preserve original representation until mapping is agreed.';
+
+-- YOLO extension (2026-11-11): camera metadata, 30-second people aggregates,
+-- and detected event review workflow. No frames or bounding boxes are stored.
+-- Independent of Jenkins collection runs; do not mix camera people counts with
+-- public-API waiting_passenger_count without explicit mapping and provenance.
+
+CREATE TABLE public.demo_yolo_cameras (
+    camera_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    zone_id bigint NOT NULL REFERENCES public.airport_zones (zone_id),
+    name text NOT NULL UNIQUE CHECK (btrim(name) <> ''),
+    is_active boolean NOT NULL DEFAULT true,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX demo_yolo_cameras_zone_idx
+    ON public.demo_yolo_cameras (zone_id);
+
+CREATE TABLE public.demo_yolo_counts (
+    id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    camera_id bigint NOT NULL REFERENCES public.demo_yolo_cameras (camera_id),
+    bucket_start timestamptz NOT NULL,
+    person_avg numeric(10,2) NOT NULL CHECK (person_avg >= 0),
+    person_max integer NOT NULL CHECK (person_max >= 0),
+    sample_count integer NOT NULL CHECK (sample_count > 0),
+    crowd_level text CHECK (crowd_level IN ('LOW', 'MID', 'HIGH')),
+    model_version text NOT NULL CHECK (btrim(model_version) <> ''),
+    CONSTRAINT demo_yolo_counts_avg_max_ck CHECK (person_avg <= person_max),
+    CONSTRAINT demo_yolo_counts_camera_bucket_uq UNIQUE (camera_id, bucket_start)
+);
+COMMENT ON TABLE public.demo_yolo_counts IS
+    'Worker 30-second buckets of camera-detected people. Estimates, not official airport waiting counts. INSERT ON CONFLICT DO NOTHING.';
+COMMENT ON COLUMN public.demo_yolo_counts.crowd_level IS
+    'LOW/MID/HIGH or NULL when no reliable classification; threshold logic belongs to the worker/backend contract.';
+CREATE INDEX demo_yolo_counts_bucket_idx
+    ON public.demo_yolo_counts (bucket_start DESC);
+
+CREATE TABLE public.demo_yolo_events (
+    id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    camera_id bigint NOT NULL REFERENCES public.demo_yolo_cameras (camera_id),
+    event_type text NOT NULL CHECK (btrim(event_type) <> ''),
+    confidence numeric(5,4) NOT NULL CHECK (confidence BETWEEN 0 AND 1),
+    detected_at timestamptz NOT NULL,
+    model_version text NOT NULL CHECK (btrim(model_version) <> ''),
+    review_status text NOT NULL DEFAULT 'PENDING'
+        CHECK (review_status IN ('PENDING', 'CONFIRMED', 'FALSE_POSITIVE')),
+    reviewed_at timestamptz,
+    dedupe_key text NOT NULL UNIQUE CHECK (btrim(dedupe_key) <> ''),
+    CONSTRAINT demo_yolo_events_review_time_ck CHECK (
+        (review_status = 'PENDING' AND reviewed_at IS NULL)
+        OR (review_status <> 'PENDING' AND reviewed_at IS NOT NULL)
+    )
+);
+COMMENT ON TABLE public.demo_yolo_events IS
+    'YOLO inference events. No image/frame/bounding-box payloads. Review only updates review_status and reviewed_at.';
+CREATE INDEX demo_yolo_events_camera_detected_idx
+    ON public.demo_yolo_events (camera_id, detected_at DESC);
+CREATE INDEX demo_yolo_events_review_detected_idx
+    ON public.demo_yolo_events (review_status, detected_at DESC);
 
 COMMIT;

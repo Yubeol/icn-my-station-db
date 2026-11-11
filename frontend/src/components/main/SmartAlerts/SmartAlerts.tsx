@@ -2,6 +2,7 @@
 import { useMemo } from "react";
 import { useLiveUpdates } from "../../../hooks/useLiveUpdates";
 import Skeleton from "../../layout/Skeleton";
+import { useYoloAlertFeed } from "../../../hooks/useYoloAlertFeed";
 import "./SmartAlerts.css";
 
 type Terminal = "T1" | "T2";
@@ -9,6 +10,8 @@ type JsonObject = Record<string, unknown>;
 
 interface Props {
   terminal: Terminal;
+  /** YOLO 사건을 누르면 호출됩니다. 스마트 알림 화면으로 이동해 그 사건을 선택하는 데 씁니다. */
+  onOpenAlert?: (alertId: string) => void;
 }
 
 interface AlertItem {
@@ -20,6 +23,8 @@ interface AlertItem {
   type: string | null;
   severity: string | null;
   isImportant: boolean;
+  /** YOLO 사건이면 true. 누를 수 있고, 스마트 알림 화면과 같은 목록에서 합쳐 온 항목입니다. */
+  isYolo?: boolean;
 }
 
 const MAX_ITEMS = 3;
@@ -212,14 +217,42 @@ function getTone(alert: AlertItem): string {
   return "normal";
 }
 
-export default function SmartAlerts({ terminal }: Props) {
+export default function SmartAlerts({ terminal, onOpenAlert }: Props) {
   const { data, loading, error } = useLiveUpdates<AlertItem[]>({
     topic: "alerts",
     scope: null,
     fetcher: getAlerts,
     intervalMs: 0,
   });
+  // 위젯에는 판정 대기(PENDING) 중인 YOLO 사건 중 최신 1건만 보여 줍니다. 판정된 사건은 숨기고, 나머지 칸은 기존 알림입니다.
+  // (스마트 알림 페이지는 판정된 사건까지 모두 보여 줍니다.) 새 알림·판정은 실시간으로 반영됩니다.
+  const yoloAlerts = useYoloAlertFeed();
   const alerts = data ?? [];
+
+  const yoloLatest = useMemo<AlertItem | null>(() => {
+    const pending = yoloAlerts
+      .filter((alert) => alert.yolo?.reviewStatus === "PENDING")
+      .filter((alert) => {
+        // 터미널 정보가 없으면 공항 공통 알림으로 취급
+        if (!alert.terminal) return true;
+        return alert.terminal.trim().toUpperCase() === terminal;
+      })
+      .sort((a, b) => getTimeValue(b.createdAt) - getTimeValue(a.createdAt))[0];
+
+    return pending
+      ? {
+          id: pending.alertId,
+          title: pending.title,
+          message: pending.message,
+          occurredAt: pending.createdAt,
+          terminal: pending.terminal ?? null,
+          type: pending.type,
+          severity: pending.severity,
+          isImportant: true,
+          isYolo: true,
+        }
+      : null;
+  }, [yoloAlerts, terminal]);
 
   const visibleAlerts = useMemo(() => {
     const scoped = alerts.filter((alert) => {
@@ -266,7 +299,10 @@ export default function SmartAlerts({ terminal }: Props) {
         return true;
       });
   }, [alerts, terminal]);
-  const shownAlerts = visibleAlerts.slice(0, MAX_ITEMS);
+  // 판정 대기 YOLO 사건이 있으면 맨 위 한 칸, 나머지 칸은 기존 알림입니다.
+  const shownAlerts = yoloLatest
+    ? [yoloLatest, ...visibleAlerts.slice(0, MAX_ITEMS - 1)]
+    : visibleAlerts.slice(0, MAX_ITEMS);
 
   if (loading && !data) {
     return (
@@ -285,7 +321,7 @@ export default function SmartAlerts({ terminal }: Props) {
     );
   }
 
-  if (visibleAlerts.length === 0) {
+  if (visibleAlerts.length === 0 && !yoloLatest) {
     return (
       <div className="smart-alerts__state">
         알림 데이터 없음
@@ -307,7 +343,21 @@ export default function SmartAlerts({ terminal }: Props) {
           return (
             <article
               key={alert.id}
-              className={`smart-alerts__item smart-alerts__item--${tone}`}
+              className={`smart-alerts__item smart-alerts__item--${tone}${alert.isYolo && onOpenAlert ? " smart-alerts__item--link" : ""}`}
+              {...(alert.isYolo && onOpenAlert
+                ? {
+                    role: "button",
+                    tabIndex: 0,
+                    title: "스마트 알림에서 이 사건 보기",
+                    onClick: () => onOpenAlert(alert.id),
+                    onKeyDown: (event: React.KeyboardEvent) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onOpenAlert(alert.id);
+                      }
+                    },
+                  }
+                : {})}
             >
               <span
                 className="smart-alerts__indicator"
