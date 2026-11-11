@@ -113,8 +113,11 @@ async def _save_buckets(buckets: list[YoloCountBucket]) -> None:
 
 
 def _parse_event(raw: Any, camera_id: int) -> tuple[str, int | None, float, datetime] | None:
-    """워커 event를 검사한다. HELP_GESTURE가 아니거나 값이 이상하면 None."""
-    if not isinstance(raw, dict) or raw.get("eventType") != rules.YOLO_EVENT_TYPE:
+    """워커 event를 검사한다. 저장 대상 eventType(rules.YOLO_EVENT_TYPES)이 아니거나 값이 이상하면 None."""
+    if not isinstance(raw, dict):
+        return None
+    event_type = raw.get("eventType")
+    if event_type not in rules.YOLO_EVENT_TYPES:
         return None
     confidence = raw.get("confidence")
     if isinstance(confidence, bool) or not isinstance(confidence, int | float):
@@ -135,7 +138,7 @@ def _parse_event(raw: Any, camera_id: int) -> tuple[str, int | None, float, date
         if detected_at.tzinfo is None:
             detected_at = detected_at.replace(tzinfo=KST)
         detected_at = detected_at.astimezone(KST)
-    return rules.YOLO_EVENT_TYPE, track_id, round(float(confidence), 4), detected_at
+    return event_type, track_id, round(float(confidence), 4), detected_at
 
 
 async def _handle_event(state: CameraState, raw: Any) -> None:

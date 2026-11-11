@@ -138,10 +138,12 @@ def insert_yolo_count(row: dict[str, Any]) -> bool:
 
 
 def insert_yolo_event(row: dict[str, Any]) -> int | None:
-    """제스처 이벤트 1건을 넣고 id를 돌려준다. 이미 있는 dedupe_key면 None. event_type은 HELP_GESTURE만 저장한다."""
+    """제스처 이벤트 1건을 넣고 id를 돌려준다. 이미 있는 dedupe_key면 None. event_type은 HELP_GESTURE·FINGER_GUN만 저장한다."""
     params = _pick(row, _YOLO_EVENT_KEYS, "demo_yolo_events")
-    if params["event_type"] != rules.YOLO_EVENT_TYPE:
-        raise ValueError(f"event_type은 {rules.YOLO_EVENT_TYPE}만 저장합니다: {params['event_type']}")
+    if params["event_type"] not in rules.YOLO_EVENT_TYPES:
+        raise ValueError(
+            f"event_type은 {rules.YOLO_EVENT_TYPES} 중 하나만 저장합니다: {params['event_type']}"
+        )
     with _connect() as conn:
         with conn.cursor() as cur:
             cur.execute(INSERT_YOLO_EVENT_SQL, params)

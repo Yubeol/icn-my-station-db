@@ -64,8 +64,10 @@ def save_event(
     dedupe_key: str,
 ) -> YoloEvent | None:
     global _next_id
-    if event_type != rules.YOLO_EVENT_TYPE:
-        raise ValueError(f"event_type은 {rules.YOLO_EVENT_TYPE}만 저장합니다: {event_type}")
+    if event_type not in rules.YOLO_EVENT_TYPES:
+        raise ValueError(
+            f"event_type은 {rules.YOLO_EVENT_TYPES} 중 하나만 저장합니다: {event_type}"
+        )
     with _lock:
         if dedupe_key in _dedupe_keys:
             return None

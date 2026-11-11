@@ -523,3 +523,85 @@ def test_yolo_results_never_imports_cv_or_stores_frames():
     for forbidden in ("cv2", "torch", "ultralytics", "latest_frame", "send_bytes"):
         assert forbidden not in source
     assert rules.YOLO_EVENT_TYPE == "HELP_GESTURE"
+
+
+# ----- FINGER_GUN (계약 v0.4) -----
+
+
+def finger_gun(track_id=7, detected_at="2026-11-12T14:03:05.120+09:00", confidence=0.83) -> dict:
+    return {**gesture(track_id, detected_at, confidence), "eventType": "FINGER_GUN"}
+
+
+def test_finger_gun_event_saved_and_alert_published():
+    messages = run_result(result(events=[finger_gun()]))
+    (event,) = yolo_store.list_events(None, None, 10)
+    assert (event.camera_id, event.event_type) == (1, "FINGER_GUN")
+    assert event.review_status == YoloReviewStatus.PENDING
+    (message,) = [m for m in messages if m.topic == "yolo_alert"]
+    assert message.scope is None
+    assert message.data["eventType"] == "FINGER_GUN"
+    assert message.data["eventId"] == event.event_id
+    assert message.data["reviewStatus"] == "PENDING"
+
+
+def test_help_gesture_still_works_alongside_finger_gun():
+    run_result(result(events=[gesture(track_id=1), finger_gun(track_id=2)]))
+    types = sorted(e.event_type for e in yolo_store.list_events(None, None, 10))
+    assert types == ["FINGER_GUN", "HELP_GESTURE"]
+
+
+def test_dedupe_key_includes_event_type():
+    detected = at(5)
+    gun = yolo_results.dedupe_key(1, "FINGER_GUN", 7, detected)
+    help_ = yolo_results.dedupe_key(1, "HELP_GESTURE", 7, detected)
+    assert gun.startswith("1:FINGER_GUN:7:")
+    assert gun != help_  # 같은 trackId·시각이어도 이벤트 종류가 다르면 서로 건너뛰지 않는다
+
+
+def test_same_track_and_time_with_two_event_types_are_both_saved():
+    run_result(result(events=[gesture(), finger_gun()]))
+    assert len(yolo_store.list_events(None, None, 10)) == 2
+
+
+def test_finger_gun_is_deduped_like_help_gesture():
+    first = run_result(result(events=[finger_gun(detected_at="2026-11-12T14:03:05.000+09:00")]))
+    second = run_result(result(events=[finger_gun(detected_at="2026-11-12T14:03:08.900+09:00")]))
+    assert len(yolo_store.list_events(None, None, 10)) == 1
+    assert len([m for m in first if m.topic == "yolo_alert"]) == 1
+    assert [m for m in second if m.topic == "yolo_alert"] == []
+    run_result(result(events=[finger_gun(detected_at="2026-11-12T14:03:15+09:00")]))
+    assert len(yolo_store.list_events(None, None, 10)) == 2  # 다음 10초 구간은 새 이벤트
+
+
+@pytest.mark.parametrize("event_type", ["FIRE", "KNIFE", "finger_gun", "help_gesture", "", None, 3])
+def test_other_event_types_are_still_ignored(event_type):
+    messages = run_result(result(events=[{**finger_gun(), "eventType": event_type}]))
+    assert yolo_store.list_events(None, None, 10) == []
+    assert [m for m in messages if m.topic == "yolo_alert"] == []
+
+
+def test_finger_gun_review_works_like_help_gesture():
+    run_result(result(events=[finger_gun()]))
+    (event,) = yolo_store.list_events(None, None, 10)
+    done = yolo_store.review_event(event.event_id, YoloReviewStatus.CONFIRMED, at(30))
+    assert (done.event_type, done.review_status) == ("FINGER_GUN", YoloReviewStatus.CONFIRMED)
+
+
+def test_mock_store_accepts_both_types_and_rejects_others():
+    camera = yolo_store.get_camera(1)
+    for index, event_type in enumerate(("HELP_GESTURE", "FINGER_GUN")):
+        assert (
+            yolo_store.save_event(camera, event_type, 0.8, at(index), "m", f"t{index}") is not None
+        )
+    with pytest.raises(ValueError):
+        yolo_store.save_event(camera, "FIRE", 0.8, at(9), "m", "t9")
+
+
+@pytest.mark.parametrize("event_type", ["HELP_GESTURE", "FINGER_GUN"])
+def test_db_write_accepts_both_event_types(fake_db, event_type):
+    log, _ = fake_db
+    assert db_write.insert_yolo_event({**EVENT_ROW, "event_type": event_type}) == 42
+    ((sql, params),) = log
+    assert sql.startswith("INSERT INTO demo_yolo_events")
+    assert params["event_type"] == event_type
+    assert "ON CONFLICT (dedupe_key) DO NOTHING" in sql

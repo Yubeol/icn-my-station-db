@@ -73,6 +73,8 @@ class CameraState:
         self.frame_seq = 0  # 받은 프레임 번호(연결이 바뀌어도 계속 증가). frameId와 별개
         self.sent_seq = 0  # 워커에 마지막으로 보낸 frame_seq
         self.frame_at = 0.0
+        # 워커에 마지막으로 프레임을 보낸 시각. 카메라가 여럿일 때 번갈아 보내는 기준이다.
+        self.last_sent = 0.0
         self.last_result: dict[str, Any] | None = None
         self.last_person_count: int | None = None
         self.last_measured_at: datetime | None = None
@@ -244,18 +246,23 @@ class YoloHub:
             return None
         if now - self._last_send < 1 / rules.YOLO_WORKER_MAX_FPS:
             return None
+        # 새 프레임이 있는 카메라 중 워커에 가장 오래 못 보낸 카메라를 고른다(번갈아 보내기).
+        # 가장 최근 프레임만 보면 프레임을 더 자주 보내는 카메라가 계속 뽑혀 다른 카메라가 굶을 수 있다.
         best: CameraState | None = None
+        best_key: tuple[float, float] = (0.0, 0.0)
         for state in self.cameras.values():
             if not state.online or state.latest_frame is None:
                 continue
             if state.frame_seq == state.sent_seq:
                 continue
-            if best is None or state.frame_at > best.frame_at:
-                best = state
+            key = (state.last_sent, -state.frame_at)  # 오래 못 보낸 순, 같으면 최근 프레임 순
+            if best is None or key < best_key:
+                best, best_key = state, key
         return best
 
     def mark_sent(self, state: CameraState, now: float) -> None:
         state.sent_seq = state.frame_seq
+        state.last_sent = now
         self._inflight = True
         self._sent_at = self._last_send = now
 

@@ -307,3 +307,108 @@ def test_log_filter_masks_args_and_keeps_record():
     assert "SECRET" not in record.getMessage()
     assert "token=***" in record.getMessage()
     assert "cameraId=1" in record.getMessage()
+
+
+# ----- finger_gun 박스 전달, 카메라 여러 대일 때 번갈아 보내기 (계약 v0.4) -----
+
+
+def test_finger_gun_detection_is_relayed_to_viewer_unchanged(yolo):
+    detections = [
+        {"cls": "person", "conf": 0.9, "box": [0.1, 0.1, 0.5, 0.9], "trackId": 1},
+        {"cls": "finger_gun", "conf": 0.77, "box": [0.4, 0.3, 0.6, 0.5], "trackId": 1},
+    ]
+    with (
+        yolo.websocket_connect(camera_url()) as camera,
+        yolo.websocket_connect(worker_url()) as worker,
+    ):
+        camera.receive_json()
+        with yolo.websocket_connect("/ws/yolo/view?cameraId=1") as view:
+            view.receive_json()  # status
+            camera.send_bytes(make_frame(3))
+            worker.receive_bytes()
+            worker.send_text(
+                json.dumps(
+                    {
+                        "type": "result",
+                        "cameraId": 1,
+                        "frameId": 3,
+                        "personCount": 1,
+                        "detections": detections,
+                        "events": [],
+                    }
+                )
+            )
+            result = read_until(view, lambda v: isinstance(v, dict) and v["type"] == "result")
+    assert result["detections"] == detections
+
+
+def _two_cameras():
+    from app.services.yolo_types import YoloCameraInfo
+
+    hub.reset()
+    first = hub.state_for(YoloCameraInfo(1, 4, "cam-a", True, "T1"))
+    second = hub.state_for(YoloCameraInfo(2, 5, "cam-b", True, "T1"))
+    first.camera_ws = second.camera_ws = FakeWs()
+    hub.worker_ws = FakeWs()
+    return first, second
+
+
+def _dispatch(now: float):
+    """pick → 보내기 → 결과 수신(비행 중 표시 해제)까지 한 번 돌린다. 보낸 카메라 번호를 돌려준다."""
+    picked = hub.pick_for_worker(now)
+    if picked is None:
+        return None
+    hub.mark_sent(picked, now)
+    hub._inflight = False
+    return picked.camera_id
+
+
+def test_two_cameras_are_served_alternately_even_if_one_is_always_newer():
+    first, second = _two_cameras()
+    served = []
+    now = 100.0
+    for i in range(1, 9):
+        # 두 카메라 모두 새 프레임을 보내고, 카메라 1의 프레임이 항상 더 최근이다(예전 방식이면 1번만 뽑힌다).
+        hub.on_frame(second, make_frame(i, camera_id=2))
+        hub.on_frame(first, make_frame(i, camera_id=1))
+        served.append(_dispatch(now))
+        now += 0.4
+    assert served == [1, 2, 1, 2, 1, 2, 1, 2]
+    hub.reset()
+
+
+def test_camera_sending_more_often_does_not_starve_the_other():
+    first, second = _two_cameras()
+    served = []
+    now = 100.0
+    for i in range(1, 13):
+        hub.on_frame(first, make_frame(i, camera_id=1))  # 카메라 1은 매번 새 프레임
+        if i % 3 == 0:
+            hub.on_frame(second, make_frame(i, camera_id=2))  # 카메라 2는 세 번에 한 번
+        served.append(_dispatch(now))
+        now += 0.4
+    # 카메라 2는 새 프레임이 생긴 바로 그 차례에 뽑힌다.
+    assert [served[i - 1] for i in (3, 6, 9, 12)] == [2, 2, 2, 2]
+    assert served.count(2) == 4
+    hub.reset()
+
+
+def test_camera_without_new_frame_does_not_block_the_other():
+    first, second = _two_cameras()
+    hub.on_frame(first, make_frame(1, camera_id=1))
+    hub.on_frame(second, make_frame(1, camera_id=2))
+    assert _dispatch(100.0) in (1, 2)
+    assert _dispatch(100.4) in (1, 2)
+    assert _dispatch(100.8) is None  # 둘 다 새 프레임이 없으면 보내지 않는다
+    hub.on_frame(second, make_frame(2, camera_id=2))
+    assert _dispatch(101.2) == 2  # 한쪽만 새 프레임이 있으면 그쪽을 보낸다
+    hub.reset()
+
+
+def test_offline_camera_is_skipped():
+    first, second = _two_cameras()
+    hub.on_frame(first, make_frame(1, camera_id=1))
+    hub.on_frame(second, make_frame(1, camera_id=2))
+    second.camera_ws = None  # 카메라 2 연결 끊김
+    assert _dispatch(100.0) == 1
+    hub.reset()
