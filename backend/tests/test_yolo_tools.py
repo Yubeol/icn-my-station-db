@@ -170,3 +170,40 @@ def test_list_cameras_when_none_open(monkeypatch):
     lines: list[str] = []
     assert fake_camera.list_cameras(lines.append) == []
     assert "열리는 웹캠이 없습니다" in lines[-1]
+
+
+# ----- fake_worker --event-type (계약 v0.4) -----
+
+
+@pytest.mark.parametrize(
+    ("event_type", "box_cls"), [("HELP_GESTURE", "help_gesture"), ("FINGER_GUN", "finger_gun")]
+)
+def test_fake_worker_gesture_event_type_and_box_class_match(event_type, box_cls):
+    header = {"cameraId": 1, "frameId": 1}
+    result = fake_worker.make_result(header, random.Random(1), True, event_type=event_type)
+    (event,) = result["events"]
+    assert event["eventType"] == event_type
+    gesture = [d for d in result["detections"] if d["cls"] in ("help_gesture", "finger_gun")]
+    assert [d["cls"] for d in gesture] == [box_cls]  # 박스 cls는 이벤트 종류와 맞는 것 하나만
+    assert gesture[0]["trackId"] == event["trackId"]
+
+
+def test_fake_worker_default_event_type_is_help_gesture():
+    result = fake_worker.make_result({"cameraId": 1, "frameId": 1}, random.Random(2), True)
+    assert result["events"][0]["eventType"] == "HELP_GESTURE"
+    assert any(d["cls"] == "help_gesture" for d in result["detections"])
+
+
+def test_fake_worker_no_gesture_has_no_event_or_gesture_box():
+    result = fake_worker.make_result(
+        {"cameraId": 1, "frameId": 1}, random.Random(3), False, event_type="FINGER_GUN"
+    )
+    assert result["events"] == []
+    assert not any(d["cls"] in ("help_gesture", "finger_gun") for d in result["detections"])
+
+
+def test_fake_worker_event_type_option():
+    assert fake_worker.parse_args([]).event_type == "HELP_GESTURE"
+    assert fake_worker.parse_args(["--event-type", "FINGER_GUN"]).event_type == "FINGER_GUN"
+    with pytest.raises(SystemExit):
+        fake_worker.parse_args(["--event-type", "FIRE"])
