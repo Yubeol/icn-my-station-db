@@ -8,7 +8,7 @@ export type LiveHall = {
   level: string;
   checking: boolean;
   /** 이 출국장을 비추는 DEMO 카메라의 인원 상태. 카메라가 없는 출국장은 비워 둡니다. */
-  yolo?: { tone: 'LOW' | 'MID' | 'HIGH' | 'OFF'; text: string };
+  yolo?: { tone: 'LOW' | 'MID' | 'HIGH' | 'OFF'; text: string; onCctv?: () => void };
 };
 
 type Terminal = 'T1' | 'T2';
@@ -69,7 +69,8 @@ function HallGate({ hall, index, total, terminal, height, selected, onSelect }: 
   const lanePath = `M${left} ${WALL_FLOOR} L${right} ${WALL_FLOOR} L${toFloorX(right, height)} ${height} L${toFloorX(left, height)} ${height} Z`;
   const figures = hall.checking ? 0 : Math.min(MAX_FIGURES, Math.ceil(hall.count / PEOPLE_PER_FIGURE[terminal]));
 
-  return <g
+  return <>
+  <g
     className={`cong-hall${selected ? ' is-selected' : ''}${level === 'HIGH' ? ' is-high' : ''}`}
     role="button"
     tabIndex={0}
@@ -110,7 +111,23 @@ function HallGate({ hall, index, total, terminal, height, selected, onSelect }: 
         <circle cy="-27.5" r="3.9" fill="#eef5fc" />
       </g>;
     })}
-  </g>;
+  </g>
+  {hall.yolo?.onCctv && <g
+    className="cong-hall__cctv"
+    role="button"
+    tabIndex={0}
+    aria-label={`${hall.name} CCTV 보기 (DEMO 카메라)`}
+    onClick={hall.yolo.onCctv}
+    onKeyDown={event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        hall.yolo?.onCctv?.();
+      }
+    }}>
+    <rect x={gate.x - 30} y={top - 30} width="60" height="22" rx="11" />
+    <text x={gate.x} y={top - 15} textAnchor="middle">CCTV</text>
+  </g>}
+  </>;
 }
 
 /** 해 질 무렵 출국장 입구 앞 대기 공간을 실내에서 바라본 장면입니다. */

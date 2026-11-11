@@ -10,6 +10,7 @@ import { useLiveUpdates } from '../hooks/useLiveUpdates';
 import { useYolo } from '../hooks/useYoloLive';
 import { cameraIdForHall } from '../api/yolo';
 import YoloHallBadge from '../components/yolo/YoloHallBadge';
+import CctvViewer from '../components/yolo/CctvViewer';
 import { describeYolo } from '../components/yolo/yoloStatus';
 import Skeleton from '../components/layout/Skeleton';
 import './CongestionPage.css';
@@ -34,6 +35,7 @@ function changeText(rate: number | null) {
 export default function CongestionPage() {
   const [terminal, setTerminal] = useState<Terminal>('T1');
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [cctv, setCctv] = useState<{ cameraId: number; title: string } | null>(null);
   const { data, loading, error, connected } = useLiveUpdates<Congestion>({
     topic: 'congestion',
     scope: terminal,
@@ -55,6 +57,14 @@ export default function CongestionPage() {
     return cameraId === null ? undefined : describeYolo(yolo, cameraId);
   }, [terminal, yolo]);
 
+  // 라이브맵 게이트에는 인원 상태와 함께 CCTV 열기 동작을 붙입니다.
+  const withCctv = useCallback((hallId: number, hallName: string) => {
+    const info = yoloOf(hallId);
+    const cameraId = cameraIdForHall(terminal, hallId);
+    if (!info || cameraId === null) return undefined;
+    return { ...info, onCctv: () => setCctv({ cameraId, title: `${terminal} ${hallName}` }) };
+  }, [terminal, yoloOf]);
+
   const halls: HallRow[] = useMemo(() => data?.halls ?? [], [data]);
   const liveHalls: LiveHall[] = useMemo(() => halls.map(hall => ({
     id: hall.hallId,
@@ -62,8 +72,8 @@ export default function CongestionPage() {
     count: hall.waitingCount,
     level: hall.level,
     checking: isHallChecking(hall),
-    yolo: yoloOf(hall.hallId),
-  })), [halls, yoloOf]);
+    yolo: withCctv(hall.hallId, hall.hallName),
+  })), [halls, withCctv]);
   const active = halls.filter(hall => !isHallChecking(hall));
   const total = active.reduce((sum, hall) => sum + hall.waitingCount, 0);
   const peak = Math.max(1, ...active.map(hall => hall.waitingCount));
@@ -166,10 +176,12 @@ export default function CongestionPage() {
                 <small>{checking ? '' : `${LEVEL_LABEL[hall.level] ?? hall.level} · ${changeText(hall.changeRate)}`}{hall.source === 'yolo' ? ' · YOLO' : ''}</small>
                 {yoloInfo && <YoloHallBadge tone={yoloInfo.tone} text={yoloInfo.text} />}
               </button>
+              {yoloInfo && <button type="button" className="cong-rank__cctv" onClick={() => setCctv({ cameraId: cameraIdForHall(terminal, hall.hallId) ?? 0, title: `${terminal} ${hall.hallName}` })}>CCTV</button>}
             </li>;
           })}
         </ol>
       </section>
     </div>}
+    {cctv && <CctvViewer cameraId={cctv.cameraId} title={cctv.title} onClose={() => setCctv(null)} />}
   </main>;
 }
