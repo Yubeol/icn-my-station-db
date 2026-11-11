@@ -4,6 +4,8 @@
 *.env
 *.env.*
 .envrc
+# 값이 없는 예시 파일은 커밋한다
+!.env.example
 secrets/
 .secrets/
 credentials/
