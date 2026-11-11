@@ -7,9 +7,14 @@ from fastapi.responses import JSONResponse
 from app import ws, ws_yolo
 from app.core.config import settings
 from app.core.db import close_pool
-from app.core.errors import FlightNotFoundError
+from app.core.errors import (
+    FlightNotFoundError,
+    YoloEventNotFoundError,
+    YoloEventReviewedError,
+    YoloWriteDisabledError,
+)
 from app.core.log_filter import install_token_mask
-from app.routers import alerts, congestion, dashboard, facilities, flights, stats, weather
+from app.routers import alerts, congestion, dashboard, facilities, flights, stats, weather, yolo
 from app.services import yolo_results
 from app.services.alert_worker import start_alert_worker
 from app.services.yolo_tick import start_yolo_tick
@@ -45,7 +50,22 @@ def flight_not_found_handler(_: Request, exc: FlightNotFoundError):
     return JSONResponse(status_code=404, content={"detail": str(exc)})
 
 
-for module in (dashboard, flights, congestion, stats, alerts, weather, facilities):
+@app.exception_handler(YoloEventNotFoundError)
+def yolo_event_not_found_handler(_: Request, exc: YoloEventNotFoundError):
+    return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+
+@app.exception_handler(YoloEventReviewedError)
+def yolo_event_reviewed_handler(_: Request, exc: YoloEventReviewedError):
+    return JSONResponse(status_code=409, content={"detail": str(exc)})
+
+
+@app.exception_handler(YoloWriteDisabledError)
+def yolo_write_disabled_handler(_: Request, exc: YoloWriteDisabledError):
+    return JSONResponse(status_code=503, content={"detail": str(exc)})
+
+
+for module in (dashboard, flights, congestion, stats, alerts, weather, facilities, yolo):
     app.include_router(module.router, prefix=API_PREFIX)
 app.include_router(ws.router)
 app.include_router(ws_yolo.router)

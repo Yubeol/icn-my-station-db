@@ -240,4 +240,7 @@ def test_openapi_has_all_rest_paths(client):
         f"{API}/weather",
         f"{API}/weather/history",
         f"{API}/facilities",
+        f"{API}/yolo/cameras",
+        f"{API}/yolo/events",
+        f"{API}/yolo/events/{{eventId}}",
     }
