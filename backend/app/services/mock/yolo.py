@@ -13,7 +13,7 @@ from app.schemas import YoloEvent, YoloReviewStatus
 from app.services.yolo_types import YoloCameraInfo, YoloCountBucket
 
 _CAMERAS = [
-    YoloCameraInfo(camera_id=1, zone_id=1, name="T1 3번 출국장 DEMO", is_active=True, scope="T1")
+    YoloCameraInfo(camera_id=1, zone_id=4, name="cam-t1-hall3", is_active=True, scope="T1")
 ]
 
 _lock = threading.Lock()

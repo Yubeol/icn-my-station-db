@@ -165,7 +165,7 @@ def result(count=4, events=None) -> dict:
 def test_gesture_event_saved_and_alert_published():
     messages = run_result(result(events=[gesture()]))
     (event,) = yolo_store.list_events(None, None, 10)
-    assert (event.camera_id, event.zone_id, event.event_type) == (1, 1, "HELP_GESTURE")
+    assert (event.camera_id, event.zone_id, event.event_type) == (1, 4, "HELP_GESTURE")
     assert event.review_status == YoloReviewStatus.PENDING
     assert event.detected_at == datetime(2026, 11, 12, 14, 3, 5, 120000, tzinfo=KST)
 
@@ -174,7 +174,7 @@ def test_gesture_event_saved_and_alert_published():
     assert message.data == {
         "eventId": event.event_id,
         "cameraId": 1,
-        "zoneId": 1,
+        "zoneId": 4,
         "eventType": "HELP_GESTURE",
         "confidence": 0.83,
         "detectedAt": "2026-11-12T14:03:05.120000+09:00",  # ISO 8601, +09:00
@@ -510,7 +510,7 @@ def test_db_write_switch_on_writes_through_db_write(db_yolo, monkeypatch):
     monkeypatch.setattr(settings, "yolo_write_enabled", True)
     camera = mock_yolo.get_camera(1)
     event = module.save_event(camera, "HELP_GESTURE", 0.8, at(5), "m", "k")
-    assert (event.event_id, event.zone_id, event.review_status) == (77, 1, YoloReviewStatus.PENDING)
+    assert (event.event_id, event.zone_id, event.review_status) == (77, 4, YoloReviewStatus.PENDING)
     assert module.save_count(YoloCountBucket(1, at(0), 1.0, 1, 1, "LOW", "m")) is True
     assert [kind for kind, _ in calls] == ["event", "count"]
     assert calls[1][1]["crowd_level"] == "LOW"
