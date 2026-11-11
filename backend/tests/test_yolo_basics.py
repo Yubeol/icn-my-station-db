@@ -40,6 +40,8 @@ def test_yolo_constants_match_contract():
     assert rules.YOLO_COUNT_BUCKET_SEC == 30
     assert rules.YOLO_EVENT_DEDUPE_SEC == 10
     assert rules.YOLO_EVENT_TYPE == "HELP_GESTURE"
+    # 계약 v0.4: HELP_GESTURE를 지우지 않고 FINGER_GUN을 추가한다.
+    assert rules.YOLO_EVENT_TYPES == ("HELP_GESTURE", "FINGER_GUN")
     assert (rules.YOLO_CLOSE_BAD_TOKEN, rules.YOLO_CLOSE_UNKNOWN_CAMERA) == (4401, 4404)
     assert rules.YOLO_CLOSE_REPLACED == 4409
 

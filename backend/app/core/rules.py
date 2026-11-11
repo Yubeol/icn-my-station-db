@@ -595,8 +595,9 @@ YOLO_COUNT_BUCKET_SEC = 30
 YOLO_EVENT_DEDUPE_SEC = 10
 # JPEG 프레임(헤더 포함) 크기 상한. 넘으면 버린다.
 YOLO_FRAME_MAX_BYTES = 1_000_000
-# DDL이 값을 제한하지 않으므로 백엔드가 이 값만 저장한다.
-YOLO_EVENT_TYPE = "HELP_GESTURE"
+# DDL이 값을 제한하지 않으므로 백엔드가 아래 값만 저장한다. (계약 v0.4: HELP_GESTURE에 FINGER_GUN 추가)
+YOLO_EVENT_TYPE = "HELP_GESTURE"  # 기본 제스처 이벤트. 기존 코드·테스트가 쓰는 이름이라 남겨 둔다.
+YOLO_EVENT_TYPES = ("HELP_GESTURE", "FINGER_GUN")
 
 # 종료 코드 (계약 1.4)
 YOLO_CLOSE_BAD_TOKEN = 4401
