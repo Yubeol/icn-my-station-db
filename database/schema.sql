@@ -1,19 +1,5 @@
--- ICN My Station | PostgreSQL 14+ schema aligned to API and RDS design (2026-11-03), YOLO extension (2026-11-11).
--- Based on the user-provided consolidated schema and API alignment migration 002.
--- Confirmed RDS column types/nullability (2026-11-03):
--- airport_zones: hall_number integer NULL, gate_id text NULL, parent_zone_id bigint NULL
--- airport_facilities: facility_type text NULL, terminal_id bigint NULL,
---                     source_facility_key text NULL.
--- This is a reference bootstrap (18 tables), not an exhaustive RDS pg_dump comparison.
--- NEW EMPTY DATABASE ONLY. Do not execute this file on the existing shared RDS.
--- For existing RDS use only database/migrations/003_demo_yolo_tables.sql for YOLO extension.
--- Do NOT execute this full bootstrap against an existing RDS.
--- Use this file alone, NOT together with migrations/001_initial_schema.sql.
--- Connect to an empty airport_dashboard database as its owner.
--- Historical README/ERD may still show data_origin/visibility_m; this file uses final names.
--- No API credentials or fabricated operational seed data.
--- Business uniqueness is scoped by source so api, yolo and demo can coexist.
--- Source fields/units and mapping assumptions are documented in README.md.
+
+
 BEGIN;
 SET LOCAL search_path TO public;
 SET TIME ZONE 'Asia/Seoul';
