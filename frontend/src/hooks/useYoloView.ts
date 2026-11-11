@@ -6,7 +6,7 @@ import type { YoloConnState, YoloViewResult } from '../api/yolo'
 export type YoloViewFrame = { url: string; frameId: number; width: number; height: number }
 
 export type YoloViewState = {
-  /** connecting: 연결 중 · open: 연결됨 · closed: 끊김(재연결 대기) · rejected: 등록되지 않은 카메라(4404) */
+  /** connecting: 연결 중 · open: 연결됨 · closed: 끊김(재연결 대기) · rejected: 등록되지 않은 카메라(4404, 재시도 중) */
   link: 'connecting' | 'open' | 'closed' | 'rejected'
   camera: YoloConnState
   worker: YoloConnState
@@ -88,11 +88,9 @@ export function useYoloView(cameraId: number, enabled: boolean): YoloViewState {
         if (socket !== ws) return
         socket = null
         shownFrameId = -1 // 재연결하면 frameId가 다시 1부터 시작합니다.
-        if (closeEvent.code === 4404) {
-          setState(current => ({ ...current, link: 'rejected', camera: 'OFFLINE', worker: 'OFFLINE', result: null }))
-          return
-        }
-        setState(current => ({ ...current, link: 'closed', camera: 'OFFLINE', worker: 'OFFLINE', result: null }))
+        // 등록되지 않은 카메라(4404)도 계속 다시 시도합니다. 카메라가 나중에 등록·송출되면 자동으로 이어집니다.
+        const link = closeEvent.code === 4404 ? 'rejected' : 'closed'
+        setState(current => ({ ...current, link, camera: 'OFFLINE', worker: 'OFFLINE', result: null }))
         if (!active) return
         timer = setTimeout(connect, RETRY_MS[Math.min(attempt, RETRY_MS.length - 1)])
         attempt += 1

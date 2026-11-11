@@ -36,6 +36,20 @@ export const YOLO_CAMERA_HALLS: readonly { cameraId: number; terminal: Terminal;
   { cameraId: 1, terminal: 'T1', hallId: 3 },
 ]
 
+/**
+ * 편의시설 지도의 구역과 카메라. DEMO 고정값이며, 2차에 백엔드 필드로 옮깁니다.
+ * zoneKey는 편의시설 지도(facilityMap.ts)의 구역 키입니다(H:3 = 3F 3번 출국장 구역). T1 3번 출국장과 같은 자리라서
+ * 출국장 카메라(1번)와 겹치지 않게 카메라 번호만 2번으로 따로 둡니다. 카메라 2번은 등록·송출 전일 수 있습니다.
+ */
+export const YOLO_FACILITY_CAMERAS: readonly {
+  cameraId: number
+  terminal: Terminal
+  floor: string
+  zoneKey: string
+  hallId: number
+  label: string
+}[] = [{ cameraId: 2, terminal: 'T1', floor: '3F', zoneKey: 'H:3', hallId: 3, label: 'T1 3번 출국장 구역' }]
+
 export function cameraIdForHall(terminal: Terminal, hallId: number): number | null {
   return YOLO_CAMERA_HALLS.find(item => item.terminal === terminal && item.hallId === hallId)?.cameraId ?? null
 }

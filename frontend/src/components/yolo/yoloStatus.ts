@@ -1,4 +1,4 @@
-import { YOLO_CAMERA_HALLS } from '../../api/yolo'
+import { YOLO_CAMERA_HALLS, YOLO_FACILITY_CAMERAS } from '../../api/yolo'
 import type { YoloLiveState } from '../../hooks/useYoloLive'
 
 export type YoloTone = 'LOW' | 'MID' | 'HIGH' | 'OFF'
@@ -19,5 +19,6 @@ export function describeYolo(state: YoloLiveState, cameraId: number): { tone: Yo
 /** 카메라가 비추는 곳의 이름. 예: "T1 3번 출국장" */
 export function cameraPlace(cameraId: number): string {
   const hall = YOLO_CAMERA_HALLS.find(item => item.cameraId === cameraId)
-  return hall ? `${hall.terminal} ${hall.hallId}번 출국장` : `카메라 ${cameraId}번`
+  if (hall) return `${hall.terminal} ${hall.hallId}번 출국장`
+  return YOLO_FACILITY_CAMERAS.find(item => item.cameraId === cameraId)?.label ?? `카메라 ${cameraId}번`
 }

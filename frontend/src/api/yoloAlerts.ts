@@ -1,5 +1,5 @@
 import type { Alert } from './client'
-import { YOLO_CAMERA_HALLS, yoloEventName } from './yolo'
+import { YOLO_CAMERA_HALLS, YOLO_FACILITY_CAMERAS, yoloEventName } from './yolo'
 import type { YoloEvent, YoloReviewStatus } from './yolo'
 
 /**
@@ -30,7 +30,9 @@ export function yoloAlertId(eventId: number): string {
 /** 카메라가 비추는 출국장(DEMO 고정 매핑). 모르는 카메라면 null입니다. */
 export function yoloPlace(cameraId: number): { terminal: string; hallId: number; label: string } | null {
   const hall = YOLO_CAMERA_HALLS.find(item => item.cameraId === cameraId)
-  return hall ? { terminal: hall.terminal, hallId: hall.hallId, label: `${hall.terminal} ${hall.hallId}번 출국장` } : null
+  if (hall) return { terminal: hall.terminal, hallId: hall.hallId, label: `${hall.terminal} ${hall.hallId}번 출국장` }
+  const facility = YOLO_FACILITY_CAMERAS.find(item => item.cameraId === cameraId)
+  return facility ? { terminal: facility.terminal, hallId: facility.hallId, label: facility.label } : null
 }
 
 /**

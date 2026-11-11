@@ -73,7 +73,8 @@ function drawBoxes(canvas: HTMLCanvasElement, detections: YoloDetection[], srcW:
 }
 
 function linkText(view: YoloViewState): { text: string; tone: 'ok' | 'warn' | 'off' } {
-  if (view.link === 'rejected') return { text: '등록되지 않은 카메라입니다', tone: 'off' }
+  // 등록·송출 전인 카메라는 오류 화면 대신 '카메라 미연결'로 보여 줍니다.
+  if (view.link === 'rejected') return { text: '카메라 미연결', tone: 'off' }
   if (view.link === 'connecting') return { text: '서버에 연결하는 중…', tone: 'warn' }
   if (view.link === 'closed') return { text: '서버 연결이 끊겼습니다. 다시 연결하는 중…', tone: 'warn' }
   if (view.camera === 'OFFLINE') return { text: '카메라 미연결', tone: 'off' }

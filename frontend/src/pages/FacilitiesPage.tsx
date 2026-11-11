@@ -3,13 +3,16 @@ import { Armchair, Coffee, MoreHorizontal, Pill, Search, ShoppingBag, X } from '
 import type { LucideIcon } from 'lucide-react';
 import { getFacilities } from '../api/client';
 import AirportScene from '../components/main/Facilities/AirportScene';
-import { buildFloorMap, MAP_FLOORS, normalizeFloor } from '../components/main/Facilities/facilityMap';
+import { buildFloorMap, MAP_FLOORS, normalizeFloor, PLANS } from '../components/main/Facilities/facilityMap';
+import CctvViewer from '../components/yolo/CctvViewer';
+import { YOLO_FACILITY_CAMERAS } from '../api/yolo';
 import type { MapTerminal, Place } from '../components/main/Facilities/facilityMap';
 import { useLiveUpdates } from '../hooks/useLiveUpdates';
 import Skeleton from '../components/layout/Skeleton';
 import './FacilitiesPage.css';
 
 const PAGE_SIZE = 40;
+const CCTV_PIN_OFFSET = 6.8; // 출국장 칸·구역 핀을 가리지 않도록 도면 안쪽으로 띄운 거리
 const TERMINALS: MapTerminal[] = ['T1', 'T2'];
 const FLOORS = MAP_FLOORS;
 const LEGEND = [
@@ -88,6 +91,20 @@ export default function FacilitiesPage() {
   const [allFloors, setAllFloors] = useState(false);
   const [activeZone, setActiveZone] = useState<string | null>(null);
   const [zoneFilter, setZoneFilter] = useState(false); // 핀을 직접 눌렀을 때만 목록을 구역으로 거릅니다
+  const [cctv, setCctv] = useState<{ cameraId: number; title: string } | null>(null);
+
+  // DEMO 카메라가 있는 구역(T1 3F 3번 출국장 구역)에만 CCTV 알약을 둡니다. 3번 출국장 위치는 출국장 도면 좌표를 씁니다.
+  const cctvCameras = useMemo(() => YOLO_FACILITY_CAMERAS.filter(camera => camera.terminal === terminal), [terminal]);
+  const cctvSpots = useMemo(() => cctvCameras.filter(camera => camera.floor === floor).map(camera => {
+    const hall = PLANS[terminal].halls[camera.hallId - 1];
+    return {
+      key: String(camera.cameraId),
+      label: camera.label,
+      x: hall.x,
+      z: hall.z + CCTV_PIN_OFFSET,
+      onOpen: () => setCctv({ cameraId: camera.cameraId, title: camera.label }),
+    };
+  }), [cctvCameras, terminal, floor]);
 
   const filtered = useMemo(() => {
     const word = search.trim().toLowerCase();
@@ -172,6 +189,10 @@ export default function FacilitiesPage() {
         <button type="button" aria-pressed={allFloors} onClick={() => { setAllFloors(value => !value); setLimit(PAGE_SIZE); }}>{allFloors ? `${floor}만 보기` : '다른 층 포함'}</button>
       </div>
       <div className="fac-list">
+        {cctvCameras.map(camera => <div className="fac-cctv" key={camera.cameraId}>
+          <span><b>DEMO</b>{camera.label} · {camera.floor}</span>
+          <button type="button" onClick={() => setCctv({ cameraId: camera.cameraId, title: camera.label })}>CCTV</button>
+        </div>)}
         {filterZone && <div className="fac-zonechip">
           <span>{filterZone.label} · {filterZone.places.length}곳</span>
           <button type="button" aria-label="구역 선택 해제" onClick={() => { setActiveZone(null); setZoneFilter(false); }}><X size={13} /></button>
@@ -203,7 +224,8 @@ export default function FacilitiesPage() {
         activeZone={activeZone}
         selectedId={selectedId}
         onPickZone={toggleZone}
-        onPickPlace={pickPlace} />
+        onPickPlace={pickPlace}
+        cctvSpots={cctvSpots} />
       <div className="fac-map__title"><strong>{terminal}</strong><span>{floor} 개략도 · 드래그 회전, 휠 확대</span></div>
       <div className="fac-floor" role="group" aria-label="층 선택">
         {FLOORS.map(item => (
@@ -217,5 +239,6 @@ export default function FacilitiesPage() {
       {mapNotice && <p className="fac-map__notice" role="status">{mapNotice}</p>}
       {selected && <FacilityPass place={selected} onClose={() => setSelectedId(null)} />}
     </section>
+    {cctv && <CctvViewer cameraId={cctv.cameraId} title={cctv.title} onClose={() => setCctv(null)} />}
   </main>;
 }
