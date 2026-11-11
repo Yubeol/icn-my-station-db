@@ -23,7 +23,7 @@ export default function YoloDialog({ label, children, onClose, className = '', u
     return () => previous?.focus?.()
   }, [])
 
-  return <div className="yolo-dialog__backdrop" onMouseDown={event => {
+  return <div className={`yolo-dialog__backdrop${urgent ? ' is-urgent' : ''}`} onMouseDown={event => {
     if (onClose && event.target === event.currentTarget) onClose()
   }}>
     <div

@@ -10,6 +10,7 @@ import CongestionPage from './pages/CongestionPage';
 import FacilitiesPage from './pages/FacilitiesPage';
 import AlertsPage from './pages/AlertsPage';
 import YoloProvider from './components/yolo/YoloProvider';
+import YoloAlertModal from './components/yolo/YoloAlertModal';
 import './App.css';
 import './polish.css';
 
@@ -69,7 +70,7 @@ export default function App() {
     </Suspense>;
   }
 
-  return <YoloProvider><div className={`icn-app ${entering ? 'is-entering' : ''}`} onAnimationEnd={event => {
+  return <YoloProvider><YoloAlertModal /><div className={`icn-app ${entering ? 'is-entering' : ''}`} onAnimationEnd={event => {
     if (event.target === event.currentTarget) setEntering(false);
   }}>
     <Header onBrandClick={() => setShowIntro(true)} />

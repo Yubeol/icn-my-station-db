@@ -106,3 +106,26 @@
 .yolo-cctv__info div { display: flex; align-items: baseline; gap: 8px; }
 .yolo-cctv__info dt { color: var(--muted); font-size: 12.5px; }
 .yolo-cctv__info dd { margin: 0; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* ---------- 긴급 알림 ---------- */
+.yolo-dialog__backdrop.is-urgent { z-index: 3100; background: rgba(40, 6, 4, .66); }
+.yolo-alert { width: min(100%, 480px); padding: 20px 22px 22px; border-top: 6px solid var(--high); }
+.yolo-alert__top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.yolo-alert__top strong { padding: 2px 9px; border-radius: 999px; background: var(--high); color: #fff; font-size: 12px; letter-spacing: .06em; }
+.yolo-alert__demo { padding: 1px 7px; border: 1px solid #c9a100; border-radius: 5px; background: #fff6cc; color: #6b5200; font-size: 11px; font-weight: 800; letter-spacing: .08em; }
+.yolo-alert__more { margin-left: auto; color: var(--muted); font-size: 12.5px; font-weight: 600; }
+.yolo-alert h2 { margin: 0 0 8px; color: var(--night); font-size: 20px; }
+.yolo-alert__lead { margin: 0 0 14px; color: var(--ink); font-size: 14px; line-height: 1.5; }
+.yolo-alert__facts { display: grid; gap: 6px; margin: 0 0 14px; padding: 10px 12px; border-radius: 9px; background: #f3f7fd; }
+.yolo-alert__facts div { display: flex; gap: 10px; }
+.yolo-alert__facts dt { flex: none; width: 76px; color: var(--muted); font-size: 13px; }
+.yolo-alert__facts dd { margin: 0; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.yolo-alert__facts small { color: var(--muted); font-weight: 500; }
+.yolo-alert__error { margin: 0 0 12px; color: var(--high); font-size: 13px; font-weight: 600; }
+.yolo-alert__actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.yolo-alert__actions button { padding: 11px 8px; border: 1px solid transparent; border-radius: 9px; font-size: 14.5px; font-weight: 700; }
+.yolo-alert__actions button:disabled { opacity: .55; cursor: progress; }
+.yolo-alert__actions .is-confirm { background: var(--high); color: #fff; }
+.yolo-alert__actions .is-confirm:hover:not(:disabled) { background: #b02e24; }
+.yolo-alert__actions .is-false { border-color: #b9c8d8; background: #fff; color: var(--night); }
+.yolo-alert__actions .is-false:hover:not(:disabled) { background: #eef3fa; }
