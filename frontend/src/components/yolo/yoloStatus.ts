@@ -1,3 +1,4 @@
+import { YOLO_CAMERA_HALLS } from '../../api/yolo'
 import type { YoloLiveState } from '../../hooks/useYoloLive'
 
 export type YoloTone = 'LOW' | 'MID' | 'HIGH' | 'OFF'
@@ -13,4 +14,10 @@ export function describeYolo(state: YoloLiveState, cameraId: number): { tone: Yo
   const count = state.counts[cameraId]
   if (!count) return { tone: 'OFF', text: '인원 집계 중' }
   return { tone: count.crowdLevel, text: `${count.personCount.toLocaleString()}명 · ${YOLO_LEVEL_LABEL[count.crowdLevel]}` }
+}
+
+/** 카메라가 비추는 곳의 이름. 예: "T1 3번 출국장" */
+export function cameraPlace(cameraId: number): string {
+  const hall = YOLO_CAMERA_HALLS.find(item => item.cameraId === cameraId)
+  return hall ? `${hall.terminal} ${hall.hallId}번 출국장` : `카메라 ${cameraId}번`
 }

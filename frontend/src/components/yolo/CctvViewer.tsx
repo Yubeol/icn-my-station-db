@@ -5,11 +5,23 @@ import type { YoloDetection } from '../../api/yolo'
 import YoloDialog from './YoloDialog'
 import { YOLO_LEVEL_LABEL } from './yoloStatus'
 
+/** 판정 모드. 긴급 알림에서 영상을 확인한 뒤 판정할 때 쓰며, 일반 CCTV 버튼으로 연 뷰어에는 없습니다. */
+export type ReviewMode = {
+  /** 상단 띠 문구 */
+  band: string
+  /** 이미 판정됨(다른 화면 등). 띠를 회색으로 바꾸고 버튼을 막습니다. */
+  done: boolean
+  busy: boolean
+  message: string | null
+  onDecide: (decision: 'CONFIRMED' | 'FALSE_POSITIVE') => void
+}
+
 type Props = {
   cameraId: number
   /** 예: "T1 3번 출국장" */
   title: string
   onClose: () => void
+  review?: ReviewMode
 }
 
 const BOX_COLOR: Record<string, string> = { person: '#4fe0ae', head: '#6db3ff', help_gesture: '#ff5d4d' }
@@ -23,7 +35,7 @@ function contentRect(canvasW: number, canvasH: number, srcW: number, srcH: numbe
   return { x: (canvasW - width) / 2, y: (canvasH - height) / 2, width, height }
 }
 
-function drawBoxes(canvas: HTMLCanvasElement, detections: YoloDetection[], srcW: number, srcH: number) {
+function drawBoxes(canvas: HTMLCanvasElement, detections: YoloDetection[], srcW: number, srcH: number, boldGesture: boolean) {
   const ratio = window.devicePixelRatio || 1
   const cssW = canvas.clientWidth
   const cssH = canvas.clientHeight
@@ -46,6 +58,7 @@ function drawBoxes(canvas: HTMLCanvasElement, detections: YoloDetection[], srcW:
     const h = (y2 - y1) * area.height
     const color = BOX_COLOR[detection.cls] ?? '#ffd23f'
     context.strokeStyle = color
+    context.lineWidth = boldGesture && detection.cls === 'help_gesture' ? 4 : 2
     context.strokeRect(x, y, w, h)
     const label = `${detection.cls} ${Math.round(detection.conf * 100)}%`
     const labelW = context.measureText(label).width + 8
@@ -67,27 +80,34 @@ function linkText(view: YoloViewState): { text: string; tone: 'ok' | 'warn' | 'o
 }
 
 /** DEMO 카메라 영상 위에 YOLO 검출 박스를 겹쳐 보여 주는 뷰어입니다. 영상은 저장하지 않고 화면에만 그립니다. */
-export default function CctvViewer({ cameraId, title, onClose }: Props) {
+export default function CctvViewer({ cameraId, title, onClose, review }: Props) {
   const view = useYoloView(cameraId, true)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const { frame, result } = view
   const srcW = frame?.width || DEFAULT_ASPECT.width
   const srcH = frame?.height || DEFAULT_ASPECT.height
   const status = linkText(view)
+  const reviewMode = review !== undefined
   const live = view.link === 'open' && view.camera === 'ONLINE'
 
   // 박스는 최근 result를 다음 result가 올 때까지 유지해서 그립니다. 크기가 바뀌면 다시 그립니다.
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-    const draw = () => drawBoxes(canvas, live && result ? result.detections : [], srcW, srcH)
+    const draw = () => drawBoxes(canvas, live && result ? result.detections : [], srcW, srcH, reviewMode)
     draw()
     const observer = new ResizeObserver(draw)
     observer.observe(canvas)
     return () => observer.disconnect()
-  }, [live, result, srcW, srcH])
+  }, [live, result, srcW, srcH, reviewMode])
 
-  return <YoloDialog label={`${title} CCTV`} onClose={onClose} className="yolo-cctv">
+  // 판정 모드에서는 배경 클릭·Esc로 닫히지 않게 하고(실수로 닫아 판정이 미뤄지는 것을 막음), 닫기 버튼으로만 닫습니다.
+  return <YoloDialog
+    label={review ? `${title} CCTV 현장 확인, 도움 요청 제스처 판정` : `${title} CCTV`}
+    onClose={review ? undefined : onClose}
+    urgent={review !== undefined}
+    className={`yolo-cctv${review ? ' is-review' : ''}`}>
+    {review && <div className={`yolo-cctv__band${review.done ? ' is-done' : ''}`} role="status">{review.band}</div>}
     <header className="yolo-cctv__head">
       <div>
         <h2>{title} CCTV</h2>
@@ -119,5 +139,13 @@ export default function CctvViewer({ cameraId, title, onClose }: Props) {
         <dd>{live && result && result.inferMs !== null ? `${result.inferMs.toFixed(0)}ms` : '-'}</dd>
       </div>
     </dl>
+
+    {review && <>
+      {review.message && <p className="yolo-alert__error" role="alert">{review.message}</p>}
+      <div className="yolo-alert__actions">
+        <button type="button" className="is-confirm" disabled={review.busy || review.done} onClick={() => review.onDecide('CONFIRMED')}>확인 (실제 상황)</button>
+        <button type="button" className="is-false" disabled={review.busy || review.done} onClick={() => review.onDecide('FALSE_POSITIVE')}>오탐 (잘못 감지)</button>
+      </div>
+    </>}
   </YoloDialog>
 }
