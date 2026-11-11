@@ -26,7 +26,9 @@ export type FlightDetail = {
 }
 export type Direction = components['schemas']['Direction']
 export type Terminal = components['schemas']['Terminal']
-export type LiveTopic = 'congestion' | 'flights' | 'stats' | 'alerts' | 'weather'
+export type LiveTopic =
+  | 'congestion' | 'flights' | 'stats' | 'alerts' | 'weather'
+  | 'yolo_camera' | 'yolo_count' | 'yolo_alert' | 'yolo_alert_reviewed'
 
 /** Vite 프록시를 쓸 경우 기본값은 상대 경로입니다. 백엔드 주소는 VITE_API_BASE_URL로도 지정할 수 있습니다. */
 const BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
@@ -40,7 +42,7 @@ export class ApiError extends Error {
     this.status = status
   }
 }
-async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
+export async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
   const response = await fetch(`${BASE_URL}${path}`, {
     method: 'GET',
     signal,
@@ -51,6 +53,25 @@ async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
     try {
       const body: unknown = await response.json()
       if (body && typeof body === 'object' && 'detail' in body && typeof body.detail === 'string') message = body.detail
+    } catch { /* JSON이 아닌 오류 응답은 기본 메시지 사용 */ }
+    throw new ApiError(response.status, message)
+  }
+  return response.json() as Promise<T>
+}
+
+/** JSON 본문을 보내는 PATCH. 오류 응답의 detail을 메시지로 쓰는 방식은 get과 같습니다. */
+export async function patch<T>(path: string, body: unknown, signal?: AbortSignal): Promise<T> {
+  const response = await fetch(`${BASE_URL}${path}`, {
+    method: 'PATCH',
+    signal,
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!response.ok) {
+    let message = `API 요청 실패: HTTP ${response.status}`
+    try {
+      const data: unknown = await response.json()
+      if (data && typeof data === 'object' && 'detail' in data && typeof data.detail === 'string') message = data.detail
     } catch { /* JSON이 아닌 오류 응답은 기본 메시지 사용 */ }
     throw new ApiError(response.status, message)
   }
@@ -108,5 +129,14 @@ export function getLiveUrl(): string {
   base.protocol = base.protocol === 'https:' ? 'wss:' : 'ws:'
   base.pathname = '/ws/live'
   base.search = ''
+  return base.toString()
+}
+
+/** CCTV 뷰어 주소(/ws/yolo/view?cameraId=). getLiveUrl과 같은 방식으로 서버를 정하고, https 사이트면 wss가 됩니다. */
+export function getYoloViewUrl(cameraId: number): string {
+  const base = BASE_URL ? new URL(BASE_URL, window.location.origin) : new URL(window.location.origin)
+  base.protocol = base.protocol === 'https:' ? 'wss:' : 'ws:'
+  base.pathname = '/ws/yolo/view'
+  base.search = `?cameraId=${encodeURIComponent(String(cameraId))}`
   return base.toString()
 }
