@@ -53,8 +53,8 @@ def confirm(client, event_id):
 
 
 def test_cameras_shape_and_status(client):
-    (camera,) = client.get(f"{API}/cameras").json()
-    assert camera == {
+    cameras = client.get(f"{API}/cameras").json()
+    assert cameras[0] == {
         "cameraId": 1,
         "zoneId": 4,
         "name": "cam-t1-hall3",
@@ -62,13 +62,27 @@ def test_cameras_shape_and_status(client):
         "camera": "OFFLINE",
         "worker": "OFFLINE",
     }
+    assert cameras[1]["cameraId"] == 2  # mock에는 편의시설 구역 카메라(2번)도 있다
+    assert (cameras[1]["camera"], cameras[1]["worker"]) == ("OFFLINE", "OFFLINE")
+    assert [c["cameraId"] for c in cameras] == [1, 2]
     with client.websocket_connect("/ws/yolo/camera?cameraId=1&token=c") as ws:
         ws.receive_json()
-        (online,) = client.get(f"{API}/cameras").json()
+        online = client.get(f"{API}/cameras").json()[0]
         assert (online["camera"], online["worker"]) == ("ONLINE", "OFFLINE")
         with client.websocket_connect("/ws/yolo/worker?token=w"):
-            (both,) = client.get(f"{API}/cameras").json()
-            assert (both["camera"], both["worker"]) == ("ONLINE", "ONLINE")
+            both = client.get(f"{API}/cameras").json()
+            assert (both[0]["camera"], both[0]["worker"]) == ("ONLINE", "ONLINE")
+            assert (both[1]["camera"], both[1]["worker"]) == (
+                "OFFLINE",
+                "ONLINE",
+            )  # 2번은 아직 송출 전
+
+
+def test_camera_2_connects_independently_of_camera_1(client):
+    with client.websocket_connect("/ws/yolo/camera?cameraId=2&token=c") as ws:
+        assert ws.receive_json() == {"type": "hello", "cameraId": 2, "maxFps": 10}
+        first, second = client.get(f"{API}/cameras").json()
+        assert (first["camera"], second["camera"]) == ("OFFLINE", "ONLINE")
 
 
 # ----- GET /events -----
@@ -168,7 +182,7 @@ def test_review_bad_body_is_422(client, body):
 def test_review_pushes_yolo_alert_reviewed_to_live(client):
     (event_id,) = seed(1)
     with client.websocket_connect("/ws/live") as live_ws:
-        for _ in range(9):  # 기존 8개 + yolo_camera 스냅샷
+        for _ in range(10):  # 기존 8개 + yolo_camera 스냅샷(카메라 2대)
             live_ws.receive_json()
         confirm(client, event_id)
         for _ in range(20):
@@ -188,7 +202,7 @@ def test_failed_review_does_not_push(client):
     (event_id,) = seed(1)
     confirm(client, event_id)
     with client.websocket_connect("/ws/live") as live_ws:
-        for _ in range(9):
+        for _ in range(10):  # 기존 8개 + yolo_camera 스냅샷(카메라 2대)
             live_ws.receive_json()
         assert confirm(client, event_id).status_code == 409
         queue_sizes = [q.qsize() for q in hub.live_subscribers]

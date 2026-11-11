@@ -95,7 +95,7 @@ def test_snapshot_includes_last_count_but_not_pending_alerts(client):
 
 def test_camera_state_change_is_pushed_immediately(client):
     with client.websocket_connect("/ws/live") as ws:
-        for _ in range(9):
+        for _ in range(10):  # 기존 8개 + yolo_camera 스냅샷(카메라 2대)
             ws.receive_json()
         with client.websocket_connect("/ws/yolo/camera?cameraId=1&token=c") as camera:
             camera.receive_json()
@@ -108,7 +108,7 @@ def test_camera_state_change_is_pushed_immediately(client):
 
 def test_gesture_event_pushes_yolo_alert(client):
     with client.websocket_connect("/ws/live") as ws:
-        for _ in range(9):
+        for _ in range(10):  # 기존 8개 + yolo_camera 스냅샷(카메라 2대)
             ws.receive_json()
         worker_ws = client.websocket_connect("/ws/yolo/worker?token=w")
         camera_ws = client.websocket_connect("/ws/yolo/camera?cameraId=1&token=c")
@@ -292,5 +292,21 @@ def test_yolo_messages_do_not_split_the_eight_message_batch(monkeypatch):
 
 def test_snapshot_message_envelope_matches_live_message():
     messages = live.build_yolo_snapshot(live.fetch_yolo_cameras())
-    assert [m.topic for m in messages] == [LiveTopic.YOLO_CAMERA]
+    assert [m.topic for m in messages] == [
+        LiveTopic.YOLO_CAMERA,
+        LiveTopic.YOLO_CAMERA,
+    ]  # 카메라 2대
     assert messages[0].sent_at.utcoffset().total_seconds() == 9 * 3600
+
+
+def test_snapshot_lists_both_mock_cameras_with_scope_t1(client):
+    with client.websocket_connect("/ws/live") as ws:
+        for _ in range(8):
+            ws.receive_json()
+        cameras = [ws.receive_json(), ws.receive_json()]
+    assert [m["topic"] for m in cameras] == ["yolo_camera", "yolo_camera"]
+    assert {m["scope"] for m in cameras} == {"T1"}
+    by_id = {m["data"]["cameraId"]: m["data"] for m in cameras}
+    assert set(by_id) == {1, 2}
+    assert by_id[1]["zoneId"] == 4
+    assert by_id[2]["camera"] == "OFFLINE"
