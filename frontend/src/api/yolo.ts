@@ -38,17 +38,21 @@ export const YOLO_CAMERA_HALLS: readonly { cameraId: number; terminal: Terminal;
 
 /**
  * 편의시설 지도의 구역과 카메라. DEMO 고정값이며, 2차에 백엔드 필드로 옮깁니다.
- * zoneKey는 편의시설 지도(facilityMap.ts)의 구역 키입니다(H:3 = 3F 3번 출국장 구역). T1 3번 출국장과 같은 자리라서
- * 출국장 카메라(1번)와 겹치지 않게 카메라 번호만 2번으로 따로 둡니다. 카메라 2번은 등록·송출 전일 수 있습니다.
+ * 구역: T1 4F 스카이허브 라운지(서편) 구역. 위치 문장 "제1여객터미널 4층 서편 환승구역(42번 게이트 부근)"이
+ * 편의시설 지도에서 게이트 구역 `G:37:1`("T1 40~42번 게이트")이 됩니다(facilityMap.ts의 gateZoneAnchor).
+ * 백엔드 airport_zones에는 편의시설 구역이 없습니다(airport_facilities.zone_id는 모두 NULL). 카메라 2번의 zone_id는
+ * DB 담당이 이 구역에 맞는 airport_zones 행을 정해 등록합니다. 카메라 2번은 등록·송출 전일 수 있습니다.
  */
 export const YOLO_FACILITY_CAMERAS: readonly {
   cameraId: number
   terminal: Terminal
   floor: string
+  /** 편의시설 지도의 구역 키 */
   zoneKey: string
-  hallId: number
+  /** 구역 위치를 잡는 대표 게이트 번호 */
+  gate: number
   label: string
-}[] = [{ cameraId: 2, terminal: 'T1', floor: '3F', zoneKey: 'H:3', hallId: 3, label: 'T1 3번 출국장 구역' }]
+}[] = [{ cameraId: 2, terminal: 'T1', floor: '4F', zoneKey: 'G:37:1', gate: 42, label: 'T1 스카이허브 라운지 구역' }]
 
 export function cameraIdForHall(terminal: Terminal, hallId: number): number | null {
   return YOLO_CAMERA_HALLS.find(item => item.terminal === terminal && item.hallId === hallId)?.cameraId ?? null

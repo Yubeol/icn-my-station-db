@@ -25,6 +25,7 @@ export default function YoloAlertDetail({ alert, onCctv, onOpenHall }: Props) {
   if (!event) return null
   const place = yoloPlace(event.cameraId)
   const pending = event.reviewStatus === 'PENDING'
+  const hallId = place?.hallId ?? null // 출국장 카메라만 출국장 혼잡도로 이동할 수 있다
 
   return <section className="alert-pass is-yolo" data-severity={alert.severity} aria-label="선택한 알림 상세">
     <div className="alert-pass__head">
@@ -48,7 +49,7 @@ export default function YoloAlertDetail({ alert, onCctv, onOpenHall }: Props) {
       {pending
         ? <button type="button" className="yolo-detail__cctv" onClick={onCctv}>CCTV로 현장 확인</button>
         : <span className="yolo-detail__result" data-status={event.reviewStatus}>{event.reviewStatus === 'CONFIRMED' ? '실제 상황으로 확인되었습니다' : '오탐으로 판정되었습니다'}</span>}
-      {place && onOpenHall && <button type="button" className="yolo-detail__hall" onClick={() => onOpenHall(place.terminal, place.hallId)}>출국장 혼잡도에서 보기 ›</button>}
+      {place && hallId !== null && onOpenHall && <button type="button" className="yolo-detail__hall" onClick={() => onOpenHall(place.terminal, hallId)}>출국장 혼잡도에서 보기 ›</button>}
     </div>
   </section>
 }

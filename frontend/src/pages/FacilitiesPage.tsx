@@ -3,7 +3,7 @@ import { Armchair, Coffee, MoreHorizontal, Pill, Search, ShoppingBag, X } from '
 import type { LucideIcon } from 'lucide-react';
 import { getFacilities } from '../api/client';
 import AirportScene from '../components/main/Facilities/AirportScene';
-import { buildFloorMap, MAP_FLOORS, normalizeFloor, PLANS } from '../components/main/Facilities/facilityMap';
+import { buildFloorMap, gateZoneAnchor, MAP_FLOORS, normalizeFloor } from '../components/main/Facilities/facilityMap';
 import CctvViewer from '../components/yolo/CctvViewer';
 import { YOLO_FACILITY_CAMERAS } from '../api/yolo';
 import type { MapTerminal, Place } from '../components/main/Facilities/facilityMap';
@@ -12,7 +12,7 @@ import Skeleton from '../components/layout/Skeleton';
 import './FacilitiesPage.css';
 
 const PAGE_SIZE = 40;
-const CCTV_PIN_OFFSET = 6.8; // 출국장 칸·구역 핀을 가리지 않도록 도면 안쪽으로 띄운 거리
+const CCTV_PIN_OFFSET = { x: 10, z: 0.5 }; // 구역 핀·시설 칸을 가리지 않도록 핀에서 화면 오른쪽으로 띄운 도면 거리
 const TERMINALS: MapTerminal[] = ['T1', 'T2'];
 const FLOORS = MAP_FLOORS;
 const LEGEND = [
@@ -93,17 +93,18 @@ export default function FacilitiesPage() {
   const [zoneFilter, setZoneFilter] = useState(false); // 핀을 직접 눌렀을 때만 목록을 구역으로 거릅니다
   const [cctv, setCctv] = useState<{ cameraId: number; title: string } | null>(null);
 
-  // DEMO 카메라가 있는 구역(T1 3F 3번 출국장 구역)에만 CCTV 알약을 둡니다. 3번 출국장 위치는 출국장 도면 좌표를 씁니다.
+  // DEMO 카메라가 있는 구역(T1 4F 스카이허브 라운지 구역)에만 CCTV 알약을 둡니다. 위치는 그 구역의 핀 자리에서 조금 비켜 둡니다.
   const cctvCameras = useMemo(() => YOLO_FACILITY_CAMERAS.filter(camera => camera.terminal === terminal), [terminal]);
-  const cctvSpots = useMemo(() => cctvCameras.filter(camera => camera.floor === floor).map(camera => {
-    const hall = PLANS[terminal].halls[camera.hallId - 1];
-    return {
+  const cctvSpots = useMemo(() => cctvCameras.filter(camera => camera.floor === floor).flatMap(camera => {
+    const anchor = gateZoneAnchor(terminal, camera.gate);
+    if (!anchor) return [];
+    return [{
       key: String(camera.cameraId),
       label: camera.label,
-      x: hall.x,
-      z: hall.z + CCTV_PIN_OFFSET,
+      x: anchor.pin.x + CCTV_PIN_OFFSET.x,
+      z: anchor.pin.z + CCTV_PIN_OFFSET.z,
       onOpen: () => setCctv({ cameraId: camera.cameraId, title: camera.label }),
-    };
+    }];
   }), [cctvCameras, terminal, floor]);
 
   const filtered = useMemo(() => {
