@@ -224,25 +224,35 @@ export default function SmartAlerts({ terminal, onOpenAlert }: Props) {
     fetcher: getAlerts,
     intervalMs: 0,
   });
-  // 스마트 알림 화면과 같은 방식으로 YOLO 사건(제스처)을 합칩니다. 새 알림·판정은 실시간으로 반영됩니다.
+  // 위젯에는 판정 대기(PENDING) 중인 YOLO 사건 중 최신 1건만 보여 줍니다. 판정된 사건은 숨기고, 나머지 칸은 기존 알림입니다.
+  // (스마트 알림 페이지는 판정된 사건까지 모두 보여 줍니다.) 새 알림·판정은 실시간으로 반영됩니다.
   const yoloAlerts = useYoloAlertFeed();
-  const alerts = useMemo<AlertItem[]>(
-    () => [
-      ...(data ?? []),
-      ...yoloAlerts.map((alert) => ({
-        id: alert.alertId,
-        title: alert.title,
-        message: alert.message,
-        occurredAt: alert.createdAt,
-        terminal: alert.terminal ?? null,
-        type: alert.type,
-        severity: alert.severity,
-        isImportant: alert.severity === "CRITICAL",
-        isYolo: true,
-      })),
-    ],
-    [data, yoloAlerts]
-  );
+  const alerts = data ?? [];
+
+  const yoloLatest = useMemo<AlertItem | null>(() => {
+    const pending = yoloAlerts
+      .filter((alert) => alert.yolo?.reviewStatus === "PENDING")
+      .filter((alert) => {
+        // 터미널 정보가 없으면 공항 공통 알림으로 취급
+        if (!alert.terminal) return true;
+        return alert.terminal.trim().toUpperCase() === terminal;
+      })
+      .sort((a, b) => getTimeValue(b.createdAt) - getTimeValue(a.createdAt))[0];
+
+    return pending
+      ? {
+          id: pending.alertId,
+          title: pending.title,
+          message: pending.message,
+          occurredAt: pending.createdAt,
+          terminal: pending.terminal ?? null,
+          type: pending.type,
+          severity: pending.severity,
+          isImportant: true,
+          isYolo: true,
+        }
+      : null;
+  }, [yoloAlerts, terminal]);
 
   const visibleAlerts = useMemo(() => {
     const scoped = alerts.filter((alert) => {
@@ -289,7 +299,10 @@ export default function SmartAlerts({ terminal, onOpenAlert }: Props) {
         return true;
       });
   }, [alerts, terminal]);
-  const shownAlerts = visibleAlerts.slice(0, MAX_ITEMS);
+  // 판정 대기 YOLO 사건이 있으면 맨 위 한 칸, 나머지 칸은 기존 알림입니다.
+  const shownAlerts = yoloLatest
+    ? [yoloLatest, ...visibleAlerts.slice(0, MAX_ITEMS - 1)]
+    : visibleAlerts.slice(0, MAX_ITEMS);
 
   if (loading && !data) {
     return (
@@ -308,7 +321,7 @@ export default function SmartAlerts({ terminal, onOpenAlert }: Props) {
     );
   }
 
-  if (visibleAlerts.length === 0) {
+  if (visibleAlerts.length === 0 && !yoloLatest) {
     return (
       <div className="smart-alerts__state">
         알림 데이터 없음
