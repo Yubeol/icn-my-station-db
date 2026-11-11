@@ -1,4 +1,4 @@
-"""YOLO DEMO mock. 카메라는 1대(camera_id=1, T1 3번 출국장)로 고정하고 결과는 메모리에만 둔다.
+"""YOLO DEMO mock. 카메라는 2대(1번 T1 3번 출국장, 2번 T1 4F 스카이허브 라운지 구역)로 고정하고 결과는 메모리에만 둔다.
 
 공유 DB에는 쿼리를 보내지 않는다. 저장 규칙은 DB와 같다: counts는 (camera_id, bucket_start),
 events는 dedupe_key가 같으면 건너뛰고(ON CONFLICT DO NOTHING), 판정 갱신은 PENDING인 이벤트만 한다.
@@ -12,8 +12,10 @@ from app.core.errors import YoloEventNotFoundError, YoloEventReviewedError
 from app.schemas import YoloEvent, YoloReviewStatus
 from app.services.yolo_types import YoloCameraInfo, YoloCountBucket
 
+# 2번 카메라의 zone_id는 mock 값이다. 실제 값은 DB 담당이 편의시설(스카이허브 라운지) 구역을 airport_zones에 정한 뒤 정해진다.
 _CAMERAS = [
-    YoloCameraInfo(camera_id=1, zone_id=4, name="cam-t1-hall3", is_active=True, scope="T1")
+    YoloCameraInfo(camera_id=1, zone_id=4, name="cam-t1-hall3", is_active=True, scope="T1"),
+    YoloCameraInfo(camera_id=2, zone_id=43, name="cam-t1-skyhub-lounge", is_active=True, scope="T1"),
 ]
 
 _lock = threading.Lock()
