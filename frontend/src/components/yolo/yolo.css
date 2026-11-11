@@ -210,3 +210,20 @@
   transition: background-color .15s;
 }
 .yolo-urgent-pill:hover { background: #a52a20; }
+
+/* ---------- 스마트 알림: YOLO 사건 행·상세 ---------- */
+/* .icn-app button { font: inherit } 규칙이 더 우선하므로, 상세 패널 안의 버튼은 .alert-pass를 붙여 글꼴 크기를 지정합니다. */
+.alert-yolo-status { margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: #fde5e2; color: #c8362b; font-size: 11px; font-style: normal; font-weight: 700; text-decoration: none; vertical-align: 1px; }
+.alert-yolo-status[data-status='CONFIRMED'] { background: #24405f; color: #fff; }
+.alert-yolo-status[data-status='FALSE_POSITIVE'] { background: #e4ebf3; color: #5d7590; }
+.alert-pass.is-yolo dl { flex-wrap: wrap; gap: 2px 10px; }
+.alert-pass__badges .yolo-detail__status { background: #fde5e2; color: #c8362b; font-weight: 700; }
+.alert-pass__badges .yolo-detail__status[data-status='CONFIRMED'] { background: #24405f; color: #fff; }
+.alert-pass__badges .yolo-detail__status[data-status='FALSE_POSITIVE'] { background: #e4ebf3; color: #5d7590; }
+.alert-pass__badges .yolo-detail__demo { background: #fff6cc; color: #6b5200; font-weight: 800; letter-spacing: .04em; }
+.yolo-detail__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin: 2px 18px 12px; }
+.alert-pass .yolo-detail__cctv { padding: 7px 16px; border: 1px solid #c8362b; border-radius: 9px; background: #c8362b; color: #fff; font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; transition: background-color .15s; }
+.alert-pass .yolo-detail__cctv:hover { border-color: #a52a20; background: #a52a20; }
+.yolo-detail__result { color: #24405f; font-size: 13px; font-weight: 700; }
+.alert-pass .yolo-detail__hall { padding: 0; border: 0; background: none; color: #0f4c92; font: inherit; font-size: 13px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.alert-pass .yolo-detail__hall:hover { color: #0b2b52; }

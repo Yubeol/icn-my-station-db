@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeftRight, Ban, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Clock3, CloudSun, Plane, Search, Users } from 'lucide-react';
+import { ArrowLeftRight, Ban, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Clock3, CloudSun, Plane, Search, Siren, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { getAlerts } from '../api/client';
-import type { Alert } from '../api/client';
+import { YOLO_ALERT_TYPE, YOLO_STATUS_LABEL } from '../api/yoloAlerts';
+import type { FeedAlert } from '../api/yoloAlerts';
 import { useLiveUpdates } from '../hooks/useLiveUpdates';
+import { useYolo } from '../hooks/useYoloLive';
+import { useYoloAlertFeed } from '../hooks/useYoloAlertFeed';
+import YoloAlertDetail from '../components/yolo/YoloAlertDetail';
 import Skeleton from '../components/layout/Skeleton';
 import type { AlertsFocus } from '../navigation';
 import './AlertsPage.css';
 
-type FeedAlert = Alert & { terminal?: string | null };
 type Severity = 'ALL' | 'CRITICAL' | 'WARN' | 'INFO';
 
 const SEVERITIES: { key: Severity; label: string }[] = [
@@ -24,6 +27,7 @@ const TYPES: Record<string, { label: string; icon: LucideIcon }> = {
   CONGESTION: { label: '출국장 혼잡', icon: Users },
   WEATHER: { label: '기상 주의', icon: CloudSun },
   BOARDING: { label: '탑승', icon: Plane },
+  [YOLO_ALERT_TYPE]: { label: '도움 요청', icon: Siren },
 };
 const SEVERITY_COLOR: Record<string, string> = { CRITICAL: '#d9434e', WARN: '#c98a1b', INFO: '#1d6fd1' };
 const SEVERITY_LABEL: Record<string, string> = { CRITICAL: '긴급', WARN: '주의', INFO: '정보' };
@@ -103,7 +107,13 @@ function Donut({ alerts }: { alerts: FeedAlert[] }) {
   </div>;
 }
 
-export default function AlertsPage({ focus }: { focus?: AlertsFocus } = {}) {
+type Props = {
+  focus?: AlertsFocus;
+  /** YOLO 사건 상세에서 출국장 혼잡도 화면으로 이동. 넘기지 않으면 링크를 숨깁니다. */
+  onOpenCongestion?: (terminal: string, hallId: number) => void;
+};
+
+export default function AlertsPage({ focus, onOpenCongestion }: Props = {}) {
   const { data, loading, error, connected, updatedAt } = useLiveUpdates<FeedAlert[]>({
     topic: 'alerts',
     fetcher: getAlerts,
@@ -124,9 +134,12 @@ export default function AlertsPage({ focus }: { focus?: AlertsFocus } = {}) {
     return () => window.clearInterval(timer);
   }, []);
 
+  // 기존 알림에 YOLO 사건(도움 요청 제스처)을 시간순으로 합칩니다. 이후 필터·요약·분포는 합쳐진 목록을 그대로 씁니다.
+  const yoloAlerts = useYoloAlertFeed();
+  const { openReview } = useYolo();
   const alerts = useMemo(
-    () => [...(data ?? [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
-    [data],
+    () => [...(data ?? []), ...yoloAlerts].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    [data, yoloAlerts],
   );
 
   const scoped = useMemo(() => {
@@ -144,6 +157,16 @@ export default function AlertsPage({ focus }: { focus?: AlertsFocus } = {}) {
   const currentPage = Math.min(page, totalPages);
   const paged = visible.slice((currentPage - 1) * size, currentPage * size);
   const selected = visible.find(alert => alert.alertId === selectedId) ?? visible[0] ?? null;
+  // 이동으로 넘어온 알림이 둘째 페이지 이후에 있으면 그 페이지를 보여 줍니다. YOLO 목록은 늦게 도착할 수 있어 찾을 때까지 기다립니다.
+  const focusPending = useRef<string | null>(focus?.alertId ?? null);
+  useEffect(() => {
+    const id = focusPending.current;
+    if (!id) return;
+    const index = visible.findIndex(alert => alert.alertId === id);
+    if (index < 0) return;
+    focusPending.current = null;
+    setPage(Math.floor(index / size) + 1);
+  }, [visible, size]);
   const typeCounts = useMemo(() => {
     const counts = new Map<string, { key: string; label: string; count: number }>();
     scoped.forEach(alert => {
@@ -249,8 +272,10 @@ export default function AlertsPage({ focus }: { focus?: AlertsFocus } = {}) {
               <time dateTime={alert.createdAt}>{timeFormat.format(new Date(alert.createdAt))}</time>
               <i><Icon size={17} /></i>
               <span>
-                <strong>{alert.title}</strong>
-                <small>{[alert.terminal, typeOf(alert).label].filter(Boolean).join(' · ')} · {alert.message}</small>
+                <strong>{alert.title}{alert.yolo && <u className="alert-yolo-status" data-status={alert.yolo.reviewStatus}>{YOLO_STATUS_LABEL[alert.yolo.reviewStatus]}</u>}</strong>
+                {alert.yolo
+                  ? <small>{[alert.terminal, typeOf(alert).label, 'DEMO · CCTV'].filter(Boolean).join(' · ')} · 신뢰도 {Math.round(alert.yolo.confidence * 100)}%</small>
+                  : <small>{[alert.terminal, typeOf(alert).label].filter(Boolean).join(' · ')} · {alert.message}</small>}
               </span>
               <em>{SEVERITY_LABEL[alert.severity] ?? alert.severity}</em>
             </button>;
@@ -277,7 +302,11 @@ export default function AlertsPage({ focus }: { focus?: AlertsFocus } = {}) {
       </section>
 
       <aside className="alert-side">
-        {selected && <section className={`alert-pass ${selected.flightNo ? '' : 'is-common'}`} data-severity={selected.severity} aria-label="선택한 알림 상세">
+        {selected?.yolo && <YoloAlertDetail
+          alert={selected}
+          onCctv={() => selected.yolo && openReview(selected.yolo)}
+          onOpenHall={onOpenCongestion} />}
+        {selected && !selected.yolo && <section className={`alert-pass ${selected.flightNo ? '' : 'is-common'}`} data-severity={selected.severity} aria-label="선택한 알림 상세">
           <div className="alert-pass__head">
             <small>OPERATION ALERT</small>
             <h2>{selected.title}</h2>
