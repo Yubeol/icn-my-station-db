@@ -153,15 +153,15 @@
 
 예시:
 ```json
-{"topic": "yolo_count", "scope": "T1", "data": {"cameraId": 1, "zoneId": 0, "personCount": 4, "crowdLevel": "LOW", "measuredAt": "2026-11-12T14:03:05+09:00"}, "sentAt": "2026-11-12T14:03:05+09:00"}
-{"topic": "yolo_alert", "scope": null, "data": {"eventId": 12, "cameraId": 1, "zoneId": 0, "eventType": "HELP_GESTURE", "confidence": 0.83, "detectedAt": "2026-11-12T14:03:05.120+09:00", "reviewStatus": "PENDING"}, "sentAt": "2026-11-12T14:03:05+09:00"}
+{"topic": "yolo_count", "scope": "T1", "data": {"cameraId": 1, "zoneId": 4, "personCount": 4, "crowdLevel": "LOW", "measuredAt": "2026-11-12T14:03:05+09:00"}, "sentAt": "2026-11-12T14:03:05+09:00"}
+{"topic": "yolo_alert", "scope": null, "data": {"eventId": 12, "cameraId": 1, "zoneId": 4, "eventType": "HELP_GESTURE", "confidence": 0.83, "detectedAt": "2026-11-12T14:03:05.120+09:00", "reviewStatus": "PENDING"}, "sentAt": "2026-11-12T14:03:05+09:00"}
 ```
 
 ## 6. REST API
 
 ### GET /api/v1/yolo/cameras
 ```json
-[{"cameraId": 1, "zoneId": 0, "name": "T1 3번 출국장 DEMO", "isActive": true, "camera": "ONLINE", "worker": "ONLINE"}]
+[{"cameraId": 1, "zoneId": 4, "name": "cam-t1-hall3", "isActive": true, "camera": "ONLINE", "worker": "ONLINE"}]
 ```
 
 ### GET /api/v1/yolo/events?cameraId=&reviewStatus=&limit=50
