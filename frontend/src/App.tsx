@@ -93,7 +93,7 @@ export default function App() {
       {menus.map(item => <button key={item.key} type="button" className={page === item.key ? 'is-active' : ''} aria-current={page === item.key ? 'page' : undefined} onClick={() => navigate(item.key)}>{item.label}</button>)}
       <FlightSearch onSearch={openFlight} />
     </nav>
-    {page === 'home' && <MainDashboard navigate={navigate} onOpenFlight={openFlight} />}
+    {page === 'home' && <MainDashboard navigate={navigate} onOpenFlight={openFlight} onOpenAlert={alertId => openAlerts({ alertId })} />}
     {page === 'flights' && <FlightsPage />}
     {page === 'statistics' && <StatisticsPage />}
     {page === 'weather' && <WeatherPage />}

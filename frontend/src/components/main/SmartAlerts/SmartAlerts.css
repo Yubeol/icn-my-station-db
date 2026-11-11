@@ -158,3 +158,7 @@
     font-size: 9px;
   }
 }
+
+/* YOLO 사건(눌러서 스마트 알림으로 이동) */
+.smart-alerts__item--link { cursor: pointer; transition: background-color .15s, border-color .15s; }
+.smart-alerts__item--link:hover, .smart-alerts__item--link:focus-visible { border-color: #e5a29c; background: #fff6f5; outline: none; }

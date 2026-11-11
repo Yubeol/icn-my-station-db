@@ -2,6 +2,7 @@
 import { useMemo } from "react";
 import { useLiveUpdates } from "../../../hooks/useLiveUpdates";
 import Skeleton from "../../layout/Skeleton";
+import { useYoloAlertFeed } from "../../../hooks/useYoloAlertFeed";
 import "./SmartAlerts.css";
 
 type Terminal = "T1" | "T2";
@@ -9,6 +10,8 @@ type JsonObject = Record<string, unknown>;
 
 interface Props {
   terminal: Terminal;
+  /** YOLO 사건을 누르면 호출됩니다. 스마트 알림 화면으로 이동해 그 사건을 선택하는 데 씁니다. */
+  onOpenAlert?: (alertId: string) => void;
 }
 
 interface AlertItem {
@@ -20,6 +23,8 @@ interface AlertItem {
   type: string | null;
   severity: string | null;
   isImportant: boolean;
+  /** YOLO 사건이면 true. 누를 수 있고, 스마트 알림 화면과 같은 목록에서 합쳐 온 항목입니다. */
+  isYolo?: boolean;
 }
 
 const MAX_ITEMS = 3;
@@ -212,14 +217,32 @@ function getTone(alert: AlertItem): string {
   return "normal";
 }
 
-export default function SmartAlerts({ terminal }: Props) {
+export default function SmartAlerts({ terminal, onOpenAlert }: Props) {
   const { data, loading, error } = useLiveUpdates<AlertItem[]>({
     topic: "alerts",
     scope: null,
     fetcher: getAlerts,
     intervalMs: 0,
   });
-  const alerts = data ?? [];
+  // 스마트 알림 화면과 같은 방식으로 YOLO 사건(제스처)을 합칩니다. 새 알림·판정은 실시간으로 반영됩니다.
+  const yoloAlerts = useYoloAlertFeed();
+  const alerts = useMemo<AlertItem[]>(
+    () => [
+      ...(data ?? []),
+      ...yoloAlerts.map((alert) => ({
+        id: alert.alertId,
+        title: alert.title,
+        message: alert.message,
+        occurredAt: alert.createdAt,
+        terminal: alert.terminal ?? null,
+        type: alert.type,
+        severity: alert.severity,
+        isImportant: alert.severity === "CRITICAL",
+        isYolo: true,
+      })),
+    ],
+    [data, yoloAlerts]
+  );
 
   const visibleAlerts = useMemo(() => {
     const scoped = alerts.filter((alert) => {
@@ -307,7 +330,21 @@ export default function SmartAlerts({ terminal }: Props) {
           return (
             <article
               key={alert.id}
-              className={`smart-alerts__item smart-alerts__item--${tone}`}
+              className={`smart-alerts__item smart-alerts__item--${tone}${alert.isYolo && onOpenAlert ? " smart-alerts__item--link" : ""}`}
+              {...(alert.isYolo && onOpenAlert
+                ? {
+                    role: "button",
+                    tabIndex: 0,
+                    title: "스마트 알림에서 이 사건 보기",
+                    onClick: () => onOpenAlert(alert.id),
+                    onKeyDown: (event: React.KeyboardEvent) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onOpenAlert(alert.id);
+                      }
+                    },
+                  }
+                : {})}
             >
               <span
                 className="smart-alerts__indicator"
