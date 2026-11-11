@@ -14,6 +14,18 @@ export type YoloReviewStatus = 'PENDING' | 'CONFIRMED' | 'FALSE_POSITIVE'
 /** 판정 요청에 쓸 수 있는 값. PENDING으로 되돌리는 요청은 서버가 받지 않습니다. */
 export type YoloReviewDecision = Exclude<YoloReviewStatus, 'PENDING'>
 
+// ---------- 이벤트 종류별 화면 이름 (계약 v0.4: HELP_GESTURE, FINGER_GUN) ----------
+
+/** name은 문장에, short는 좁은 곳(분포 막대 등)에 씁니다. 모르는 종류는 일반 제스처로 보여 줍니다. */
+const YOLO_EVENT_NAMES: Record<string, { name: string; short: string }> = {
+  HELP_GESTURE: { name: '도움 요청 제스처', short: '도움 요청' },
+  FINGER_GUN: { name: '손가락 총 제스처', short: '손가락 총' },
+}
+
+export function yoloEventName(eventType: string): { name: string; short: string } {
+  return YOLO_EVENT_NAMES[eventType] ?? { name: '제스처', short: '제스처' }
+}
+
 // ---------- 카메라 ↔ 출국장 ----------
 
 /**

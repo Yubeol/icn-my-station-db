@@ -24,7 +24,9 @@ type Props = {
   review?: ReviewMode
 }
 
-const BOX_COLOR: Record<string, string> = { person: '#4fe0ae', head: '#6db3ff', help_gesture: '#ff5d4d' }
+// 제스처 클래스(help_gesture, finger_gun)는 같은 빨간색으로 강조합니다.
+const GESTURE_CLASSES = new Set(['help_gesture', 'finger_gun'])
+const BOX_COLOR: Record<string, string> = { person: '#4fe0ae', head: '#6db3ff', help_gesture: '#ff5d4d', finger_gun: '#ff5d4d' }
 const DEFAULT_ASPECT = { width: 640, height: 360 }
 
 /** 이미지가 object-fit: contain으로 놓인 영역(캔버스 좌표). 박스 좌표는 이 영역 기준 0~1 비율입니다. */
@@ -58,7 +60,7 @@ function drawBoxes(canvas: HTMLCanvasElement, detections: YoloDetection[], srcW:
     const h = (y2 - y1) * area.height
     const color = BOX_COLOR[detection.cls] ?? '#ffd23f'
     context.strokeStyle = color
-    context.lineWidth = boldGesture && detection.cls === 'help_gesture' ? 4 : 2
+    context.lineWidth = boldGesture && GESTURE_CLASSES.has(detection.cls) ? 4 : 2
     context.strokeRect(x, y, w, h)
     const label = `${detection.cls} ${Math.round(detection.conf * 100)}%`
     const labelW = context.measureText(label).width + 8
@@ -103,7 +105,7 @@ export default function CctvViewer({ cameraId, title, onClose, review }: Props) 
 
   // 판정 모드에서는 배경 클릭·Esc로 닫히지 않게 하고(실수로 닫아 판정이 미뤄지는 것을 막음), 닫기 버튼으로만 닫습니다.
   return <YoloDialog
-    label={review ? `${title} CCTV 현장 확인, 도움 요청 제스처 판정` : `${title} CCTV`}
+    label={review ? `${title} CCTV 현장 확인, 제스처 판정` : `${title} CCTV`}
     onClose={review ? undefined : onClose}
     urgent={review !== undefined}
     className={`yolo-cctv${review ? ' is-review' : ''}`}>

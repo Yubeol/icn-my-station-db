@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeftRight, Ban, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Clock3, CloudSun, Plane, Search, Siren, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { getAlerts } from '../api/client';
-import { YOLO_ALERT_TYPE, YOLO_STATUS_LABEL } from '../api/yoloAlerts';
+import { YOLO_ALERT_TYPE, YOLO_ALERT_TYPES, YOLO_STATUS_LABEL } from '../api/yoloAlerts';
 import type { FeedAlert } from '../api/yoloAlerts';
 import { useLiveUpdates } from '../hooks/useLiveUpdates';
 import { useYolo } from '../hooks/useYoloLive';
@@ -20,14 +20,17 @@ const SEVERITIES: { key: Severity; label: string }[] = [
   { key: 'WARN', label: '주의' },
   { key: 'INFO', label: '정보' },
 ];
-const TYPES: Record<string, { label: string; icon: LucideIcon }> = {
+// label은 목록·분포 막대에, filterLabel은 유형 선택 목록에 보입니다. noFilter는 선택 목록에서 뺍니다.
+const TYPES: Record<string, { label: string; icon: LucideIcon; filterLabel?: string; noFilter?: boolean }> = {
   DELAY: { label: '지연', icon: Clock3 },
   CANCELLED: { label: '결항', icon: Ban },
   GATE_CHANGE: { label: '게이트 변경', icon: ArrowLeftRight },
   CONGESTION: { label: '출국장 혼잡', icon: Users },
   WEATHER: { label: '기상 주의', icon: CloudSun },
   BOARDING: { label: '탑승', icon: Plane },
-  [YOLO_ALERT_TYPE]: { label: '도움 요청', icon: Siren },
+  [YOLO_ALERT_TYPES.HELP_GESTURE]: { label: '도움 요청', filterLabel: '도움 요청 제스처', icon: Siren },
+  [YOLO_ALERT_TYPES.FINGER_GUN]: { label: '손가락 총', filterLabel: '손가락 총 제스처', icon: Siren },
+  [YOLO_ALERT_TYPE]: { label: '제스처', icon: Siren, noFilter: true },
 };
 const SEVERITY_COLOR: Record<string, string> = { CRITICAL: '#d9434e', WARN: '#c98a1b', INFO: '#1d6fd1' };
 const SEVERITY_LABEL: Record<string, string> = { CRITICAL: '긴급', WARN: '주의', INFO: '정보' };
@@ -134,7 +137,7 @@ export default function AlertsPage({ focus, onOpenCongestion }: Props = {}) {
     return () => window.clearInterval(timer);
   }, []);
 
-  // 기존 알림에 YOLO 사건(도움 요청 제스처)을 시간순으로 합칩니다. 이후 필터·요약·분포는 합쳐진 목록을 그대로 씁니다.
+  // 기존 알림에 YOLO 사건(제스처)을 시간순으로 합칩니다. 이후 필터·요약·분포는 합쳐진 목록을 그대로 씁니다.
   const yoloAlerts = useYoloAlertFeed();
   const { openReview } = useYolo();
   const alerts = useMemo(
@@ -247,7 +250,7 @@ export default function AlertsPage({ focus, onOpenCongestion }: Props = {}) {
           </select>
           <select value={type} aria-label="알림 유형" onChange={event => setType(event.target.value)}>
             <option value="ALL">모든 유형</option>
-            {Object.entries(TYPES).map(([key, value]) => <option key={key} value={key}>{value.label}</option>)}
+            {Object.entries(TYPES).filter(([, value]) => !value.noFilter).map(([key, value]) => <option key={key} value={key}>{value.filterLabel ?? value.label}</option>)}
           </select>
         </div>
         <div className="alert-chips" role="group" aria-label="중요도">

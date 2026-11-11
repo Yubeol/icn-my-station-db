@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { yoloEventName } from '../../api/yolo'
 import type { YoloEvent, YoloReviewDecision } from '../../api/yolo'
 import { useYolo } from '../../hooks/useYoloLive'
 import type { YoloReviewOutcome } from '../../hooks/useYoloLive'
@@ -54,7 +55,7 @@ export default function YoloReviewViewer({ event, onClose }: Props) {
     review={{
       band: elsewhere
         ? '다른 화면에서 판정됨'
-        : `도움 요청 제스처 감지 · ${clockFormat.format(new Date(event.detectedAt))} · 신뢰도 ${Math.round(event.confidence * 100)}%`,
+        : `${yoloEventName(event.eventType).name} 감지 · ${clockFormat.format(new Date(event.detectedAt))} · 신뢰도 ${Math.round(event.confidence * 100)}%`,
       done: elsewhere,
       busy,
       message,

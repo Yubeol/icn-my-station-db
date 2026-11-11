@@ -1,5 +1,5 @@
 import type { Alert } from './client'
-import { YOLO_CAMERA_HALLS } from './yolo'
+import { YOLO_CAMERA_HALLS, yoloEventName } from './yolo'
 import type { YoloEvent, YoloReviewStatus } from './yolo'
 
 /**
@@ -8,7 +8,13 @@ import type { YoloEvent, YoloReviewStatus } from './yolo'
  */
 export type FeedAlert = Omit<Alert, 'type'> & { type: string; terminal?: string | null; yolo?: YoloEvent }
 
-export const YOLO_ALERT_TYPE = 'YOLO_GESTURE'
+export const YOLO_ALERT_TYPE = 'YOLO_GESTURE' // 모르는 이벤트 종류
+export const YOLO_ALERT_TYPES = { HELP_GESTURE: 'YOLO_HELP_GESTURE', FINGER_GUN: 'YOLO_FINGER_GUN' } as const
+
+/** 스마트 알림의 유형 값. 이벤트 종류마다 따로 두어 유형 필터·분포에서 나눠 볼 수 있게 합니다. */
+export function yoloAlertType(eventType: string): string {
+  return YOLO_ALERT_TYPES[eventType as keyof typeof YOLO_ALERT_TYPES] ?? YOLO_ALERT_TYPE
+}
 export const YOLO_ALERT_WINDOW_MS = 24 * 3_600_000 // 기존 알림 목록과 같은 최근 24시간
 
 export const YOLO_STATUS_LABEL: Record<YoloReviewStatus, string> = {
@@ -36,9 +42,9 @@ export function yoloEventToAlert(event: YoloEvent): FeedAlert {
   const where = place?.label ?? `카메라 ${event.cameraId}번`
   return {
     alertId: yoloAlertId(event.eventId),
-    type: YOLO_ALERT_TYPE,
+    type: yoloAlertType(event.eventType),
     severity: event.reviewStatus === 'FALSE_POSITIVE' ? 'INFO' : 'CRITICAL',
-    title: '도움 요청 제스처 감지',
+    title: `${yoloEventName(event.eventType).name} 감지`,
     message: `${where} · DEMO 카메라 · 신뢰도 ${Math.round(event.confidence * 100)}% · ${YOLO_STATUS_LABEL[event.reviewStatus]}`,
     flightNo: null,
     isMine: false,

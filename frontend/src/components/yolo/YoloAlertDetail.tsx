@@ -1,3 +1,4 @@
+import { yoloEventName } from '../../api/yolo'
 import { YOLO_STATUS_LABEL, yoloPlace } from '../../api/yoloAlerts'
 import type { FeedAlert } from '../../api/yoloAlerts'
 import './yolo.css'
@@ -31,7 +32,7 @@ export default function YoloAlertDetail({ alert, onCctv, onOpenHall }: Props) {
       <h2>{alert.title}</h2>
       <div className="alert-pass__badges">
         <b data-severity={alert.severity}>{alert.severity === 'CRITICAL' ? '긴급' : '정보'}</b>
-        <span>도움 요청 제스처</span>
+        <span>{yoloEventName(event.eventType).name}</span>
         <span className="yolo-detail__status" data-status={event.reviewStatus}>{YOLO_STATUS_LABEL[event.reviewStatus]}</span>
         <span className="yolo-detail__demo">DEMO · CCTV</span>
       </div>
