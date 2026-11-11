@@ -9,6 +9,7 @@ import WeatherPage from './pages/WeatherPage';
 import CongestionPage from './pages/CongestionPage';
 import FacilitiesPage from './pages/FacilitiesPage';
 import AlertsPage from './pages/AlertsPage';
+import YoloProvider from './components/yolo/YoloProvider';
 import './App.css';
 import './polish.css';
 
@@ -68,7 +69,7 @@ export default function App() {
     </Suspense>;
   }
 
-  return <div className={`icn-app ${entering ? 'is-entering' : ''}`} onAnimationEnd={event => {
+  return <YoloProvider><div className={`icn-app ${entering ? 'is-entering' : ''}`} onAnimationEnd={event => {
     if (event.target === event.currentTarget) setEntering(false);
   }}>
     <Header onBrandClick={() => setShowIntro(true)} />
@@ -84,5 +85,5 @@ export default function App() {
     {page === 'facilities' && <FacilitiesPage />}
     {page === 'alerts' && <AlertsPage />}
     {page === 'myFlight' && <MyFlightPage flightNo={flightNo} navigate={navigate} />}
-  </div>;
+  </div></YoloProvider>;
 }
