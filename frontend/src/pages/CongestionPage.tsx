@@ -164,7 +164,7 @@ export default function CongestionPage() {
           {ranked.map(hall => {
             const checking = isHallChecking(hall);
             const yoloInfo = yoloOf(hall.hallId);
-            return <li key={hall.hallId}>
+            return <li key={hall.hallId} className={yoloInfo ? 'has-yolo' : undefined}>
               <button
                 type="button"
                 className={hall.hallId === selectedId ? 'is-selected' : ''}
