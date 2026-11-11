@@ -3,9 +3,9 @@
 from datetime import timedelta
 
 from app.core import rules
+from app.core.errors import FlightNotFoundError
 from app.core.timeutil import now_kst
 from app.schemas import Alert, AlertSeverity, AlertType, Terminal
-from app.core.errors import FlightNotFoundError
 from app.services.flights import get_flight, resolve_my_flight_no
 
 # (id, 종류, 중요도, 제목, 내용, 편명, 중요 알림 여부, 발생 시각 오프셋(분))
