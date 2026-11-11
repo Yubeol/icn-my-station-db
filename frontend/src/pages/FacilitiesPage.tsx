@@ -201,7 +201,10 @@ export default function FacilitiesPage({ focus }: { focus?: FacilitiesFocus } = 
       <div className="fac-list">
         {cctvCameras.map(camera => <div className="fac-cctv" key={camera.cameraId}>
           <span><b>DEMO</b>{camera.label}</span>
-          <button type="button" onClick={() => setCctv({ cameraId: camera.cameraId, title: camera.label })}>CCTV</button>
+          <button type="button" onClick={() => {
+            setFloor(camera.floor); // 닫은 뒤 지도에서 알약이 보이도록 카메라가 있는 층으로 바꿉니다
+            setCctv({ cameraId: camera.cameraId, title: camera.label });
+          }}>CCTV</button>
         </div>)}
         {filterZone && <div className="fac-zonechip">
           <span>{filterZone.label} · {filterZone.places.length}곳</span>
