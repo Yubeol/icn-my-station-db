@@ -46,7 +46,7 @@ export function yoloEventToAlert(event: YoloEvent): FeedAlert {
     alertId: yoloAlertId(event.eventId),
     type: yoloAlertType(event.eventType),
     severity: event.reviewStatus === 'FALSE_POSITIVE' ? 'INFO' : 'CRITICAL',
-    title: `${yoloEventName(event.eventType).name} 감지`,
+    title: yoloEventName(event.eventType).headline,
     message: `${where} · DEMO 카메라 · 신뢰도 ${Math.round(event.confidence * 100)}% · ${YOLO_STATUS_LABEL[event.reviewStatus]}`,
     flightNo: null,
     isMine: false,

@@ -55,7 +55,8 @@ export default function YoloReviewViewer({ event, onClose }: Props) {
     review={{
       band: elsewhere
         ? '다른 화면에서 판정됨'
-        : `${yoloEventName(event.eventType).name} 감지 · ${clockFormat.format(new Date(event.detectedAt))} · 신뢰도 ${Math.round(event.confidence * 100)}%`,
+        : `${yoloEventName(event.eventType).band} · ${clockFormat.format(new Date(event.detectedAt))} · 신뢰도 ${Math.round(event.confidence * 100)}%`,
+      note: yoloEventName(event.eventType).note,
       done: elsewhere,
       busy,
       message,

@@ -9,6 +9,8 @@ import { YOLO_LEVEL_LABEL } from './yoloStatus'
 export type ReviewMode = {
   /** 상단 띠 문구 */
   band: string
+  /** 영상 제목 아래 보조 문구. 없으면 DEMO 안내 문구를 씁니다. */
+  note?: string | null
   /** 이미 판정됨(다른 화면 등). 띠를 회색으로 바꾸고 버튼을 막습니다. */
   done: boolean
   busy: boolean
@@ -114,7 +116,7 @@ export default function CctvViewer({ cameraId, title, onClose, review }: Props) 
     <header className="yolo-cctv__head">
       <div>
         <h2>{title} CCTV</h2>
-        <p>실제 공항 CCTV가 아닌 DEMO 카메라 영상입니다.</p>
+        <p>{review?.note ?? '실제 공항 CCTV가 아닌 DEMO 카메라 영상입니다.'}</p>
       </div>
       <button type="button" className="yolo-cctv__close" onClick={onClose} aria-label="CCTV 닫기">닫기</button>
     </header>

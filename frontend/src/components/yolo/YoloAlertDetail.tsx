@@ -38,7 +38,7 @@ export default function YoloAlertDetail({ alert, onCctv, onOpenHall }: Props) {
         <span className="yolo-detail__demo">DEMO · CCTV</span>
       </div>
     </div>
-    <p className="alert-pass__message">자동 감지 후보입니다. CCTV로 확인한 뒤 판정해 주세요.</p>
+    <p className="alert-pass__message">{yoloEventName(event.eventType).note ?? '자동 감지 후보입니다. CCTV로 확인한 뒤 판정해 주세요.'}</p>
     <dl>
       <dt>위치</dt><dd>{place?.label ?? `카메라 ${event.cameraId}번`}</dd>
       <dt>감지 시각</dt><dd><time dateTime={event.detectedAt}>{fullFormat.format(new Date(event.detectedAt))}</time></dd>

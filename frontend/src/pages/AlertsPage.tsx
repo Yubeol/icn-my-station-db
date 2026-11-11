@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeftRight, Ban, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Clock3, CloudSun, Plane, Search, Siren, Users } from 'lucide-react';
+import { ArrowLeftRight, Ban, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Clock3, CloudSun, Plane, Search, Siren, TriangleAlert, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { getAlerts } from '../api/client';
+import { yoloEventName } from '../api/yolo';
 import { YOLO_ALERT_TYPE, YOLO_ALERT_TYPES, YOLO_STATUS_LABEL } from '../api/yoloAlerts';
 import type { FeedAlert } from '../api/yoloAlerts';
 import { useLiveUpdates } from '../hooks/useLiveUpdates';
@@ -29,7 +30,8 @@ const TYPES: Record<string, { label: string; icon: LucideIcon; filterLabel?: str
   WEATHER: { label: '기상 주의', icon: CloudSun },
   BOARDING: { label: '탑승', icon: Plane },
   [YOLO_ALERT_TYPES.HELP_GESTURE]: { label: '도움 요청', filterLabel: '도움 요청 제스처', icon: Siren },
-  [YOLO_ALERT_TYPES.FINGER_GUN]: { label: '손가락 총', filterLabel: '손가락 총 제스처', icon: Siren },
+  // 손가락 총(FINGER_GUN)은 화면에서 '흉기 위협 의심'으로 부르고 경고 아이콘을 씁니다.
+  [YOLO_ALERT_TYPES.FINGER_GUN]: { label: yoloEventName('FINGER_GUN').short, filterLabel: yoloEventName('FINGER_GUN').filter, icon: TriangleAlert },
   [YOLO_ALERT_TYPE]: { label: '제스처', icon: Siren, noFilter: true },
 };
 const SEVERITY_COLOR: Record<string, string> = { CRITICAL: '#d9434e', WARN: '#c98a1b', INFO: '#1d6fd1' };

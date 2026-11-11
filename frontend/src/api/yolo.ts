@@ -14,16 +14,50 @@ export type YoloReviewStatus = 'PENDING' | 'CONFIRMED' | 'FALSE_POSITIVE'
 /** 판정 요청에 쓸 수 있는 값. PENDING으로 되돌리는 요청은 서버가 받지 않습니다. */
 export type YoloReviewDecision = Exclude<YoloReviewStatus, 'PENDING'>
 
-// ---------- 이벤트 종류별 화면 이름 (계약 v0.4: HELP_GESTURE, FINGER_GUN) ----------
+// ---------- 이벤트 종류별 화면 문구 (계약 v0.4: HELP_GESTURE, FINGER_GUN) ----------
+// 데이터 이름(FINGER_GUN)과 박스 클래스(finger_gun)는 그대로이고, 화면에 보이는 문구만 여기서 정합니다.
 
-/** name은 문장에, short는 좁은 곳(분포 막대 등)에 씁니다. 모르는 종류는 일반 제스처로 보여 줍니다. */
-const YOLO_EVENT_NAMES: Record<string, { name: string; short: string }> = {
-  HELP_GESTURE: { name: '도움 요청 제스처', short: '도움 요청' },
-  FINGER_GUN: { name: '손가락 총 제스처', short: '손가락 총' },
+export type YoloEventName = {
+  /** 토스트·배지에 쓰는 이름 */
+  name: string
+  /** 분포 막대처럼 좁은 곳에 쓰는 이름 */
+  short: string
+  /** 목록·상세의 제목 */
+  headline: string
+  /** 판정 모드 뷰어 띠의 앞부분 */
+  band: string
+  /** 유형 선택 목록의 이름 */
+  filter: string
+  /** 상세·판정 뷰어의 보조 문구. 없으면 기본 문구를 씁니다. */
+  note: string | null
 }
 
-export function yoloEventName(eventType: string): { name: string; short: string } {
-  return YOLO_EVENT_NAMES[eventType] ?? { name: '제스처', short: '제스처' }
+const YOLO_EVENT_NAMES: Record<string, YoloEventName> = {
+  HELP_GESTURE: {
+    name: '도움 요청 제스처',
+    short: '도움 요청',
+    headline: '도움 요청 제스처 감지',
+    band: '도움 요청 제스처 감지',
+    filter: '도움 요청 제스처',
+    note: null,
+  },
+  FINGER_GUN: {
+    name: '흉기 위협 의심',
+    short: '흉기 의심',
+    headline: '흉기 위협 의심 동작 감지 · 확인 필요',
+    band: '흉기 위협 의심 동작 감지',
+    filter: '흉기 위협 의심',
+    note: '총 모양 손동작(DEMO 대체 신호) · 자동 감지 후보입니다',
+  },
+}
+
+/** 모르는 이벤트 종류는 일반 제스처 문구로 보여 줍니다. */
+export function yoloEventName(eventType: string): YoloEventName {
+  return (
+    YOLO_EVENT_NAMES[eventType] ?? {
+      name: '제스처', short: '제스처', headline: '제스처 감지', band: '제스처 감지', filter: '제스처', note: null,
+    }
+  )
 }
 
 // ---------- 카메라 ↔ 출국장 ----------
