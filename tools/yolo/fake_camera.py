@@ -5,6 +5,7 @@
 예)
     python tools/yolo/fake_camera.py --url ws://localhost:8000 --camera-id 1 --source 0 --fps 5
     python tools/yolo/fake_camera.py --url wss://example.com --source sample.jpg --token ...
+    python tools/yolo/fake_camera.py --list-cameras     # 열리는 웹캠 번호 확인(0~5)
 
 토큰은 --token 또는 환경변수 YOLO_CAMERA_TOKEN으로 준다. 토큰과 프레임은 출력하지 않는다.
 프레임은 메모리에서 바로 보내고 디스크·로그에 남기지 않는다.
@@ -15,6 +16,7 @@ import asyncio
 import json
 import os
 import struct
+import sys
 import time
 from urllib.parse import urlencode
 
@@ -44,6 +46,54 @@ def camera_url(base: str, camera_id: int, token: str) -> str:
     return f"{base.rstrip('/')}/ws/yolo/camera?{query}"
 
 
+MAX_CAMERA_INDEX = 5  # --list-cameras가 확인하는 번호: 0~5
+
+
+def open_webcam(index: int):
+    """웹캠을 연다. Windows에서는 DirectShow(CAP_DSHOW)로 먼저 열고, 안 열리면 기본 방식으로 다시 시도한다.
+
+    (VideoCapture, 사용한 방식 이름)을 돌려준다. 어느 쪽으로도 안 열리면 (None, None).
+    """
+    import cv2  # tools/yolo/requirements.txt에만 있는 의존성
+
+    attempts = []
+    if sys.platform == "win32":
+        attempts.append(("DSHOW", lambda: cv2.VideoCapture(index, cv2.CAP_DSHOW)))
+    attempts.append(("기본", lambda: cv2.VideoCapture(index)))
+    for name, make in attempts:
+        capture = make()
+        if capture.isOpened():
+            return capture, name
+        capture.release()
+    return None, None
+
+
+def list_cameras(out=print) -> list[int]:
+    """0~5번 웹캠을 열어 보고 열리는 번호를 출력한다. 열린 번호 목록을 돌려준다."""
+    import cv2
+
+    try:  # 열리지 않는 번호마다 OpenCV가 경고를 쏟아내므로 조용히 만든다(없으면 그대로 둔다)
+        cv2.utils.logging.setLogLevel(cv2.utils.logging.LOG_LEVEL_SILENT)
+    except AttributeError:
+        pass
+    found = []
+    for index in range(MAX_CAMERA_INDEX + 1):
+        capture, method = open_webcam(index)
+        if capture is None:
+            out(f"{index}번: 열리지 않음")
+            continue
+        width = int(capture.get(3))  # cv2.CAP_PROP_FRAME_WIDTH
+        height = int(capture.get(4))  # cv2.CAP_PROP_FRAME_HEIGHT
+        capture.release()
+        found.append(index)
+        out(f"{index}번: 열림 ({method}, {width}x{height})")
+    if found:
+        out(f"사용할 수 있는 번호: {', '.join(map(str, found))}  →  --source {found[0]}")
+    else:
+        out("열리는 웹캠이 없습니다. 다른 프로그램이 카메라를 쓰고 있지 않은지 확인하세요.")
+    return found
+
+
 class FrameSource:
     """웹캠(숫자) 또는 이미지 파일에서 JPEG 한 장씩 만든다."""
 
@@ -55,9 +105,12 @@ class FrameSource:
         self.capture = None
         self.image = None
         if source.isdigit():
-            self.capture = cv2.VideoCapture(int(source))
-            if not self.capture.isOpened():
-                raise SystemExit(f"웹캠 {source}번을 열 수 없습니다.")
+            self.capture, method = open_webcam(int(source))
+            if self.capture is None:
+                raise SystemExit(
+                    f"웹캠 {source}번을 열 수 없습니다. --list-cameras로 열리는 번호를 확인하세요."
+                )
+            print(f"웹캠 {source}번 열림 ({method})")
         else:
             self.image = cv2.imread(source)
             if self.image is None:
@@ -133,6 +186,11 @@ def parse_args(argv=None) -> argparse.Namespace:
     p.add_argument("--token", default=None, help="기본값: 환경변수 YOLO_CAMERA_TOKEN")
     p.add_argument("--fps", type=float, default=5.0, help="송출 fps (서버 maxFps를 넘지 않음)")
     p.add_argument("--source", default="0", help="웹캠 번호(0, 1, ...) 또는 이미지 파일 경로")
+    p.add_argument(
+        "--list-cameras",
+        action="store_true",
+        help="웹캠 0~5번을 열어 보고 열리는 번호를 출력한 뒤 종료",
+    )
     p.add_argument("--width", type=int, default=640)
     p.add_argument("--height", type=int, default=360)
     p.add_argument("--quality", type=int, default=65, help="JPEG 품질 1~100 (계약 권장 0.65)")
@@ -140,7 +198,11 @@ def parse_args(argv=None) -> argparse.Namespace:
 
 
 if __name__ == "__main__":
+    arguments = parse_args()
+    if arguments.list_cameras:
+        list_cameras()
+        sys.exit(0)
     try:
-        asyncio.run(run(parse_args()))
+        asyncio.run(run(arguments))
     except KeyboardInterrupt:
         pass
