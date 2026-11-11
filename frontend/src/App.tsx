@@ -10,7 +10,9 @@ import CongestionPage from './pages/CongestionPage';
 import FacilitiesPage from './pages/FacilitiesPage';
 import AlertsPage from './pages/AlertsPage';
 import YoloProvider from './components/yolo/YoloProvider';
-import YoloAlertModal from './components/yolo/YoloAlertModal';
+import YoloToast from './components/yolo/YoloToast';
+import YoloReviewHost from './components/yolo/YoloReviewHost';
+import type { AlertsFocus } from './navigation';
 import './App.css';
 import './polish.css';
 
@@ -48,6 +50,8 @@ const menus: { key: PageKey; label: string }[] = [
 export default function App() {
   const [page, setPage] = useState<PageKey>('home');
   const [flightNo, setFlightNo] = useState('');
+  // 스마트 알림 화면으로 이동할 때 넘기는 값(중요도 필터, 선택할 알림). nonce가 바뀌면 화면을 새로 맞춥니다.
+  const [alertsFocus, setAlertsFocus] = useState<AlertsFocus>({ nonce: 0 });
   const [showIntro, setShowIntro] = useState(() => !introSeen());
   // 소개 화면에서 넘어온 직후에만 메인을 페이드 인합니다.
   const [entering, setEntering] = useState(false);
@@ -55,6 +59,10 @@ export default function App() {
   const openFlight = (next: string) => {
     setFlightNo(next);
     setPage('myFlight');
+  };
+  const openAlerts = (focus: Omit<AlertsFocus, 'nonce'>) => {
+    setAlertsFocus(current => ({ ...focus, nonce: current.nonce + 1 }));
+    setPage('alerts');
   };
   const startDashboard = () => {
     markIntroSeen();
@@ -70,10 +78,10 @@ export default function App() {
     </Suspense>;
   }
 
-  return <YoloProvider><YoloAlertModal /><div className={`icn-app ${entering ? 'is-entering' : ''}`} onAnimationEnd={event => {
+  return <YoloProvider><YoloToast onOpen={event => openAlerts({ alertId: `yolo-${event.eventId}` })} /><YoloReviewHost /><div className={`icn-app ${entering ? 'is-entering' : ''}`} onAnimationEnd={event => {
     if (event.target === event.currentTarget) setEntering(false);
   }}>
-    <Header onBrandClick={() => setShowIntro(true)} />
+    <Header onBrandClick={() => setShowIntro(true)} onUrgentClick={() => openAlerts({ severity: 'CRITICAL' })} />
     <nav className="icn-nav" aria-label="대시보드 메뉴">
       {menus.map(item => <button key={item.key} type="button" className={page === item.key ? 'is-active' : ''} aria-current={page === item.key ? 'page' : undefined} onClick={() => navigate(item.key)}>{item.label}</button>)}
       <FlightSearch onSearch={openFlight} />
@@ -84,7 +92,7 @@ export default function App() {
     {page === 'weather' && <WeatherPage />}
     {page === 'congestion' && <CongestionPage />}
     {page === 'facilities' && <FacilitiesPage />}
-    {page === 'alerts' && <AlertsPage />}
+    {page === 'alerts' && <AlertsPage key={alertsFocus.nonce} focus={alertsFocus} />}
     {page === 'myFlight' && <MyFlightPage flightNo={flightNo} navigate={navigate} />}
   </div></YoloProvider>;
 }

@@ -28,6 +28,14 @@ export type YoloLiveState = {
   counts: Record<number, YoloCountLive>
   /** 판정 대기 알림. 최근 감지가 앞입니다. */
   pending: YoloEvent[]
+  /** WebSocket으로 새로 받은 마지막 알림(접속할 때 REST로 받은 기존 대기 알림은 제외). 토스트가 씁니다. */
+  lastAlert: { seq: number; event: YoloEvent } | null
+  /** yolo_alert·yolo_alert_reviewed·판정을 받을 때마다 올라가는 번호. 목록 화면이 다시 조회할 때 씁니다. */
+  eventsVersion: number
+  /** 판정 모드 CCTV 뷰어로 보고 있는 알림. 앱 어디서든 열 수 있습니다. */
+  reviewing: YoloEvent | null
+  openReview: (event: YoloEvent) => void
+  closeReview: () => void
   review: (eventId: number, decision: YoloReviewDecision) => Promise<YoloReviewOutcome>
 }
 
@@ -36,6 +44,11 @@ const EMPTY: YoloLiveState = {
   cameras: {},
   counts: {},
   pending: [],
+  lastAlert: null,
+  eventsVersion: 0,
+  reviewing: null,
+  openReview: () => {},
+  closeReview: () => {},
   review: async () => 'error',
 }
 
@@ -59,6 +72,9 @@ export function useYoloLiveState(): YoloLiveState {
   const [cameras, setCameras] = useState<Record<number, YoloCameraLive>>({})
   const [counts, setCounts] = useState<Record<number, YoloCountLive>>({})
   const [pending, setPending] = useState<YoloEvent[]>([])
+  const [lastAlert, setLastAlert] = useState<YoloLiveState['lastAlert']>(null)
+  const [eventsVersion, setEventsVersion] = useState(0)
+  const [reviewing, setReviewing] = useState<YoloEvent | null>(null)
   // 판정이 끝난 eventId. 조회 응답이 늦게 도착해도 닫힌 알림이 되살아나지 않게 합니다.
   const reviewedIds = useRef(new Set<number>())
 
@@ -116,9 +132,14 @@ export function useYoloLiveState(): YoloLiveState {
         const event: YoloEvent = { ...alert, reviewedAt: null }
         receivedDuringFetch = [...receivedDuringFetch, event]
         setPending(list => upsert(list, event))
+        setLastAlert(current => ({ seq: (current?.seq ?? 0) + 1, event }))
+        setEventsVersion(version => version + 1)
       } else if (message.topic === 'yolo_alert_reviewed') {
         const reviewed = parseYoloAlertReviewed(message.data)
-        if (reviewed) markReviewed(reviewed.eventId)
+        if (reviewed) {
+          markReviewed(reviewed.eventId)
+          setEventsVersion(version => version + 1)
+        }
       }
     })
 
@@ -138,6 +159,7 @@ export function useYoloLiveState(): YoloLiveState {
     try {
       await reviewYoloEvent(eventId, decision)
       close()
+      setEventsVersion(version => version + 1)
       return 'ok'
     } catch (error) {
       if (error instanceof ApiError) {
@@ -153,8 +175,11 @@ export function useYoloLiveState(): YoloLiveState {
     }
   }, [])
 
+  const openReview = useCallback((event: YoloEvent) => setReviewing(event), [])
+  const closeReview = useCallback(() => setReviewing(null), [])
+
   return useMemo(
-    () => ({ connected, cameras, counts, pending, review }),
-    [connected, cameras, counts, pending, review],
+    () => ({ connected, cameras, counts, pending, lastAlert, eventsVersion, reviewing, openReview, closeReview, review }),
+    [connected, cameras, counts, pending, lastAlert, eventsVersion, reviewing, openReview, closeReview, review],
   )
 }

@@ -5,6 +5,7 @@ import { getAlerts } from '../api/client';
 import type { Alert } from '../api/client';
 import { useLiveUpdates } from '../hooks/useLiveUpdates';
 import Skeleton from '../components/layout/Skeleton';
+import type { AlertsFocus } from '../navigation';
 import './AlertsPage.css';
 
 type FeedAlert = Alert & { terminal?: string | null };
@@ -102,17 +103,18 @@ function Donut({ alerts }: { alerts: FeedAlert[] }) {
   </div>;
 }
 
-export default function AlertsPage() {
+export default function AlertsPage({ focus }: { focus?: AlertsFocus } = {}) {
   const { data, loading, error, connected, updatedAt } = useLiveUpdates<FeedAlert[]>({
     topic: 'alerts',
     fetcher: getAlerts,
     intervalMs: 60_000,
   });
-  const [severity, setSeverity] = useState<Severity>('ALL');
+  // 헤더의 긴급 알약이나 토스트에서 넘어왔다면 그 값으로 시작합니다.
+  const [severity, setSeverity] = useState<Severity>(focus?.severity ?? 'ALL');
   const [terminal, setTerminal] = useState('ALL');
   const [type, setType] = useState('ALL');
   const [search, setSearch] = useState('');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(focus?.alertId ?? null);
   const [page, setPage] = useState(1);
   const { listRef, size } = usePageSize();
   const [clock, setClock] = useState(() => Date.now());
@@ -174,7 +176,13 @@ export default function AlertsPage() {
   const maxHour = Math.max(1, ...hourBuckets.map(item => item.count));
   const count = (key: string) => scoped.filter(alert => alert.severity === key).length;
 
+  // 필터가 바뀌면 선택과 페이지를 처음으로 되돌립니다. 이동으로 넘어온 첫 화면의 선택은 지우지 않습니다.
+  const firstRun = useRef(true);
   useEffect(() => {
+    if (firstRun.current) {
+      firstRun.current = false;
+      return;
+    }
     setSelectedId(null);
     setPage(1);
   }, [severity, terminal, type, search]);
