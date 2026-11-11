@@ -220,3 +220,5 @@ congestion 메시지는 터미널별로, flights·stats 메시지는 방향별�
 | 날씨 | CLEAR, CLOUDY, RAIN, SNOW, FOG |
 | 편의시설 | LOUNGE, FOOD_CAFE, PHARMACY, SHOPPING, ETC |
 | 데이터 출처 | api, yolo, demo |
+
+YOLO DEMO 계약은 docs/yolo-demo-contract.md 참고
