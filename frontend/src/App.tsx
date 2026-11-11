@@ -12,7 +12,7 @@ import AlertsPage from './pages/AlertsPage';
 import YoloProvider from './components/yolo/YoloProvider';
 import YoloToast from './components/yolo/YoloToast';
 import YoloReviewHost from './components/yolo/YoloReviewHost';
-import type { AlertsFocus } from './navigation';
+import type { AlertsFocus, CongestionFocus } from './navigation';
 import './App.css';
 import './polish.css';
 
@@ -52,6 +52,8 @@ export default function App() {
   const [flightNo, setFlightNo] = useState('');
   // 스마트 알림 화면으로 이동할 때 넘기는 값(중요도 필터, 선택할 알림). nonce가 바뀌면 화면을 새로 맞춥니다.
   const [alertsFocus, setAlertsFocus] = useState<AlertsFocus>({ nonce: 0 });
+  // 출국장 혼잡도 화면으로 이동할 때 넘기는 값(터미널, 선택할 출국장). nonce 0은 이동 없이 직접 연 화면입니다.
+  const [congestionFocus, setCongestionFocus] = useState<CongestionFocus>({ nonce: 0, terminal: 'T1', hallId: 0 });
   const [showIntro, setShowIntro] = useState(() => !introSeen());
   // 소개 화면에서 넘어온 직후에만 메인을 페이드 인합니다.
   const [entering, setEntering] = useState(false);
@@ -63,6 +65,11 @@ export default function App() {
   const openAlerts = (focus: Omit<AlertsFocus, 'nonce'>) => {
     setAlertsFocus(current => ({ ...focus, nonce: current.nonce + 1 }));
     setPage('alerts');
+  };
+  const openCongestion = (terminal: string, hallId: number) => {
+    if (terminal !== 'T1' && terminal !== 'T2') return;
+    setCongestionFocus(current => ({ nonce: current.nonce + 1, terminal, hallId }));
+    setPage('congestion');
   };
   const startDashboard = () => {
     markIntroSeen();
@@ -90,9 +97,9 @@ export default function App() {
     {page === 'flights' && <FlightsPage />}
     {page === 'statistics' && <StatisticsPage />}
     {page === 'weather' && <WeatherPage />}
-    {page === 'congestion' && <CongestionPage />}
+    {page === 'congestion' && <CongestionPage key={congestionFocus.nonce} focus={congestionFocus.nonce ? congestionFocus : undefined} />}
     {page === 'facilities' && <FacilitiesPage />}
-    {page === 'alerts' && <AlertsPage key={alertsFocus.nonce} focus={alertsFocus} />}
+    {page === 'alerts' && <AlertsPage key={alertsFocus.nonce} focus={alertsFocus} onOpenCongestion={openCongestion} />}
     {page === 'myFlight' && <MyFlightPage flightNo={flightNo} navigate={navigate} />}
   </div></YoloProvider>;
 }

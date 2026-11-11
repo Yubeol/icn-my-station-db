@@ -8,6 +8,7 @@ import { getCongestion, getCongestionHourly } from '../api/client';
 import type { Congestion, CongestionHourly, Terminal } from '../api/client';
 import { useLiveUpdates } from '../hooks/useLiveUpdates';
 import { useYolo } from '../hooks/useYoloLive';
+import type { CongestionFocus } from '../navigation';
 import { cameraIdForHall } from '../api/yolo';
 import YoloHallBadge from '../components/yolo/YoloHallBadge';
 import CctvViewer from '../components/yolo/CctvViewer';
@@ -32,9 +33,10 @@ function changeText(rate: number | null) {
   return `30분 전 대비 ${rate > 0 ? '+' : ''}${rate.toFixed(1)}%`;
 }
 
-export default function CongestionPage() {
-  const [terminal, setTerminal] = useState<Terminal>('T1');
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+// 스마트 알림 등에서 넘어오면 그 터미널과 출국장을 선택한 채로 시작합니다.
+export default function CongestionPage({ focus }: { focus?: CongestionFocus } = {}) {
+  const [terminal, setTerminal] = useState<Terminal>(focus?.terminal ?? 'T1');
+  const [selectedId, setSelectedId] = useState<number | null>(focus?.hallId ?? null);
   const [cctv, setCctv] = useState<{ cameraId: number; title: string } | null>(null);
   const { data, loading, error, connected } = useLiveUpdates<Congestion>({
     topic: 'congestion',
